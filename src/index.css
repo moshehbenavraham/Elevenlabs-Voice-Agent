@@ -93,14 +93,18 @@
 @layer utilities {
   /* Enhanced Glass morphism utilities */
   .glass {
-    @apply bg-white/5 backdrop-blur-md border border-white/10;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 
       0 8px 32px 0 rgba(31, 38, 135, 0.37),
       inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
   }
   
   .glass-enhanced {
-    @apply bg-white/8 backdrop-blur-xl border border-white/20;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 
       0 12px 40px 0 rgba(31, 38, 135, 0.5),
       inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
@@ -108,19 +112,22 @@
   }
   
   .glass-light {
-    @apply bg-black/5 backdrop-blur-md border border-black/10;
+    background: rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
     box-shadow: 
       0 8px 32px 0 rgba(0, 0, 0, 0.1),
       inset 0 1px 0 0 rgba(0, 0, 0, 0.05);
   }
 
   .glass-frosted {
-    @apply bg-white/10 backdrop-blur-2xl border border-white/30;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(40px) saturate(1.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: 
       0 15px 50px 0 rgba(31, 38, 135, 0.6),
       inset 0 2px 0 0 rgba(255, 255, 255, 0.2),
       inset 0 -2px 0 0 rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px) saturate(1.2);
   }
 
   /* Gradient utilities */
