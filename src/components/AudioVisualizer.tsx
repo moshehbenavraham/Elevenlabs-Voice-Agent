@@ -193,9 +193,8 @@ export const AudioVisualizer: React.FC<AudioVisualizerProps> = ({
 
       analyserRef.current.getByteFrequencyData(dataArrayRef.current);
 
-      // Clear canvas with subtle fade effect
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Clear canvas completely for transparent background
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       // Draw visualization
       drawVisualization(ctx, canvas, dataArrayRef.current);
