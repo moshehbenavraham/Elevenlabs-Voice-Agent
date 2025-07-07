@@ -29,8 +29,12 @@ export const VoiceOrb: React.FC<VoiceOrbProps> = ({
 
   const orbVariants = {
     idle: {
-      scale: 1,
-      boxShadow: '0 0 30px rgba(124, 58, 237, 0.3)',
+      scale: [1, 1.02, 1],
+      boxShadow: [
+        '0 0 30px rgba(124, 58, 237, 0.3)',
+        '0 0 40px rgba(124, 58, 237, 0.5)',
+        '0 0 30px rgba(124, 58, 237, 0.3)',
+      ],
     },
     loading: {
       scale: [1, 1.05, 1],
@@ -57,9 +61,9 @@ export const VoiceOrb: React.FC<VoiceOrbProps> = ({
         animate={orbState}
         variants={orbVariants}
         transition={{
-          duration: orbState === 'loading' ? 1.5 : 2,
-          repeat: orbState === 'loading' || (orbState === 'connected' && isSpeaking) ? Infinity : 0,
-          ease: 'easeInOut',
+          duration: orbState === 'idle' ? 3 : orbState === 'loading' ? 1.5 : 2,
+          repeat: orbState === 'idle' || orbState === 'loading' || (orbState === 'connected' && isSpeaking) ? Infinity : 0,
+          ease: orbState === 'idle' ? 'easeInOut' : 'easeInOut',
         }}
       >
         <div className="relative w-80 h-80 max-w-[300px] max-h-[300px] rounded-full glass gradient-primary p-1 animate-pulse-glow">
