@@ -27,7 +27,7 @@ const Index = () => {
     } else {
       try {
         // Your ElevenLabs Agent ID
-        const agentId = 'agent_01jvvymdfgf6pa6ks0435a9xr3';
+        const agentId = 'ADD YOUR AGENT ID HERE';
         await startConversation(agentId);
         setHasStarted(true);
         
