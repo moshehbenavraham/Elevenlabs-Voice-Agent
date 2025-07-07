@@ -37,18 +37,17 @@ export const useElevenLabsConversation = () => {
     },
     onMessage: (message) => {
       console.log('Message received:', message);
-      // Add message to transcript
-      if (message.type === 'user_transcript' && message.user_transcript) {
-        setMessages(prev => [...prev, { role: 'user', content: message.user_transcript }]);
-      } else if (message.type === 'agent_response' && message.agent_response) {
-        setMessages(prev => [...prev, { role: 'assistant', content: message.agent_response }]);
+      // Add message to transcript based on ElevenLabs API structure
+      if (message.message && message.source) {
+        const role = message.source === 'user' ? 'user' : 'assistant';
+        setMessages(prev => [...prev, { role, content: message.message }]);
       }
     },
     onError: (error) => {
       console.error('ElevenLabs error:', error);
       setState(prev => ({ 
         ...prev, 
-        error: error.message || 'Connection error occurred',
+        error: 'Connection error occurred',
         isLoading: false 
       }));
     },
