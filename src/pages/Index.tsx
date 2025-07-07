@@ -26,9 +26,9 @@ const Index = () => {
       setHasStarted(false);
     } else {
       try {
-        // Demo agent ID - replace with actual ElevenLabs agent ID
-        const demoAgentId = 'demo-agent-id';
-        await startConversation(demoAgentId);
+        // Your ElevenLabs Agent ID
+        const agentId = 'agent_01jvvymdfgf6pa6ks0435a9xr3';
+        await startConversation(agentId);
         setHasStarted(true);
         
         toast({
