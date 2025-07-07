@@ -1,9 +1,20 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Zap, MessageCircle } from 'lucide-react';
+import { Sparkles, Zap, MessageCircle, Mic } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-export const HeroSection: React.FC = () => {
+interface HeroSectionProps {
+  onStartConversation: () => Promise<void>;
+  isLoading: boolean;
+  error: string | null;
+}
+
+export const HeroSection: React.FC<HeroSectionProps> = ({ 
+  onStartConversation, 
+  isLoading, 
+  error 
+}) => {
   const features = [
     {
       icon: MessageCircle,
@@ -87,13 +98,45 @@ export const HeroSection: React.FC = () => {
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 1.2 }}
         >
-          <p className="text-white/60 text-sm mb-4">
-            Start your voice conversation below
+          <p className="text-white/60 text-sm mb-6">
+            Start your voice conversation now
           </p>
-          <div className="flex items-center justify-center space-x-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-green-400 text-sm font-medium">Ready to connect</span>
-          </div>
+          
+          <Button
+            onClick={onStartConversation}
+            disabled={isLoading}
+            className="glass hover:bg-white/10 text-white border-white/20 px-8 py-4 h-auto text-lg font-semibold rounded-full transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+            size="lg"
+          >
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                Connecting...
+              </>
+            ) : (
+              <>
+                <Mic className="w-5 h-5 mr-2" />
+                Start Voice Chat
+              </>
+            )}
+          </Button>
+          
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 text-red-400 text-sm"
+            >
+              {error}
+            </motion.div>
+          )}
+          
+          {!isLoading && !error && (
+            <div className="flex items-center justify-center space-x-2 mt-4">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-green-400 text-sm font-medium">Ready to connect</span>
+            </div>
+          )}
         </motion.div>
       </motion.div>
 

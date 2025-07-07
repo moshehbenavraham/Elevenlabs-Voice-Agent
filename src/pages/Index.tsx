@@ -62,7 +62,11 @@ const Index = () => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(124,58,237,0.05),transparent_50%)]" />
       
       {!hasStarted ? (
-        <HeroSection />
+        <HeroSection 
+          onStartConversation={handleToggleConnection}
+          isLoading={isLoading}
+          error={error}
+        />
       ) : (
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
