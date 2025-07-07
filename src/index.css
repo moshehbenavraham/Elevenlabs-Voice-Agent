@@ -91,13 +91,36 @@
 }
 
 @layer utilities {
-  /* Glass morphism utilities */
+  /* Enhanced Glass morphism utilities */
   .glass {
-    @apply bg-white/5 backdrop-blur-sm border border-white/10;
+    @apply bg-white/5 backdrop-blur-md border border-white/10;
+    box-shadow: 
+      0 8px 32px 0 rgba(31, 38, 135, 0.37),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  }
+  
+  .glass-enhanced {
+    @apply bg-white/8 backdrop-blur-xl border border-white/20;
+    box-shadow: 
+      0 12px 40px 0 rgba(31, 38, 135, 0.5),
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
+      inset 0 -1px 0 0 rgba(255, 255, 255, 0.05);
   }
   
   .glass-light {
-    @apply bg-black/5 backdrop-blur-sm border border-black/10;
+    @apply bg-black/5 backdrop-blur-md border border-black/10;
+    box-shadow: 
+      0 8px 32px 0 rgba(0, 0, 0, 0.1),
+      inset 0 1px 0 0 rgba(0, 0, 0, 0.05);
+  }
+
+  .glass-frosted {
+    @apply bg-white/10 backdrop-blur-2xl border border-white/30;
+    box-shadow: 
+      0 15px 50px 0 rgba(31, 38, 135, 0.6),
+      inset 0 2px 0 0 rgba(255, 255, 255, 0.2),
+      inset 0 -2px 0 0 rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px) saturate(1.2);
   }
 
   /* Gradient utilities */
@@ -112,7 +135,7 @@
     background-clip: text;
   }
 
-  /* Animation utilities */
+  /* Enhanced Animation utilities */
   .animate-fade-in {
     animation: fadeIn 0.8s ease-out;
   }
@@ -127,6 +150,18 @@
 
   .animate-pulse-glow {
     animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-morph {
+    animation: morph 4s ease-in-out infinite;
+  }
+
+  .animate-ripple {
+    animation: ripple 2s ease-out infinite;
   }
 
   /* Grid background pattern */
@@ -177,6 +212,41 @@
   }
   50% {
     box-shadow: 0 0 40px rgba(124, 58, 237, 0.6);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes morph {
+  0%, 100% {
+    border-radius: 50%;
+  }
+  25% {
+    border-radius: 45%;
+  }
+  50% {
+    border-radius: 40%;
+  }
+  75% {
+    border-radius: 48%;
+  }
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
   }
 }
 

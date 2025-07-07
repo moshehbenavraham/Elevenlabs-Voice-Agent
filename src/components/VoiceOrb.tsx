@@ -3,6 +3,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Mic, MicOff, Square } from 'lucide-react';
 import { AudioVisualizer } from './AudioVisualizer';
+import { ParticleSystem } from './ParticleSystem';
 
 interface VoiceOrbProps {
   isConnected: boolean;
@@ -30,6 +31,7 @@ export const VoiceOrb: React.FC<VoiceOrbProps> = ({
   const orbVariants = {
     idle: {
       scale: [1, 1.02, 1.01, 1],
+      y: [0, -3, 0, 3, 0],
       boxShadow: [
         '0 0 30px rgba(124, 58, 237, 0.3)',
         '0 0 45px rgba(124, 58, 237, 0.5)',
@@ -37,29 +39,35 @@ export const VoiceOrb: React.FC<VoiceOrbProps> = ({
         '0 0 30px rgba(124, 58, 237, 0.3)',
       ],
       opacity: [0.9, 1, 0.95, 0.9],
+      borderRadius: ["50%", "50%", "45%", "50%"],
     },
     loading: {
       scale: [1, 1.05, 1.02, 1],
+      y: [0, -5, 0, 5, 0],
       boxShadow: [
         '0 0 30px rgba(124, 58, 237, 0.3)',
-        '0 0 50px rgba(124, 58, 237, 0.6)',
+        '0 0 60px rgba(124, 58, 237, 0.7)',
         '0 0 40px rgba(124, 58, 237, 0.5)',
         '0 0 30px rgba(124, 58, 237, 0.3)',
       ],
       opacity: [0.8, 1, 0.9, 0.8],
       rotate: [0, 2, -2, 0],
+      borderRadius: ["50%", "45%", "50%", "45%"],
     },
     connected: {
       scale: isSpeaking 
-        ? [1, 1.1, 1.05, 1, 1.08, 1] 
+        ? [1, 1.12, 1.05, 1, 1.08, 1] 
         : [1, 1.03, 1.01, 1],
+      y: isSpeaking 
+        ? [0, -8, 0, 8, 0, -4, 0]
+        : [0, -2, 0, 2, 0],
       boxShadow: isSpeaking 
         ? [
             '0 0 40px rgba(236, 72, 153, 0.6)',
-            '0 0 70px rgba(236, 72, 153, 0.9)',
+            '0 0 80px rgba(236, 72, 153, 0.9)',
             '0 0 50px rgba(236, 72, 153, 0.7)',
             '0 0 40px rgba(236, 72, 153, 0.6)',
-            '0 0 65px rgba(236, 72, 153, 0.8)',
+            '0 0 70px rgba(236, 72, 153, 0.8)',
             '0 0 40px rgba(236, 72, 153, 0.6)',
           ]
         : [
@@ -69,6 +77,9 @@ export const VoiceOrb: React.FC<VoiceOrbProps> = ({
             '0 0 40px rgba(124, 58, 237, 0.6)',
           ],
       opacity: isSpeaking ? [0.9, 1, 0.95, 0.9, 1, 0.9] : [0.9, 1, 0.95, 0.9],
+      borderRadius: isSpeaking 
+        ? ["50%", "40%", "50%", "45%", "50%", "40%"]
+        : ["50%", "48%", "50%", "48%"],
     },
   };
 
@@ -81,13 +92,23 @@ export const VoiceOrb: React.FC<VoiceOrbProps> = ({
         animate={orbState}
         variants={orbVariants}
         transition={{
-          duration: orbState === 'idle' ? 3 : orbState === 'loading' ? 1.5 : 2,
+          duration: orbState === 'idle' ? 4 : orbState === 'loading' ? 1.8 : isSpeaking ? 1.5 : 2.5,
           repeat: orbState === 'idle' || orbState === 'loading' || (orbState === 'connected' && isSpeaking) ? Infinity : 0,
-          ease: orbState === 'idle' ? 'easeInOut' : 'easeInOut',
+          ease: orbState === 'idle' ? 'easeInOut' : orbState === 'loading' ? 'easeInOut' : 'easeInOut',
+          type: 'spring',
+          stiffness: orbState === 'loading' ? 100 : 50,
+          damping: orbState === 'loading' ? 10 : 15,
         }}
       >
-        <div className="relative w-80 h-80 max-w-[300px] max-h-[300px] rounded-full glass gradient-primary p-1 animate-pulse-glow">
+        <div className="relative w-80 h-80 max-w-[300px] max-h-[300px] rounded-full glass-enhanced gradient-primary p-1 animate-pulse-glow">
           <div className="w-full h-full rounded-full bg-background/20 backdrop-blur-xl flex items-center justify-center relative overflow-hidden">
+            {/* Particle System */}
+            <ParticleSystem
+              isActive={isConnected}
+              isSpeaking={isSpeaking}
+              intensity={isSpeaking ? 1 : 0.5}
+            />
+            
             {/* Audio Visualizer */}
             <AudioVisualizer
               isActive={isConnected}
@@ -97,7 +118,7 @@ export const VoiceOrb: React.FC<VoiceOrbProps> = ({
             
             {/* Center Icon */}
             <motion.div
-              className="relative z-10 p-6 rounded-full glass"
+              className="relative z-10 p-6 rounded-full glass-frosted"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -122,7 +143,7 @@ export const VoiceOrb: React.FC<VoiceOrbProps> = ({
         <motion.button
           onClick={onToggleConnection}
           disabled={isLoading}
-          className="px-8 py-3 rounded-full gradient-primary text-white font-medium hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
+          className="px-8 py-3 rounded-full gradient-primary text-white font-medium glass-enhanced hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
         >
@@ -132,7 +153,7 @@ export const VoiceOrb: React.FC<VoiceOrbProps> = ({
         {isConnected && (
           <motion.button
             onClick={onEndConversation}
-            className="px-6 py-3 rounded-full glass text-white hover:bg-red-500/20 transition-all duration-300"
+            className="px-6 py-3 rounded-full glass-enhanced text-white hover:bg-red-500/20 transition-all duration-300"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             initial={{ opacity: 0, x: 20 }}

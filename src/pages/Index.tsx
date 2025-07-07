@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { HeroSection } from '@/components/HeroSection';
 import { VoiceOrb } from '@/components/VoiceOrb';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { BackgroundEffects } from '@/components/BackgroundEffects';
 import { useElevenLabsConversation } from '@/hooks/useElevenLabsConversation';
 import { toast } from '@/hooks/use-toast';
 
@@ -59,6 +60,7 @@ const Index = () => {
       <ThemeToggle />
       
       {/* Background Effects */}
+      <BackgroundEffects isSpeaking={isSpeaking} />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(124,58,237,0.05),transparent_50%)]" />
       
       {!hasStarted ? (
@@ -89,7 +91,7 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               className="mt-8 max-w-2xl w-full"
             >
-              <div className="glass p-6 rounded-2xl max-h-60 overflow-y-auto">
+              <div className="glass-enhanced p-6 rounded-2xl max-h-60 overflow-y-auto">
                 <h3 className="text-white font-semibold mb-4">Conversation</h3>
                 <div className="space-y-3" aria-live="polite">
                   {messages.map((message, index) => (
@@ -97,8 +99,8 @@ const Index = () => {
                       key={index}
                       className={`p-3 rounded-lg ${
                         message.role === 'user'
-                          ? 'bg-purple-500/20 ml-4'
-                          : 'bg-pink-500/20 mr-4'
+                          ? 'bg-purple-500/20 ml-4 glass'
+                          : 'bg-pink-500/20 mr-4 glass'
                       }`}
                     >
                       <p className="text-white/90 text-sm">{message.content}</p>
@@ -118,7 +120,7 @@ const Index = () => {
           animate={{ opacity: 1, y: 0 }}
           className="fixed bottom-6 left-6 right-6 md:left-auto md:right-6 md:max-w-md"
         >
-          <div className="glass p-4 rounded-lg border-red-500/50 bg-red-500/10">
+          <div className="glass-enhanced p-4 rounded-lg border-red-500/50 bg-red-500/10">
             <p className="text-red-400 text-sm">{error}</p>
           </div>
         </motion.div>
