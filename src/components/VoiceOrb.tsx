@@ -4,6 +4,8 @@ import { motion } from 'framer-motion';
 import { Mic, MicOff, Square } from 'lucide-react';
 import { AudioVisualizer } from './AudioVisualizer';
 import { ParticleSystem } from './ParticleSystem';
+import { EnhancedButton } from './ui/enhanced-button';
+import { AnimatedText } from './AnimatedText';
 
 interface VoiceOrbProps {
   isConnected: boolean;
@@ -140,28 +142,31 @@ export const VoiceOrb: React.FC<VoiceOrbProps> = ({
 
       {/* Control Buttons */}
       <div className="flex space-x-4">
-        <motion.button
+        <EnhancedButton
           onClick={onToggleConnection}
           disabled={isLoading}
-          className="px-8 py-3 rounded-full gradient-primary text-white font-medium glass-enhanced hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed min-w-[120px]"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          isLoading={isLoading}
+          variant="primary"
+          size="lg"
+          anticipation={!isConnected && !isLoading}
         >
           {isLoading ? 'Connecting...' : isConnected ? 'Disconnect' : 'Start Chat'}
-        </motion.button>
+        </EnhancedButton>
 
         {isConnected && (
-          <motion.button
-            onClick={onEndConversation}
-            className="px-6 py-3 rounded-full glass-enhanced text-white hover:bg-red-500/20 transition-all duration-300"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+          <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
           >
-            <Square className="w-5 h-5" />
-          </motion.button>
+            <EnhancedButton
+              onClick={onEndConversation}
+              variant="secondary"
+              size="md"
+            >
+              <Square className="w-5 h-5" />
+            </EnhancedButton>
+          </motion.div>
         )}
       </div>
 
@@ -172,12 +177,16 @@ export const VoiceOrb: React.FC<VoiceOrbProps> = ({
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
       >
-        <p className="text-sm">
-          {isLoading && 'Connecting to AI agent...'}
-          {isConnected && !isSpeaking && 'Listening... Start speaking'}
-          {isConnected && isSpeaking && 'AI is responding...'}
-          {!isConnected && !isLoading && 'Click to start your voice conversation'}
-        </p>
+        <AnimatedText 
+          variant={isSpeaking ? 'gradient' : 'reveal'}
+          className="text-sm"
+        >
+          {(isLoading && 'Connecting to AI agent...') ||
+           (isConnected && !isSpeaking && 'Listening... Start speaking') ||
+           (isConnected && isSpeaking && 'AI is responding...') ||
+           (!isConnected && !isLoading && 'Click to start your voice conversation') ||
+           ''}
+        </AnimatedText>
       </motion.div>
     </div>
   );

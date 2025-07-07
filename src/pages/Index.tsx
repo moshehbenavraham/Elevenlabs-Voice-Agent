@@ -5,7 +5,9 @@ import { HeroSection } from '@/components/HeroSection';
 import { VoiceOrb } from '@/components/VoiceOrb';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { BackgroundEffects } from '@/components/BackgroundEffects';
+import { VoiceEnvironment } from '@/components/VoiceEnvironment';
 import { useElevenLabsConversation } from '@/hooks/useElevenLabsConversation';
+import { useVoiceAnimations } from '@/hooks/useVoiceAnimations';
 import { toast } from '@/hooks/use-toast';
 
 const Index = () => {
@@ -20,6 +22,9 @@ const Index = () => {
   } = useElevenLabsConversation();
 
   const [hasStarted, setHasStarted] = useState(false);
+  
+  // Enhanced voice animations
+  const { isTransitioning } = useVoiceAnimations(isConnected, isLoading, isSpeaking);
 
   const handleToggleConnection = async () => {
     if (isConnected) {
@@ -61,6 +66,11 @@ const Index = () => {
       
       {/* Background Effects */}
       <BackgroundEffects isSpeaking={isSpeaking} />
+      <VoiceEnvironment 
+        isSpeaking={isSpeaking} 
+        isConnected={isConnected}
+        audioIntensity={isSpeaking ? 0.8 : 0.3}
+      />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(124,58,237,0.05),transparent_50%)]" />
       
       {!hasStarted ? (
