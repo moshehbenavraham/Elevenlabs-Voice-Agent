@@ -1,6 +1,24 @@
 
 # ElevenLabs Voice Agent
 
+> **Project assembled by [AI with Apex](https://AIwithApex.com)**  
+> 🚀 **[Remix this project on Lovable](https://elevenlabs-voice-agent.lovable.app/)**  
+> 💻 **Developed on [Lovable.dev](https://lovable.dev/)**
+
+## 🎥 Video Tutorial Series
+
+Learn how to create and configure ElevenLabs agents for this application:
+
+| Tutorial | Description |
+|----------|-------------|
+| 📚 [Building Your First ElevenLabs Agent](https://youtu.be/oEkyNSWRqxc?si=30fMIpIhm0hgbzfz) | Complete walkthrough of creating your base conversational AI agent |
+| 🗂️ [Setting Up Knowledge Base (RAG)](https://youtu.be/S93uZ9Cuz4w?si=WxEtWKrEzx_e5XBL) | Quick 60-second guide to prepare your agent's knowledge base |
+| 🛠️ [Creating Agent Tools & Functions](https://youtu.be/jHTMYmptHI0?si=1O0kVsWjTDr6bbVC) | Build your first agent tool for contact detail collection |
+| 📝 [Handling Call Transcripts](https://youtu.be/--j6hfnCc-w?si=Hz12v8ukPi4y2pU4) | Process and manage post-call transcripts effectively |
+| ✨ [Advanced Features & Configuration](https://youtu.be/55UJWHi_ZMk?si=p58wnk-bmEkgDg2_) | Explore new features and advanced usage patterns |
+
+---
+
 A sophisticated voice AI web application built with React, TypeScript, and the ElevenLabs Conversational AI SDK. Experience real-time voice conversations with advanced AI featuring beautiful audio visualizations and a modern glassmorphism UI.
 
 ## ✨ Features
