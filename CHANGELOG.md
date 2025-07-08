@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **AI with Apex Attribution**: Added project attribution to AI with Apex (https://AIwithApex.com) at top of README
+- **Lovable.dev Integration**: Added links to remix project on Lovable and development platform
+- **Video Tutorial Series**: Added comprehensive YouTube tutorial series for creating ElevenLabs agents
+  - Building Your First ElevenLabs Agent
+  - Setting Up Knowledge Base (RAG)
+  - Creating Agent Tools & Functions
+  - Handling Call Transcripts
+  - Advanced Features & Configuration
+
+### Changed
+- **Documentation Updates**: Updated all documentation to reflect current project structure
+  - Fixed package references from `@11labs/react` to `@elevenlabs/react` in API_INTEGRATION.md
+  - Updated CLAUDE.md to reflect actual component file structure
+  - Corrected project structure documentation to match actual codebase
+
 ### Fixed
 - **Critical Layout Issues**: Fixed conflicting positioning systems in header layout
   - Removed independent `fixed` positioning from ThemeToggle component

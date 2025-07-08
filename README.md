@@ -106,13 +106,17 @@ npm run dev
    - Navigate to the Conversational AI section in your dashboard
    - Create a new conversational AI agent
    - Copy your Agent ID from the agent settings
-   - Replace the placeholder in [`src/pages/Index.tsx:36`](src/pages/Index.tsx:36):
-     ```typescript
-     const agentId = 'INSERT YOUR AGENT ID HERE'; // Replace with your actual Agent ID
+   - Create a `.env` file from `.env.example`:
+     ```bash
+     cp .env.example .env
+     ```
+   - Add your Agent ID to the `.env` file:
+     ```
+     VITE_ELEVENLABS_AGENT_ID=your_actual_agent_id_here
      ```
 
 2. **Environment Configuration**:
-   - **Current Implementation**: Mock/demo setup for development
+   - **Environment Variables**: Configure your Agent ID in `.env` file (see `.env.example`)
    - **Production Requirements**:
      - Implement server-side signed URL generation for security
      - Set up proper authentication with ElevenLabs API
@@ -120,7 +124,7 @@ npm run dev
    - **Browser Permissions**: Microphone access will be requested on first use
 
 3. **Important Notes**:
-   - This is currently a **demo implementation** with hardcoded agent ID
+   - The app reads Agent ID from environment variables (not hardcoded)
    - For production use, implement proper API key management on your backend
    - The app uses the ElevenLabs React SDK for real-time conversation handling
 
@@ -129,7 +133,7 @@ npm run dev
 - **Frontend**: React 18, TypeScript, Vite
 - **Build Tool**: Vite with SWC for fast compilation
 - **Styling**: Tailwind CSS, Framer Motion animations
-- **Voice AI**: @11labs/react SDK v0.1.4
+- **Voice AI**: @elevenlabs/react SDK v0.2.1
 - **Audio Processing**: Web Audio API, Canvas API for visualizations
 - **UI Components**: Radix UI primitives with shadcn/ui styling
 - **Routing**: React Router v6
@@ -321,7 +325,7 @@ src/
 - **Mobile Browsers**: Optimized for mobile, background tab throttling may affect audio ⚠️
 
 ### Known Issues
-1. **Agent ID Configuration**: Must replace placeholder in [`src/pages/Index.tsx:36`](src/pages/Index.tsx:36)
+1. **Agent ID Configuration**: Must set `VITE_ELEVENLABS_AGENT_ID` in `.env` file
 2. **Safari WebAudio**: May require user interaction before audio processing starts
 3. **Mobile Chrome**: Background tab throttling affects audio visualization
 4. **HTTPS Requirement**: Microphone access requires HTTPS in production
@@ -372,9 +376,9 @@ bun run lint
 ### Environment Setup
 1. Clone the repository
 2. Install dependencies with `bun install`
-3. Configure your ElevenLabs Agent ID in [`src/pages/Index.tsx:36`](src/pages/Index.tsx:36)
+3. Configure your ElevenLabs Agent ID in `.env` file (copy from `.env.example`)
 4. Start development server with `bun dev`
-5. Open `http://localhost:5173` in your browser
+5. Open `http://localhost:8080` in your browser
 
 ## 📄 License
 

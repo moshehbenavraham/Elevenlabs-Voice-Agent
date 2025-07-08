@@ -25,7 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build Tool**: Vite with SWC for fast compilation
 - **Styling**: Tailwind CSS with custom glassmorphism design system
 - **UI Components**: Radix UI primitives wrapped in shadcn/ui pattern
-- **Voice AI**: @11labs/react SDK v0.1.4 for conversational AI
+- **Voice AI**: @elevenlabs/react SDK v0.1.4 for conversational AI
 - **Animations**: Framer Motion for smooth transitions
 - **State**: React Context (theme), Tanstack Query (server state), custom hooks
 
@@ -33,21 +33,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 src/
 ├── components/          # UI components
-│   ├── VoiceOrb.tsx    # Main voice interaction (audio, animations, controls)
-│   ├── AudioVisualizer.tsx # 60fps Web Audio API visualization
+│   ├── voice/          # Voice-specific components
+│   │   ├── VoiceButton.tsx # Voice interaction button
+│   │   ├── VoiceStatus.tsx # Connection status display
+│   │   └── VoiceVisualizer.tsx # Audio visualization component
 │   ├── BackgroundEffects.tsx # Dynamic background animations
+│   ├── HeroSection.tsx # Landing page hero section
+│   ├── VoiceEnvironment.tsx # 3D voice environment
+│   ├── ConfigurationModal.tsx # Settings modal
 │   └── ui/             # 50+ shadcn/ui components
 ├── hooks/              # Business logic
-│   ├── useElevenLabsConversation.ts # Core voice chat integration
-│   ├── useVoiceAnimations.ts # Animation states and controls
-│   └── usePerformanceOptimization.ts # Performance monitoring
+│   ├── useAccessibility.ts # Accessibility features
+│   ├── use-mobile.tsx  # Mobile detection hook
+│   └── use-toast.ts    # Toast notifications
 ├── pages/              # Route components
-│   └── Index.tsx       # Main app page (uses env vars for Agent ID)
+│   ├── Index.tsx       # Main app page (uses env vars for Agent ID)
+│   └── NotFound.tsx    # 404 error page
 ├── test/               # Test infrastructure
 │   ├── setup.ts        # Test configuration and mocks
 │   └── App.test.tsx    # Basic app tests
-└── contexts/           # Global state
-    └── ThemeContext.tsx # Dark/light theme management
+├── contexts/           # Global state
+│   ├── ThemeContext.tsx # Dark/light theme management
+│   └── VoiceContext.tsx # Voice state management
+└── lib/                # Utilities
+    └── utils.ts        # Helper functions
 ```
 
 ### Environment Variables
@@ -61,14 +70,14 @@ src/
 ### Key Integration Points
 
 1. **ElevenLabs Voice Agent**: 
-   - Agent ID now uses environment variable `VITE_ELEVENLABS_AGENT_ID`
-   - Uses `useElevenLabsConversation` hook for all voice interactions
+   - Agent ID is configured via environment variable `VITE_ELEVENLABS_AGENT_ID`
+   - Uses ElevenLabs React SDK Conversation component
    - Requires HTTPS in production for microphone access
 
 2. **Audio Visualization**:
-   - `AudioVisualizer.tsx` uses Web Audio API for real-time frequency analysis
+   - `VoiceVisualizer.tsx` uses Web Audio API for real-time frequency analysis
    - Canvas-based rendering optimized for 60fps
-   - Integrates with voice state from ElevenLabs hook
+   - Integrates with voice state from conversation events
 
 3. **Theme System**:
    - Glassmorphism design with backdrop-filter effects
@@ -84,14 +93,14 @@ src/
 
 2. **Performance**:
    - Audio visualizations are throttled to 60fps
-   - Use `usePerformanceOptimization` hook for monitoring
-   - Mobile optimizations via `useMobileOptimization` hook
+   - Mobile optimizations via `use-mobile` hook
+   - Lazy loading for heavy components
 
 3. **State Management**:
    - Theme: Context API (`ThemeContext`)
    - Server data: Tanstack Query
    - Local state: Custom hooks pattern
-   - Voice state: `useElevenLabsConversation` hook
+   - Voice state: VoiceContext and ElevenLabs SDK
 
 4. **Styling**:
    - Tailwind utilities first

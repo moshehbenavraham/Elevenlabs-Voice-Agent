@@ -37,7 +37,7 @@ VITE_ELEVENLABS_AGENT_ID=your_agent_id_here
 
 ### 3. Basic Integration
 ```typescript
-import { useConversation } from '@11labs/react';
+import { useConversation } from '@elevenlabs/react';
 
 const MyComponent = () => {
   const conversation = useConversation({
@@ -87,12 +87,12 @@ const API_ENDPOINTS = {
 
 ### Installation
 ```bash
-npm install @11labs/react
+npm install @elevenlabs/react
 ```
 
 ### Basic React SDK Setup
 ```typescript
-import { useConversation } from '@11labs/react';
+import { useConversation } from '@elevenlabs/react';
 
 const VoiceComponent = () => {
   const conversation = useConversation({
@@ -125,7 +125,7 @@ const VoiceComponent = () => {
 
 ### Advanced Hook Configuration
 ```typescript
-import { useConversation } from '@11labs/react';
+import { useConversation } from '@elevenlabs/react';
 import { useState, useCallback } from 'react';
 
 const useElevenLabsConversation = () => {
@@ -243,7 +243,7 @@ const validateSession = async (conversation: any): Promise<boolean> => {
 
 ### Starting a Conversation with React SDK
 ```typescript
-import { useConversation } from '@11labs/react';
+import { useConversation } from '@elevenlabs/react';
 
 interface ConversationConfig {
   agentId: string;
@@ -321,7 +321,7 @@ const useMessageHandler = () => {
 
 ### Advanced Conversation State Management
 ```typescript
-import { useConversation } from '@11labs/react';
+import { useConversation } from '@elevenlabs/react';
 import { useState, useCallback, useEffect } from 'react';
 
 interface ConversationState {
@@ -694,10 +694,10 @@ class RateLimiter {
 ### Unit Testing React SDK
 ```typescript
 import { renderHook, act } from '@testing-library/react';
-import { useConversation } from '@11labs/react';
+import { useConversation } from '@elevenlabs/react';
 
 // Mock the ElevenLabs React SDK
-jest.mock('@11labs/react', () => ({
+jest.mock('@elevenlabs/react', () => ({
   useConversation: jest.fn(),
 }));
 
@@ -756,7 +756,7 @@ describe('ElevenLabs React SDK Integration', () => {
 ### Integration Testing with React SDK
 ```typescript
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { useConversation } from '@11labs/react';
+import { useConversation } from '@elevenlabs/react';
 
 // Test component using the hook
 const TestVoiceComponent = ({ agentId }: { agentId: string }) => {
@@ -1064,7 +1064,7 @@ const diagnoseError = (error: any) => {
 ### React SDK Specific Resources
 - **[React SDK GitHub](https://github.com/elevenlabs/elevenlabs-js/tree/main/packages/react)**
 - **[React SDK Examples](https://github.com/elevenlabs/elevenlabs-examples/tree/main/react)**
-- **[TypeScript Definitions](https://www.npmjs.com/package/@11labs/react)**
+- **[TypeScript Definitions](https://www.npmjs.com/package/@elevenlabs/react)**
 
 ### Development Resources
 - **[GitHub Issues](https://github.com/yourusername/elevenlabs-voice-agent/issues)**
