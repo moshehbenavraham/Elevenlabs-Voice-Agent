@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Bash(npm run dev:*)",
+      "Bash(ls:*)",
+      "Bash(npm run lint)",
+      "Bash(npm install:*)",
+      "Bash(mkdir:*)",
+      "Bash(npm run test:run:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx update-browserslist-db:*)",
+      "Bash(npm update:*)",
+      "Bash(timeout 30s npm run dev)",
+      "Bash(npm uninstall:*)",
+      "WebFetch(domain:elevenlabs.io)",
+      "Bash(rm:*)"
+    ],
+    "deny": []
+  }
+}

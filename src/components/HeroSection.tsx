@@ -132,10 +132,22 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           )}
           
           {!isLoading && !error && (
-            <div className="flex items-center justify-center space-x-2 mt-4">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-green-400 text-sm font-medium">Ready to connect</span>
-            </div>
+            <motion.div 
+              className="flex flex-col items-center gap-2 mt-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.4 }}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                <span className="text-green-400 text-sm font-medium">Ready to connect</span>
+              </div>
+              <p className="text-white/40 text-xs">
+                {import.meta.env.VITE_ELEVENLABS_AGENT_ID && import.meta.env.VITE_ELEVENLABS_AGENT_ID !== 'your_agent_id_here' 
+                  ? 'Agent configured' 
+                  : 'Configure agent in settings'}
+              </p>
+            </motion.div>
           )}
         </motion.div>
       </motion.div>

@@ -1,114 +1,119 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-interface BackgroundEffectsProps {
-  isSpeaking?: boolean;
-  className?: string;
-}
-
-export const BackgroundEffects: React.FC<BackgroundEffectsProps> = ({ 
-  isSpeaking = false, 
-  className = '' 
-}) => {
-  const FloatingElement = ({ 
-    size, 
-    delay, 
-    duration, 
-    x, 
-    y, 
-    shape = 'circle' 
-  }: {
-    size: number;
-    delay: number;
-    duration: number;
-    x: number;
-    y: number;
-    shape?: 'circle' | 'square' | 'triangle';
-  }) => (
-    <motion.div
-      className={`absolute ${shape === 'circle' ? 'rounded-full' : shape === 'square' ? 'rounded-lg' : ''}`}
-      style={{
-        width: size,
-        height: size,
-        left: x,
-        top: y,
-        background: isSpeaking 
-          ? 'linear-gradient(135deg, rgba(236, 72, 153, 0.1), rgba(124, 58, 237, 0.1))'
-          : 'linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(236, 72, 153, 0.1))',
-        filter: 'blur(1px)',
-      }}
-      animate={{
-        y: [0, -20, 0],
-        x: [0, 10, 0],
-        rotate: shape === 'square' ? [0, 180, 360] : [0, 360],
-        scale: [1, 1.1, 1],
-        opacity: [0.3, 0.7, 0.3],
-      }}
-      transition={{
-        duration,
-        delay,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      }}
-    />
-  );
-
+export const BackgroundEffects: React.FC = () => {
   return (
-    <div className={`absolute inset-0 overflow-hidden pointer-events-none ${className}`}>
-      {/* Dynamic gradient overlay */}
+    <div className="fixed inset-0 pointer-events-none overflow-hidden">
+      {/* Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-pink-900/20" />
+      
+      {/* Animated Gradient Orbs */}
       <motion.div
-        className="absolute inset-0"
-        style={{
-          background: isSpeaking
-            ? 'radial-gradient(circle at 30% 70%, rgba(236, 72, 153, 0.15), transparent 50%), radial-gradient(circle at 70% 30%, rgba(124, 58, 237, 0.15), transparent 50%)'
-            : 'radial-gradient(circle at 50% 50%, rgba(124, 58, 237, 0.1), transparent 50%)',
-        }}
+        className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full blur-3xl"
         animate={{
-          opacity: [0.5, 1, 0.5],
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-          ease: 'easeInOut',
-        }}
-      />
-
-      {/* Floating geometric elements */}
-      <FloatingElement size={60} delay={0} duration={8} x={100} y={150} shape="circle" />
-      <FloatingElement size={40} delay={1} duration={12} x={250} y={100} shape="square" />
-      <FloatingElement size={30} delay={2} duration={10} x={80} y={300} shape="circle" />
-      <FloatingElement size={50} delay={3} duration={15} x={350} y={250} shape="circle" />
-      <FloatingElement size={35} delay={4} duration={9} x={200} y={350} shape="square" />
-      <FloatingElement size={45} delay={5} duration={11} x={400} y={180} shape="circle" />
-
-      {/* Subtle noise texture */}
-      <div 
-        className="absolute inset-0 opacity-20"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-          mixBlendMode: 'overlay',
-        }}
-      />
-
-      {/* Animated grid pattern */}
-      <motion.div
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px)
-          `,
-          backgroundSize: '40px 40px',
-        }}
-        animate={{
-          backgroundPosition: ['0px 0px', '40px 40px'],
+          x: [0, 100, 0],
+          y: [0, -50, 0],
+          scale: [1, 1.2, 1],
         }}
         transition={{
           duration: 20,
           repeat: Infinity,
-          ease: 'linear',
+          ease: 'easeInOut',
         }}
       />
+      
+      <motion.div
+        className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"
+        animate={{
+          x: [0, -80, 0],
+          y: [0, 60, 0],
+          scale: [1, 0.8, 1],
+        }}
+        transition={{
+          duration: 25,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          delay: 5,
+        }}
+      />
+      
+      <motion.div
+        className="absolute top-1/2 right-1/3 w-64 h-64 bg-gradient-to-r from-pink-500/10 to-red-500/10 rounded-full blur-3xl"
+        animate={{
+          x: [0, -60, 0],
+          y: [0, -80, 0],
+          scale: [1, 1.3, 1],
+        }}
+        transition={{
+          duration: 18,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          delay: 10,
+        }}
+      />
+      
+      {/* Floating Elements */}
+      <motion.div
+        className="absolute top-20 left-20 w-16 h-16 bg-purple-500/20 rounded-full blur-md"
+        animate={{
+          y: [0, -30, 0],
+          x: [0, 20, 0],
+          opacity: [0.3, 0.7, 0.3],
+        }}
+        transition={{
+          duration: 6,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      />
+      
+      <motion.div
+        className="absolute top-40 right-32 w-12 h-12 bg-pink-500/20 rounded-full blur-md"
+        animate={{
+          y: [0, 25, 0],
+          x: [0, -15, 0],
+          opacity: [0.2, 0.6, 0.2],
+        }}
+        transition={{
+          duration: 8,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          delay: 2,
+        }}
+      />
+      
+      <motion.div
+        className="absolute bottom-40 left-32 w-20 h-20 bg-blue-500/20 rounded-full blur-md"
+        animate={{
+          y: [0, -20, 0],
+          x: [0, 30, 0],
+          opacity: [0.4, 0.8, 0.4],
+        }}
+        transition={{
+          duration: 7,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          delay: 4,
+        }}
+      />
+      
+      <motion.div
+        className="absolute bottom-20 right-20 w-14 h-14 bg-purple-500/20 rounded-full blur-md"
+        animate={{
+          y: [0, 35, 0],
+          x: [0, -25, 0],
+          opacity: [0.3, 0.7, 0.3],
+        }}
+        transition={{
+          duration: 9,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          delay: 6,
+        }}
+      />
+      
+      {/* Grid Background Effect */}
+      <div className="absolute inset-0 grid-bg opacity-30" />
     </div>
   );
 };

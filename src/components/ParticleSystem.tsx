@@ -1,137 +1,160 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 
 interface Particle {
   x: number;
   y: number;
   vx: number;
   vy: number;
-  life: number;
-  maxLife: number;
   size: number;
+  opacity: number;
   hue: number;
 }
 
 interface ParticleSystemProps {
-  isActive: boolean;
-  isSpeaking: boolean;
-  intensity?: number;
-  className?: string;
+  particleCount?: number;
+  isActive?: boolean;
 }
 
-export const ParticleSystem: React.FC<ParticleSystemProps> = ({
-  isActive,
-  isSpeaking,
-  intensity = 0.5,
-  className = ''
+export const ParticleSystem: React.FC<ParticleSystemProps> = ({ 
+  particleCount = 50,
+  isActive = true 
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const particlesRef = useRef<Particle[]>([]);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-  useEffect(() => {
+  // Initialize particles
+  const initializeParticles = useCallback((width: number, height: number) => {
+    const particles: Particle[] = [];
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5,
+        size: Math.random() * 2 + 0.5,
+        opacity: Math.random() * 0.5 + 0.1,
+        hue: Math.random() * 60 + 260, // Purple to pink range
+      });
+    }
+    particlesRef.current = particles;
+  }, [particleCount]);
+
+  // Update particle positions
+  const updateParticles = (width: number, height: number) => {
+    particlesRef.current.forEach((particle) => {
+      particle.x += particle.vx;
+      particle.y += particle.vy;
+
+      // Wrap around edges
+      if (particle.x < 0) particle.x = width;
+      if (particle.x > width) particle.x = 0;
+      if (particle.y < 0) particle.y = height;
+      if (particle.y > height) particle.y = 0;
+
+      // Slight opacity oscillation
+      particle.opacity += (Math.random() - 0.5) * 0.02;
+      particle.opacity = Math.max(0.05, Math.min(0.6, particle.opacity));
+    });
+  };
+
+  // Render particles
+  const renderParticles = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    ctx.clearRect(0, 0, width, height);
+    
+    particlesRef.current.forEach((particle) => {
+      const gradient = ctx.createRadialGradient(
+        particle.x, particle.y, 0,
+        particle.x, particle.y, particle.size * 2
+      );
+      
+      gradient.addColorStop(0, `hsla(${particle.hue}, 70%, 60%, ${particle.opacity})`);
+      gradient.addColorStop(1, `hsla(${particle.hue}, 70%, 60%, 0)`);
+      
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(particle.x, particle.y, particle.size * 2, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  };
+
+  // Animation loop
+  const animate = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !isActive) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    const orbRadius = 140;
+    const { width, height } = canvas;
+    
+    updateParticles(width, height);
+    renderParticles(ctx, width, height);
+    
+    animationRef.current = requestAnimationFrame(animate);
+  }, [isActive]);
 
-    // Create particles around orb perimeter
-    const createParticle = (): Particle => {
-      const angle = Math.random() * Math.PI * 2;
-      const radius = orbRadius + (Math.random() - 0.5) * 20;
-      
-      return {
-        x: centerX + Math.cos(angle) * radius,
-        y: centerY + Math.sin(angle) * radius,
-        vx: (Math.random() - 0.5) * 2,
-        vy: (Math.random() - 0.5) * 2,
-        life: 1,
-        maxLife: 60 + Math.random() * 120,
-        size: 1 + Math.random() * 3,
-        hue: isSpeaking ? 316 + Math.random() * 40 : 262 + Math.random() * 30
-      };
-    };
-
-    const updateParticles = () => {
-      // Add new particles based on activity
-      const particleCount = isActive ? (isSpeaking ? 8 : 4) : 1;
-      const currentIntensity = Math.max(0.1, intensity);
-      
-      for (let i = 0; i < particleCount * currentIntensity; i++) {
-        if (particlesRef.current.length < 100) {
-          particlesRef.current.push(createParticle());
-        }
-      }
-
-      // Update existing particles
-      particlesRef.current = particlesRef.current.filter(particle => {
-        particle.x += particle.vx;
-        particle.y += particle.vy;
-        particle.life--;
-        
-        // Add slight attraction to orb center
-        const dx = centerX - particle.x;
-        const dy = centerY - particle.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distance > orbRadius + 50) {
-          particle.vx += dx * 0.001;
-          particle.vy += dy * 0.001;
-        }
-
-        return particle.life > 0;
+  // Handle resize
+  useEffect(() => {
+    const updateDimensions = () => {
+      setDimensions({
+        width: window.innerWidth,
+        height: window.innerHeight,
       });
     };
 
-    const drawParticles = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      particlesRef.current.forEach(particle => {
-        const alpha = particle.life / particle.maxLife;
-        const size = particle.size * alpha;
-        
-        // Draw particle with glow effect
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, size, 0, Math.PI * 2);
-        
-        // Inner glow
-        ctx.fillStyle = `hsla(${particle.hue}, 80%, 60%, ${alpha * 0.8})`;
-        ctx.fill();
-        
-        // Outer glow
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, size * 2, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${particle.hue}, 70%, 50%, ${alpha * 0.3})`;
-        ctx.fill();
-      });
-    };
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
 
-    const animate = () => {
-      updateParticles();
-      drawParticles();
-      animationRef.current = requestAnimationFrame(animate);
+    return () => {
+      window.removeEventListener('resize', updateDimensions);
     };
+  }, []);
 
-    animate();
+  // Initialize particles when dimensions change
+  useEffect(() => {
+    if (dimensions.width && dimensions.height) {
+      initializeParticles(dimensions.width, dimensions.height);
+    }
+  }, [dimensions, particleCount, initializeParticles]);
+
+  // Start/stop animation based on isActive
+  useEffect(() => {
+    if (isActive && dimensions.width && dimensions.height) {
+      animate();
+    } else if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isActive, isSpeaking, intensity]);
+  }, [isActive, dimensions, animate]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
+  if (!isActive) return null;
 
   return (
     <canvas
       ref={canvasRef}
-      width={300}
-      height={300}
-      className={`absolute inset-0 pointer-events-none ${className}`}
-      style={{ maxWidth: '300px', maxHeight: '300px' }}
+      width={dimensions.width}
+      height={dimensions.height}
+      className="fixed inset-0 pointer-events-none z-0"
+      style={{
+        width: '100%',
+        height: '100%',
+      }}
     />
   );
 };

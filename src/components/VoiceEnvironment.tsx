@@ -1,142 +1,149 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 
 interface VoiceEnvironmentProps {
-  isSpeaking: boolean;
-  isConnected: boolean;
-  audioIntensity?: number;
-  className?: string;
+  isActive?: boolean;
+  intensity?: number; // 0-1 scale for visual intensity
 }
 
 export const VoiceEnvironment: React.FC<VoiceEnvironmentProps> = ({
-  isSpeaking,
-  isConnected,
-  audioIntensity = 0,
-  className = '',
+  isActive = false,
+  intensity = 0.5,
 }) => {
-  const [dominantFrequency, setDominantFrequency] = useState(262);
-  
-  // Simulate voice tone analysis (in real app, this would come from audio analysis)
-  useEffect(() => {
-    if (isSpeaking) {
-      const interval = setInterval(() => {
-        // Simulate varying voice tones
-        const baseFreq = 262; // Base hue for primary color
-        const variation = Math.sin(Date.now() / 1000) * 30; // ±30 hue variation
-        setDominantFrequency(baseFreq + variation);
-      }, 100);
-      
-      return () => clearInterval(interval);
-    }
-  }, [isSpeaking]);
-
-  // Dynamic color calculation based on voice tone
-  const getVoiceToneColors = () => {
-    const intensity = Math.max(0.1, audioIntensity);
-    const baseHue = isSpeaking ? dominantFrequency : 262;
-    const saturation = isSpeaking ? 73 + (intensity * 27) : 83;
-    const lightness = isSpeaking ? 52 + (intensity * 20) : 58;
-    
-    return {
-      primary: `hsl(${baseHue}, ${saturation}%, ${lightness}%)`,
-      secondary: `hsl(${baseHue + 40}, ${saturation}%, ${lightness}%)`,
-      ambient: `hsl(${baseHue}, ${saturation * 0.6}%, ${lightness * 0.3}%)`,
-    };
-  };
-
-  const colors = getVoiceToneColors();
-
+  // Calculate visual properties based on intensity
+  const baseOpacity = intensity * 0.6;
+  const pulseScale = 1 + intensity * 0.3;
+  const animationSpeed = Math.max(0.5, 2 - intensity);
 
   return (
-    <div className={`absolute inset-0 pointer-events-none ${className}`}>
-      {/* Dynamic atmospheric lighting */}
+    <div className="fixed inset-0 pointer-events-none z-10">
+      {/* Central Ambient Glow */}
       <motion.div
-        className="absolute inset-0"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+        initial={{ opacity: 0, scale: 0 }}
         animate={{
-          opacity: isSpeaking ? [0.6, 1, 0.6] : isConnected ? [0.4, 0.6, 0.4] : [0.3, 0.5, 0.3],
-          scale: isSpeaking ? [1.2, 1.5, 1.2] : isConnected ? [1, 1.2, 1] : [1, 1.1, 1],
+          opacity: isActive ? baseOpacity : 0,
+          scale: isActive ? pulseScale : 0,
         }}
         transition={{
-          duration: isSpeaking ? 1.5 : isConnected ? 3 : 4,
+          duration: animationSpeed,
+          ease: 'easeInOut',
+        }}
+      >
+        <motion.div
+          className="w-96 h-96 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-3xl"
+          animate={isActive ? {
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.6, 0.3],
+          } : {}}
+          transition={{
+            duration: animationSpeed * 2,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+      </motion.div>
+
+      {/* Surrounding Energy Rings */}
+      {[...Array(3)].map((_, index) => (
+        <motion.div
+          key={index}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{
+            opacity: isActive ? baseOpacity * (0.8 - index * 0.2) : 0,
+            scale: isActive ? 1 + index * 0.5 : 0,
+          }}
+          transition={{
+            duration: animationSpeed,
+            delay: index * 0.2,
+            ease: 'easeOut',
+          }}
+        >
+          <motion.div
+            className={`w-${120 + index * 60} h-${120 + index * 60} border border-white/10 rounded-full`}
+            animate={isActive ? {
+              scale: [1, 1.1, 1],
+              opacity: [0.1, 0.3, 0.1],
+            } : {}}
+            transition={{
+              duration: animationSpeed * 3,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: index * 0.5,
+            }}
+            style={{
+              width: `${120 + index * 60}px`,
+              height: `${120 + index * 60}px`,
+            }}
+          />
+        </motion.div>
+      ))}
+
+      {/* Corner Accent Lights */}
+      <motion.div
+        className="absolute top-10 left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl"
+        animate={isActive ? {
+          opacity: [baseOpacity * 0.5, baseOpacity, baseOpacity * 0.5],
+          scale: [1, 1.2, 1],
+        } : { opacity: 0, scale: 0 }}
+        transition={{
+          duration: animationSpeed * 2.5,
           repeat: Infinity,
           ease: 'easeInOut',
         }}
-        style={{
-          background: `radial-gradient(circle at 50% 50%, ${colors.ambient} 0%, transparent 70%)`,
-        }}
       />
 
-      {/* Voice-reactive gradient overlay */}
       <motion.div
-        className="absolute inset-0"
-        animate={{
-          background: [
-            `radial-gradient(circle at 30% 70%, ${colors.primary}15, transparent 50%)`,
-            `radial-gradient(circle at 70% 30%, ${colors.secondary}15, transparent 50%)`,
-            `radial-gradient(circle at 30% 70%, ${colors.primary}15, transparent 50%)`,
-          ],
-        }}
+        className="absolute top-10 right-10 w-24 h-24 bg-pink-500/10 rounded-full blur-2xl"
+        animate={isActive ? {
+          opacity: [baseOpacity * 0.3, baseOpacity * 0.8, baseOpacity * 0.3],
+          scale: [1, 1.3, 1],
+        } : { opacity: 0, scale: 0 }}
         transition={{
-          duration: isSpeaking ? 2 : 4,
+          duration: animationSpeed * 3,
           repeat: Infinity,
           ease: 'easeInOut',
+          delay: 0.8,
         }}
       />
 
-      {/* Immersive atmosphere particles */}
-      {isSpeaking && (
-        <div className="absolute inset-0 overflow-hidden">
-          {[...Array(6)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-2 h-2 rounded-full"
-              style={{
-                background: colors.primary,
-                left: `${20 + i * 15}%`,
-                top: `${30 + (i % 2) * 40}%`,
-              }}
-              animate={{
-                y: [-20, -40, -20],
-                opacity: [0, 0.8, 0],
-                scale: [0.5, 1, 0.5],
-              }}
-              transition={{
-                duration: 2 + Math.random(),
-                repeat: Infinity,
-                delay: i * 0.3,
-                ease: 'easeInOut',
-              }}
-            />
-          ))}
-        </div>
-      )}
+      <motion.div
+        className="absolute bottom-10 left-10 w-28 h-28 bg-blue-500/10 rounded-full blur-2xl"
+        animate={isActive ? {
+          opacity: [baseOpacity * 0.4, baseOpacity * 0.7, baseOpacity * 0.4],
+          scale: [1, 1.1, 1],
+        } : { opacity: 0, scale: 0 }}
+        transition={{
+          duration: animationSpeed * 2.2,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          delay: 1.2,
+        }}
+      />
 
-      {/* Spatial audio visualization rings */}
-      {isConnected && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          {[...Array(3)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute rounded-full border"
-              style={{
-                width: 200 + i * 100,
-                height: 200 + i * 100,
-                borderColor: colors.primary,
-                borderWidth: 1,
-              }}
-              animate={{
-                scale: [1, 1.2, 1],
-                opacity: [0.2, 0.5, 0.2],
-              }}
-              transition={{
-                duration: 3 + i,
-                repeat: Infinity,
-                delay: i * 0.5,
-                ease: 'easeInOut',
-              }}
-            />
-          ))}
-        </div>
+      <motion.div
+        className="absolute bottom-10 right-10 w-20 h-20 bg-purple-500/10 rounded-full blur-2xl"
+        animate={isActive ? {
+          opacity: [baseOpacity * 0.2, baseOpacity * 0.6, baseOpacity * 0.2],
+          scale: [1, 1.4, 1],
+        } : { opacity: 0, scale: 0 }}
+        transition={{
+          duration: animationSpeed * 2.8,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          delay: 1.6,
+        }}
+      />
+
+      {/* Ambient Grid Enhancement */}
+      {isActive && (
+        <motion.div
+          className="absolute inset-0 grid-bg"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: baseOpacity * 0.3 }}
+          transition={{ duration: animationSpeed }}
+        />
       )}
     </div>
   );
