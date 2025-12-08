@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { App } from '../App';
 
@@ -48,8 +48,11 @@ describe('App', () => {
     expect(container.firstChild).not.toBeNull();
   });
 
-  it('renders the index page on root route', () => {
+  it('renders the index page on root route', async () => {
     render(<App />);
-    expect(screen.getByTestId('index-page')).toBeInTheDocument();
+    // Wait for lazy-loaded component to render (Suspense boundary)
+    await waitFor(() => {
+      expect(screen.getByTestId('index-page')).toBeInTheDocument();
+    });
   });
 });

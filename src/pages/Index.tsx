@@ -1,38 +1,43 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Settings, AlertCircle } from 'lucide-react';
+import { Settings, AlertCircle, X } from 'lucide-react';
 import { HeroSection } from '@/components/HeroSection';
 import { VoiceButton } from '@/components/voice/VoiceButton';
 import { VoiceStatus } from '@/components/voice/VoiceStatus';
 import { VoiceVisualizer } from '@/components/voice/VoiceVisualizer';
+import { VoiceWidget } from '@/components/voice/VoiceWidget';
 import { BackgroundEffects } from '@/components/BackgroundEffects';
-import { ParticleSystem } from '@/components/ParticleSystem';
-import { VoiceEnvironment } from '@/components/VoiceEnvironment';
 import { ConfigurationModal } from '@/components/ConfigurationModal';
 import { useVoice } from '@/contexts/VoiceContext';
+import { useConnectionMode } from '@/hooks/useConnectionMode';
 import { toast } from '@/hooks/use-toast';
+import { trackError } from '@/lib/errorTracking';
 
-/** Number of animated particles in the background effect */
-const BACKGROUND_PARTICLE_COUNT = 60;
+const DEBUG = import.meta.env.DEV;
 
-/** Number of frequency bars in the audio visualizer */
-const VISUALIZER_BAR_COUNT = 40;
-
-/** Primary accent color for the visualizer (purple) */
-const VISUALIZER_COLOR = '#8b5cf6';
-
-/** Voice environment intensity when connected (0-1 scale) */
-const VOICE_ENVIRONMENT_INTENSITY = 0.7;
+function debugLog(context: string, message: string, data?: unknown) {
+  if (DEBUG) {
+    console.log(`[Index:${context}]`, message, data ?? '');
+  }
+}
 
 export const Index = () => {
-  const { error, clearError, isLoading, connect, isConnected } = useVoice();
+  const connectionMode = useConnectionMode();
+  const { error, clearError, isLoading, connect, disconnect } = useVoice();
   const [showConfig, setShowConfig] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
 
   // Check if agent ID is configured on mount
   useEffect(() => {
     const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
+    debugLog('mount', 'Checking configuration', {
+      hasAgentId: !!agentId,
+      isPlaceholder: agentId === 'your_agent_id_here',
+      agentIdPreview: agentId ? agentId.substring(0, 8) + '...' : 'not set',
+    });
+
     if (!agentId || agentId === 'your_agent_id_here') {
+      debugLog('mount', 'Agent ID not configured, will show config modal');
       setTimeout(() => setShowConfig(true), 1000);
     }
   }, []);
@@ -41,17 +46,16 @@ export const Index = () => {
   const handleConnect = () => {
     setHasStarted(true);
     toast({
-      title: 'Voice Chat Connected',
-      description: 'You can now speak with the AI agent',
+      title: 'Connected',
+      description: 'Voice conversation is now active',
     });
   };
 
   // Handle disconnection
   const handleDisconnect = () => {
-    setHasStarted(false);
     toast({
-      title: 'Voice Chat Disconnected',
-      description: 'Connection has been closed',
+      title: 'Disconnected',
+      description: 'Voice conversation ended',
     });
   };
 
@@ -59,7 +63,7 @@ export const Index = () => {
   const handleConfigError = () => {
     toast({
       title: 'Configuration Required',
-      description: 'Please set your ElevenLabs Agent ID in the settings',
+      description: 'Please set your ElevenLabs Agent ID',
       variant: 'destructive',
     });
     setShowConfig(true);
@@ -67,58 +71,208 @@ export const Index = () => {
 
   // Handle HeroSection start conversation
   const handleStartConversation = async () => {
+    debugLog('handleStartConversation', 'Starting conversation...', { isConfigured });
+
     if (!isConfigured) {
+      debugLog('handleStartConversation', 'Not configured, showing config modal');
       handleConfigError();
       return;
     }
 
     try {
       const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
+      debugLog('handleStartConversation', 'Connecting with agent', {
+        agentId: agentId?.substring(0, 8) + '...',
+      });
+
       await connect(agentId);
+      debugLog('handleStartConversation', 'Connection successful');
       handleConnect();
-    } catch {
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      debugLog('handleStartConversation', 'Connection failed', { error: err });
+      trackError('Index', 'Failed to start conversation', err);
+
       toast({
         title: 'Connection Failed',
-        description: 'Please check your ElevenLabs configuration and internet connection',
+        description: errorMessage || 'Please check your configuration',
         variant: 'destructive',
       });
     }
+  };
+
+  // Handle end call
+  const handleEndCall = async () => {
+    await disconnect();
+    setHasStarted(false);
+    handleDisconnect();
   };
 
   // Check for missing configuration
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
   const isConfigured = agentId && agentId !== 'your_agent_id_here';
 
+  // Widget mode - simplified UI with ElevenLabs widget
+  if (connectionMode === 'widget') {
+    return (
+      <div className="min-h-screen bg-[#09090b] relative overflow-hidden film-grain">
+        <BackgroundEffects />
+
+        {/* Header - same as SDK mode */}
+        <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
+          <div className="max-w-7xl mx-auto flex justify-between items-center">
+            {/* Logo / Brand */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3"
+            >
+              {/* Logo mark */}
+              <div className="relative w-8 h-8 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-lg bg-amber-500/10 border border-amber-500/20" />
+                <motion.div
+                  className="w-2 h-2 rounded-full bg-amber-400"
+                  animate={{
+                    scale: [1, 1.2, 1],
+                    opacity: [0.8, 1, 0.8],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                />
+              </div>
+              <span className="font-display text-lg text-zinc-200 tracking-tight">
+                Voice<span className="text-amber-400">AI</span>
+              </span>
+            </motion.div>
+
+            {/* Right side - Settings */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-4"
+            >
+              {!isConfigured && (
+                <div className="flex items-center gap-2 text-amber-400/70 text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  <span className="hidden sm:inline">Setup required</span>
+                </div>
+              )}
+              <button
+                onClick={() => setShowConfig(true)}
+                className="p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-all duration-200"
+                aria-label="Open settings"
+              >
+                <Settings className="w-5 h-5" />
+              </button>
+            </motion.div>
+          </div>
+        </header>
+
+        {/* Main Content - Widget Mode */}
+        <main className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <h1 className="font-display text-5xl sm:text-6xl text-zinc-100 mb-4">
+              Voice<span className="text-gradient">AI</span>
+            </h1>
+            <p className="text-zinc-400 text-lg max-w-md mx-auto">
+              Click the orb below to start a conversation
+            </p>
+          </motion.div>
+
+          {/* ElevenLabs Widget - positioned center */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+          >
+            <VoiceWidget className="relative z-20" />
+          </motion.div>
+        </main>
+
+        {/* Configuration Modal */}
+        <ConfigurationModal isOpen={showConfig} onClose={() => setShowConfig(false)} />
+
+        {/* Footer accent */}
+        <div className="fixed bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-zinc-800/50 to-transparent" />
+      </div>
+    );
+  }
+
+  // SDK mode - existing implementation
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
-      {/* Visual Effects */}
+    <div className="min-h-screen bg-[#09090b] relative overflow-hidden film-grain">
+      {/* Background Effects */}
       <BackgroundEffects />
-      <ParticleSystem isActive={true} particleCount={BACKGROUND_PARTICLE_COUNT} />
-      <VoiceEnvironment isActive={isConnected} intensity={VOICE_ENVIRONMENT_INTENSITY} />
 
       {/* Header */}
-      <div className="fixed top-4 left-4 right-4 z-50 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <h1 className="text-lg sm:text-xl font-bold text-white/90">Voice Agent</h1>
-          {!isConfigured && <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />}
-        </div>
-        <button
-          onClick={() => setShowConfig(true)}
-          className="p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-          aria-label="Open settings"
-        >
-          <Settings className="w-5 h-5 text-white/70" />
-        </button>
-      </div>
+      <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          {/* Logo / Brand */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-3"
+          >
+            {/* Logo mark */}
+            <div className="relative w-8 h-8 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-lg bg-amber-500/10 border border-amber-500/20" />
+              <motion.div
+                className="w-2 h-2 rounded-full bg-amber-400"
+                animate={{
+                  scale: [1, 1.2, 1],
+                  opacity: [0.8, 1, 0.8],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              />
+            </div>
+            <span className="font-display text-lg text-zinc-200 tracking-tight">
+              Voice<span className="text-amber-400">AI</span>
+            </span>
+          </motion.div>
 
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(124,58,237,0.05),transparent_50%)]" />
+          {/* Right side */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-4"
+          >
+            {/* Config status */}
+            {!isConfigured && (
+              <div className="flex items-center gap-2 text-amber-400/70 text-sm">
+                <AlertCircle className="w-4 h-4" />
+                <span className="hidden sm:inline">Setup required</span>
+              </div>
+            )}
+
+            {/* Settings button */}
+            <button
+              onClick={() => setShowConfig(true)}
+              className="p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-all duration-200"
+              aria-label="Open settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </motion.div>
+        </div>
+      </header>
 
       {/* Main Content */}
-      <div className="min-h-screen flex flex-col items-center justify-center px-4 pt-20">
+      <main className="relative z-10 min-h-screen">
         <AnimatePresence mode="wait">
           {!hasStarted ? (
-            // Hero Section with rich content
+            // Hero Section - Landing state
             <HeroSection
               key="hero"
               onStartConversation={handleStartConversation}
@@ -126,60 +280,114 @@ export const Index = () => {
               error={error}
             />
           ) : (
-            // Voice Interface
+            // Voice Interface - Active call state
             <motion.div
               key="interface"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="w-full max-w-2xl space-y-6"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              className="min-h-screen flex flex-col"
             >
-              {/* Voice Control */}
-              <div className="flex flex-col items-center space-y-6">
-                <VoiceButton size="lg" onDisconnect={handleDisconnect} />
+              {/* Voice interface content */}
+              <div className="flex-1 flex flex-col items-center justify-center px-6 py-24">
+                <div className="w-full max-w-lg space-y-12">
+                  {/* Header text */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-center"
+                  >
+                    <h2 className="font-display text-3xl sm:text-4xl text-zinc-100 mb-2">
+                      Conversation Active
+                    </h2>
+                    <p className="text-zinc-500 text-sm">Speak naturally - AI is listening</p>
+                  </motion.div>
 
-                {/* Audio Visualizer */}
-                <VoiceVisualizer
-                  className="w-full max-w-md"
-                  barCount={VISUALIZER_BAR_COUNT}
-                  color={VISUALIZER_COLOR}
-                />
+                  {/* Voice Button - Central element */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+                    className="flex justify-center py-8"
+                  >
+                    <VoiceButton size="lg" onDisconnect={handleEndCall} />
+                  </motion.div>
+
+                  {/* Audio Visualizer */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                  >
+                    <VoiceVisualizer className="w-full" />
+                  </motion.div>
+
+                  {/* Status and Messages */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <VoiceStatus />
+                  </motion.div>
+
+                  {/* End call button */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                    className="flex justify-center pt-4"
+                  >
+                    <button
+                      onClick={handleEndCall}
+                      className="flex items-center gap-2 px-6 py-3 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all duration-200"
+                    >
+                      <X className="w-4 h-4" />
+                      <span className="text-sm">End conversation</span>
+                    </button>
+                  </motion.div>
+                </div>
               </div>
-
-              {/* Status and Messages */}
-              <VoiceStatus />
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </main>
 
       {/* Configuration Modal */}
       <ConfigurationModal isOpen={showConfig} onClose={() => setShowConfig(false)} />
 
-      {/* Error Toast Handler */}
-      {error && (
-        <div className="fixed bottom-4 right-4 z-50">
+      {/* Error Toast */}
+      <AnimatePresence>
+        {error && (
           <motion.div
-            initial={{ opacity: 0, x: 100 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 max-w-sm"
+            initial={{ opacity: 0, y: 20, x: 20 }}
+            animate={{ opacity: 1, y: 0, x: 0 }}
+            exit={{ opacity: 0, y: 20, x: 20 }}
+            className="fixed bottom-6 right-6 z-50 max-w-sm"
           >
-            <div className="flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-red-200 font-medium">Connection Error</p>
-                <p className="text-red-200/80 text-sm mt-1">{error}</p>
-                <button
-                  onClick={clearError}
-                  className="text-red-300 hover:text-red-200 text-sm mt-2 underline"
-                >
-                  Dismiss
-                </button>
+            <div className="px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 backdrop-blur-sm">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-red-300 font-medium text-sm">Connection Error</p>
+                  <p className="text-red-300/70 text-sm mt-1 break-words">{error}</p>
+                  <button
+                    onClick={clearError}
+                    className="text-red-400 hover:text-red-300 text-xs mt-2 underline"
+                  >
+                    Dismiss
+                  </button>
+                </div>
               </div>
             </div>
           </motion.div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
+
+      {/* Footer accent line */}
+      <div className="fixed bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-zinc-800/50 to-transparent" />
     </div>
   );
 };

@@ -56,37 +56,13 @@ vi.mock('@/components/HeroSection', () => ({
   ),
 }));
 
-vi.mock('@/components/VoiceOrb', () => ({
-  VoiceOrb: () => <div data-testid="voice-orb">Voice Orb</div>,
-}));
-
-vi.mock('@/components/ThemeToggle', () => ({
-  ThemeToggle: () => <div data-testid="theme-toggle">Theme Toggle</div>,
-}));
-
 vi.mock('@/components/BackgroundEffects', () => ({
   BackgroundEffects: () => <div data-testid="background-effects">Background Effects</div>,
-}));
-
-vi.mock('@/components/VoiceEnvironment', () => ({
-  VoiceEnvironment: () => <div data-testid="voice-environment">Voice Environment</div>,
 }));
 
 vi.mock('@/components/ConfigurationModal', () => ({
   ConfigurationModal: ({ isOpen }: ConfigurationModalMockProps) =>
     isOpen ? <div data-testid="config-modal">Configuration Modal</div> : null,
-}));
-
-vi.mock('@/components/ErrorDisplay', () => ({
-  ErrorDisplay: () => <div data-testid="error-display">Error Display</div>,
-}));
-
-vi.mock('@/components/VolumeControl', () => ({
-  VolumeControl: () => <div data-testid="volume-control">Volume Control</div>,
-}));
-
-vi.mock('@/components/ParticleSystem', () => ({
-  ParticleSystem: () => <div data-testid="particle-system">Particle System</div>,
 }));
 
 vi.mock('@/components/voice/VoiceButton', () => ({
@@ -123,8 +99,9 @@ describe('Index Component', () => {
   it('renders required components', () => {
     render(<Index />);
 
+    // Background effects should be rendered
     expect(screen.getByTestId('background-effects')).toBeInTheDocument();
-    expect(screen.getByTestId('voice-environment')).toBeInTheDocument();
-    expect(screen.getByTestId('particle-system')).toBeInTheDocument();
+    // Hero section should be visible in initial state
+    expect(screen.getByTestId('hero-section')).toBeInTheDocument();
   });
 });

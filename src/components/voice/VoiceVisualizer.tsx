@@ -1,7 +1,8 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useVoice } from '@/contexts/VoiceContext';
 import { cn } from '@/lib/utils';
+import { trackError } from '@/lib/errorTracking';
 
 interface VoiceVisualizerProps {
   className?: string;
@@ -14,10 +15,9 @@ interface VoiceVisualizerProps {
 
 export function VoiceVisualizer({
   className,
-  width = 300,
-  height = 100,
-  barCount = 32,
-  color = '#8b5cf6',
+  width = 400,
+  height = 120,
+  barCount = 64,
   responsive = true,
 }: VoiceVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -25,18 +25,23 @@ export function VoiceVisualizer({
   const analyserRef = useRef<AnalyserNode>();
   const dataArrayRef = useRef<Uint8Array>();
   const [isActive, setIsActive] = useState(false);
+  const smoothDataRef = useRef<number[]>(new Array(barCount).fill(0));
 
   const { audioStream, isConnected, isSpeaking } = useVoice();
+
+  // Smooth the audio data for more organic movement
+  const smoothData = useCallback((newData: number[], smoothFactor = 0.3) => {
+    return newData.map((value, i) => {
+      const current = smoothDataRef.current[i] || 0;
+      return current + (value - current) * smoothFactor;
+    });
+  }, []);
 
   // Initialize audio analysis
   useEffect(() => {
     if (!audioStream || !canvasRef.current) {
       return;
     }
-
-    const canvas = canvasRef.current;
-    const canvasContext = canvas.getContext('2d');
-    if (!canvasContext) return;
 
     let audioContext: AudioContext | null = null;
     let source: MediaStreamAudioSourceNode | null = null;
@@ -48,18 +53,17 @@ export function VoiceVisualizer({
         const analyser = audioContext.createAnalyser();
 
         analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.8;
+        analyser.smoothingTimeConstant = 0.85;
         source.connect(analyser);
 
         analyserRef.current = analyser;
         dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
         setIsActive(true);
       } catch (error) {
-        console.error('Failed to initialize audio visualization:', error);
+        trackError('VoiceVisualizer', 'Failed to initialize audio visualization', error);
       }
     };
 
-    // Use setTimeout to avoid synchronous setState
     const timeoutId = setTimeout(setupAudio, 0);
 
     return () => {
@@ -70,15 +74,110 @@ export function VoiceVisualizer({
     };
   }, [audioStream]);
 
-  // Animation loop
+  // Draw organic waveform
+  const drawWaveform = useCallback(
+    (ctx: CanvasRenderingContext2D, canvasWidth: number, canvasHeight: number, data: number[]) => {
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+      const centerY = canvasHeight / 2;
+      const maxAmplitude = canvasHeight * 0.4;
+
+      // Smooth the data
+      const smoothedData = smoothData(data);
+      smoothDataRef.current = smoothedData;
+
+      // Colors - warm amber gradient
+      const gradient = ctx.createLinearGradient(0, 0, canvasWidth, 0);
+      gradient.addColorStop(0, 'hsla(43, 96%, 56%, 0.1)');
+      gradient.addColorStop(
+        0.5,
+        isSpeaking ? 'hsla(142, 71%, 45%, 0.6)' : 'hsla(43, 96%, 56%, 0.5)'
+      );
+      gradient.addColorStop(1, 'hsla(43, 96%, 56%, 0.1)');
+
+      // Draw smooth waveform using bezier curves
+      ctx.beginPath();
+      ctx.moveTo(0, centerY);
+
+      const segmentWidth = canvasWidth / (smoothedData.length - 1);
+
+      for (let i = 0; i < smoothedData.length; i++) {
+        const x = i * segmentWidth;
+        const amplitude = (smoothedData[i] / 255) * maxAmplitude;
+        const y = centerY + Math.sin(i * 0.5 + Date.now() * 0.002) * amplitude;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          const prevX = (i - 1) * segmentWidth;
+          const prevAmplitude = (smoothedData[i - 1] / 255) * maxAmplitude;
+          const prevY = centerY + Math.sin((i - 1) * 0.5 + Date.now() * 0.002) * prevAmplitude;
+
+          const cpX1 = prevX + segmentWidth / 3;
+          const cpX2 = x - segmentWidth / 3;
+
+          ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
+        }
+      }
+
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // Draw mirrored wave (bottom half)
+      ctx.beginPath();
+      ctx.moveTo(0, centerY);
+
+      for (let i = 0; i < smoothedData.length; i++) {
+        const x = i * segmentWidth;
+        const amplitude = (smoothedData[i] / 255) * maxAmplitude;
+        const y = centerY - Math.sin(i * 0.5 + Date.now() * 0.002) * amplitude;
+
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          const prevX = (i - 1) * segmentWidth;
+          const prevAmplitude = (smoothedData[i - 1] / 255) * maxAmplitude;
+          const prevY = centerY - Math.sin((i - 1) * 0.5 + Date.now() * 0.002) * prevAmplitude;
+
+          const cpX1 = prevX + segmentWidth / 3;
+          const cpX2 = x - segmentWidth / 3;
+
+          ctx.bezierCurveTo(cpX1, prevY, cpX2, y, x, y);
+        }
+      }
+
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Center line
+      ctx.beginPath();
+      ctx.moveTo(0, centerY);
+      ctx.lineTo(canvasWidth, centerY);
+      ctx.strokeStyle = 'hsla(0, 0%, 100%, 0.05)';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Glow effect when speaking
+      if (isSpeaking) {
+        ctx.shadowColor = 'hsla(142, 71%, 45%, 0.5)';
+        ctx.shadowBlur = 15;
+      }
+    },
+    [smoothData, isSpeaking]
+  );
+
+  // Animation loop for active audio
   useEffect(() => {
     if (!isActive || !canvasRef.current || !analyserRef.current || !dataArrayRef.current) {
       return;
     }
 
     const canvas = canvasRef.current;
-    const canvasContext = canvas.getContext('2d');
-    if (!canvasContext) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
     const analyser = analyserRef.current;
     const dataArray = dataArrayRef.current;
@@ -88,41 +187,14 @@ export function VoiceVisualizer({
 
       analyser.getByteFrequencyData(dataArray);
 
-      // Clear canvas
-      canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Calculate bar dimensions
-      const barWidth = canvas.width / barCount;
-      const barSpacing = barWidth * 0.1;
-      const effectiveBarWidth = barWidth - barSpacing;
-
-      // Draw frequency bars
+      // Convert to array and sample for display
+      const data: number[] = [];
+      const step = Math.floor(dataArray.length / barCount);
       for (let i = 0; i < barCount; i++) {
-        // Map frequency data to bar index
-        const dataIndex = Math.floor((i / barCount) * dataArray.length);
-        const barHeight = (dataArray[dataIndex] / 255) * canvas.height;
-
-        // Calculate position
-        const x = i * barWidth + barSpacing / 2;
-        const y = canvas.height - barHeight;
-
-        // Create gradient
-        const gradient = canvasContext.createLinearGradient(0, y, 0, canvas.height);
-        gradient.addColorStop(0, color);
-        gradient.addColorStop(1, color + '40'); // Add transparency
-
-        canvasContext.fillStyle = gradient;
-        canvasContext.fillRect(x, y, effectiveBarWidth, barHeight);
-
-        // Add glow effect when speaking
-        if (isSpeaking && barHeight > 10) {
-          canvasContext.shadowColor = color;
-          canvasContext.shadowBlur = 10;
-          canvasContext.fillRect(x, y, effectiveBarWidth, barHeight);
-          canvasContext.shadowBlur = 0;
-        }
+        data.push(dataArray[i * step] || 0);
       }
 
+      drawWaveform(ctx, canvas.width, canvas.height, data);
       animationRef.current = requestAnimationFrame(animate);
     };
 
@@ -133,87 +205,101 @@ export function VoiceVisualizer({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isActive, barCount, color, isSpeaking]);
+  }, [isActive, barCount, drawWaveform]);
 
-  // Fallback visualization when no audio stream
+  // Idle animation when connected but no active audio
   useEffect(() => {
     if (isActive || !canvasRef.current || !isConnected) return;
 
     const canvas = canvasRef.current;
-    const canvasContext = canvas.getContext('2d');
-    if (!canvasContext) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    const animateFallback = () => {
+    const animateIdle = () => {
       if (isActive) return;
 
-      canvasContext.clearRect(0, 0, canvas.width, canvas.height);
-
-      const barWidth = canvas.width / barCount;
-      const barSpacing = barWidth * 0.1;
-      const effectiveBarWidth = barWidth - barSpacing;
+      const time = Date.now() / 1000;
+      const data: number[] = [];
 
       for (let i = 0; i < barCount; i++) {
-        const time = Date.now() / 1000;
-        const wave = Math.sin(time * 2 + i * 0.3) * 0.5 + 0.5;
-        const barHeight = wave * canvas.height * 0.3;
-
-        const x = i * barWidth + barSpacing / 2;
-        const y = canvas.height - barHeight;
-
-        canvasContext.fillStyle = color + '60';
-        canvasContext.fillRect(x, y, effectiveBarWidth, barHeight);
+        // Create gentle wave pattern
+        const wave1 = Math.sin(time * 2 + i * 0.2) * 0.3 + 0.3;
+        const wave2 = Math.sin(time * 1.5 + i * 0.15) * 0.2;
+        const combined = (wave1 + wave2) * 255 * 0.3;
+        data.push(Math.max(0, combined));
       }
 
-      animationRef.current = requestAnimationFrame(animateFallback);
+      drawWaveform(ctx, canvas.width, canvas.height, data);
+      animationRef.current = requestAnimationFrame(animateIdle);
     };
 
-    animateFallback();
+    animateIdle();
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isActive, isConnected, barCount, color]);
+  }, [isActive, isConnected, barCount, drawWaveform]);
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className={cn(
-        'relative overflow-hidden rounded-lg bg-black/20 backdrop-blur-sm border border-white/10',
-        className
-      )}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className={cn('relative overflow-hidden rounded-xl', className)}
     >
+      {/* Background with subtle gradient */}
+      <div
+        className="absolute inset-0 rounded-xl"
+        style={{
+          background:
+            'linear-gradient(180deg, hsla(240, 6%, 8%, 0.8) 0%, hsla(240, 6%, 8%, 0.6) 100%)',
+          border: '1px solid hsla(0, 0%, 100%, 0.06)',
+        }}
+      />
+
+      {/* Canvas */}
       <canvas
         ref={canvasRef}
         width={responsive ? undefined : width}
         height={responsive ? undefined : height}
-        className={cn('w-full h-full', responsive ? 'aspect-[3/1]' : '')}
+        className={cn('relative z-10 w-full', responsive ? 'h-24 sm:h-28' : '')}
         style={!responsive ? { width, height } : undefined}
         role="img"
         aria-label={
           isActive
-            ? 'Real-time audio visualization showing voice activity'
+            ? 'Real-time audio visualization showing voice waveform'
             : 'Audio visualization placeholder'
         }
       />
 
-      {/* Overlay for better visual feedback */}
-      {isSpeaking && (
+      {/* Status badge */}
+      <div className="absolute top-3 right-3 flex items-center gap-2">
+        <div
+          className={cn(
+            'w-1.5 h-1.5 rounded-full',
+            isActive ? (isSpeaking ? 'bg-emerald-400' : 'bg-amber-400') : 'bg-zinc-600'
+          )}
+        />
+        <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-500">
+          {isActive ? (isSpeaking ? 'Active' : 'Listening') : 'Standby'}
+        </span>
+      </div>
+
+      {/* Edge glow when active */}
+      {isActive && (
         <motion.div
+          className="absolute inset-0 rounded-xl pointer-events-none"
           initial={{ opacity: 0 }}
-          animate={{ opacity: [0.1, 0.3, 0.1] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+          animate={{ opacity: 1 }}
+          style={{
+            boxShadow: isSpeaking
+              ? 'inset 0 0 20px hsla(142, 71%, 45%, 0.1)'
+              : 'inset 0 0 20px hsla(43, 96%, 56%, 0.05)',
+          }}
         />
       )}
-
-      {/* Status indicator */}
-      <div className="absolute top-2 right-2 flex items-center gap-1">
-        <div className={cn('w-2 h-2 rounded-full', isActive ? 'bg-green-400' : 'bg-gray-400')} />
-        <span className="text-xs text-white/60">{isActive ? 'LIVE' : 'IDLE'}</span>
-      </div>
     </motion.div>
   );
 }
