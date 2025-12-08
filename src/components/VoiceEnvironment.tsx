@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 import { motion } from 'framer-motion';
 
 interface VoiceEnvironmentProps {
@@ -6,7 +6,7 @@ interface VoiceEnvironmentProps {
   intensity?: number; // 0-1 scale for visual intensity
 }
 
-export const VoiceEnvironment: React.FC<VoiceEnvironmentProps> = ({
+export const VoiceEnvironment: FC<VoiceEnvironmentProps> = ({
   isActive = false,
   intensity = 0.5,
 }) => {
@@ -32,10 +32,14 @@ export const VoiceEnvironment: React.FC<VoiceEnvironmentProps> = ({
       >
         <motion.div
           className="w-96 h-96 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded-full blur-3xl"
-          animate={isActive ? {
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.6, 0.3],
-          } : {}}
+          animate={
+            isActive
+              ? {
+                  scale: [1, 1.2, 1],
+                  opacity: [0.3, 0.6, 0.3],
+                }
+              : {}
+          }
           transition={{
             duration: animationSpeed * 2,
             repeat: Infinity,
@@ -62,10 +66,14 @@ export const VoiceEnvironment: React.FC<VoiceEnvironmentProps> = ({
         >
           <motion.div
             className={`w-${120 + index * 60} h-${120 + index * 60} border border-white/10 rounded-full`}
-            animate={isActive ? {
-              scale: [1, 1.1, 1],
-              opacity: [0.1, 0.3, 0.1],
-            } : {}}
+            animate={
+              isActive
+                ? {
+                    scale: [1, 1.1, 1],
+                    opacity: [0.1, 0.3, 0.1],
+                  }
+                : {}
+            }
             transition={{
               duration: animationSpeed * 3,
               repeat: Infinity,
@@ -83,10 +91,14 @@ export const VoiceEnvironment: React.FC<VoiceEnvironmentProps> = ({
       {/* Corner Accent Lights */}
       <motion.div
         className="absolute top-10 left-10 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl"
-        animate={isActive ? {
-          opacity: [baseOpacity * 0.5, baseOpacity, baseOpacity * 0.5],
-          scale: [1, 1.2, 1],
-        } : { opacity: 0, scale: 0 }}
+        animate={
+          isActive
+            ? {
+                opacity: [baseOpacity * 0.5, baseOpacity, baseOpacity * 0.5],
+                scale: [1, 1.2, 1],
+              }
+            : { opacity: 0, scale: 0 }
+        }
         transition={{
           duration: animationSpeed * 2.5,
           repeat: Infinity,
@@ -96,10 +108,14 @@ export const VoiceEnvironment: React.FC<VoiceEnvironmentProps> = ({
 
       <motion.div
         className="absolute top-10 right-10 w-24 h-24 bg-pink-500/10 rounded-full blur-2xl"
-        animate={isActive ? {
-          opacity: [baseOpacity * 0.3, baseOpacity * 0.8, baseOpacity * 0.3],
-          scale: [1, 1.3, 1],
-        } : { opacity: 0, scale: 0 }}
+        animate={
+          isActive
+            ? {
+                opacity: [baseOpacity * 0.3, baseOpacity * 0.8, baseOpacity * 0.3],
+                scale: [1, 1.3, 1],
+              }
+            : { opacity: 0, scale: 0 }
+        }
         transition={{
           duration: animationSpeed * 3,
           repeat: Infinity,
@@ -110,10 +126,14 @@ export const VoiceEnvironment: React.FC<VoiceEnvironmentProps> = ({
 
       <motion.div
         className="absolute bottom-10 left-10 w-28 h-28 bg-blue-500/10 rounded-full blur-2xl"
-        animate={isActive ? {
-          opacity: [baseOpacity * 0.4, baseOpacity * 0.7, baseOpacity * 0.4],
-          scale: [1, 1.1, 1],
-        } : { opacity: 0, scale: 0 }}
+        animate={
+          isActive
+            ? {
+                opacity: [baseOpacity * 0.4, baseOpacity * 0.7, baseOpacity * 0.4],
+                scale: [1, 1.1, 1],
+              }
+            : { opacity: 0, scale: 0 }
+        }
         transition={{
           duration: animationSpeed * 2.2,
           repeat: Infinity,
@@ -124,10 +144,14 @@ export const VoiceEnvironment: React.FC<VoiceEnvironmentProps> = ({
 
       <motion.div
         className="absolute bottom-10 right-10 w-20 h-20 bg-purple-500/10 rounded-full blur-2xl"
-        animate={isActive ? {
-          opacity: [baseOpacity * 0.2, baseOpacity * 0.6, baseOpacity * 0.2],
-          scale: [1, 1.4, 1],
-        } : { opacity: 0, scale: 0 }}
+        animate={
+          isActive
+            ? {
+                opacity: [baseOpacity * 0.2, baseOpacity * 0.6, baseOpacity * 0.2],
+                scale: [1, 1.4, 1],
+              }
+            : { opacity: 0, scale: 0 }
+        }
         transition={{
           duration: animationSpeed * 2.8,
           repeat: Infinity,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, AlertCircle } from 'lucide-react';
 import { HeroSection } from '@/components/HeroSection';
@@ -12,7 +12,19 @@ import { ConfigurationModal } from '@/components/ConfigurationModal';
 import { useVoice } from '@/contexts/VoiceContext';
 import { toast } from '@/hooks/use-toast';
 
-const Index = () => {
+/** Number of animated particles in the background effect */
+const BACKGROUND_PARTICLE_COUNT = 60;
+
+/** Number of frequency bars in the audio visualizer */
+const VISUALIZER_BAR_COUNT = 40;
+
+/** Primary accent color for the visualizer (purple) */
+const VISUALIZER_COLOR = '#8b5cf6';
+
+/** Voice environment intensity when connected (0-1 scale) */
+const VOICE_ENVIRONMENT_INTENSITY = 0.7;
+
+export const Index = () => {
   const { error, clearError, isLoading, connect, isConnected } = useVoice();
   const [showConfig, setShowConfig] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
@@ -29,8 +41,8 @@ const Index = () => {
   const handleConnect = () => {
     setHasStarted(true);
     toast({
-      title: "Voice Chat Connected",
-      description: "You can now speak with the AI agent",
+      title: 'Voice Chat Connected',
+      description: 'You can now speak with the AI agent',
     });
   };
 
@@ -38,17 +50,17 @@ const Index = () => {
   const handleDisconnect = () => {
     setHasStarted(false);
     toast({
-      title: "Voice Chat Disconnected",
-      description: "Connection has been closed",
+      title: 'Voice Chat Disconnected',
+      description: 'Connection has been closed',
     });
   };
 
   // Handle configuration errors
   const handleConfigError = () => {
     toast({
-      title: "Configuration Required",
-      description: "Please set your ElevenLabs Agent ID in the settings",
-      variant: "destructive",
+      title: 'Configuration Required',
+      description: 'Please set your ElevenLabs Agent ID in the settings',
+      variant: 'destructive',
     });
     setShowConfig(true);
   };
@@ -59,16 +71,16 @@ const Index = () => {
       handleConfigError();
       return;
     }
-    
+
     try {
       const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
       await connect(agentId);
       handleConnect();
-    } catch (err) {
+    } catch {
       toast({
-        title: "Connection Failed",
-        description: "Please check your ElevenLabs configuration and internet connection",
-        variant: "destructive",
+        title: 'Connection Failed',
+        description: 'Please check your ElevenLabs configuration and internet connection',
+        variant: 'destructive',
       });
     }
   };
@@ -81,16 +93,14 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
       {/* Visual Effects */}
       <BackgroundEffects />
-      <ParticleSystem isActive={true} particleCount={60} />
-      <VoiceEnvironment isActive={isConnected} intensity={0.7} />
-      
+      <ParticleSystem isActive={true} particleCount={BACKGROUND_PARTICLE_COUNT} />
+      <VoiceEnvironment isActive={isConnected} intensity={VOICE_ENVIRONMENT_INTENSITY} />
+
       {/* Header */}
       <div className="fixed top-4 left-4 right-4 z-50 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <h1 className="text-lg sm:text-xl font-bold text-white/90">Voice Agent</h1>
-          {!isConfigured && (
-            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />
-          )}
+          {!isConfigured && <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-400" />}
         </div>
         <button
           onClick={() => setShowConfig(true)}
@@ -126,16 +136,13 @@ const Index = () => {
             >
               {/* Voice Control */}
               <div className="flex flex-col items-center space-y-6">
-                <VoiceButton
-                  size="lg"
-                  onDisconnect={handleDisconnect}
-                />
-                
+                <VoiceButton size="lg" onDisconnect={handleDisconnect} />
+
                 {/* Audio Visualizer */}
                 <VoiceVisualizer
                   className="w-full max-w-md"
-                  barCount={40}
-                  color="#8b5cf6"
+                  barCount={VISUALIZER_BAR_COUNT}
+                  color={VISUALIZER_COLOR}
                 />
               </div>
 
@@ -147,10 +154,7 @@ const Index = () => {
       </div>
 
       {/* Configuration Modal */}
-      <ConfigurationModal 
-        isOpen={showConfig} 
-        onClose={() => setShowConfig(false)} 
-      />
+      <ConfigurationModal isOpen={showConfig} onClose={() => setShowConfig(false)} />
 
       {/* Error Toast Handler */}
       {error && (
@@ -179,5 +183,3 @@ const Index = () => {
     </div>
   );
 };
-
-export default Index;

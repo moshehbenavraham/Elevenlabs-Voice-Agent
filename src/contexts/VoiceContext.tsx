@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { useConversation } from '@elevenlabs/react';
 
 interface VoiceState {
@@ -63,7 +64,7 @@ function voiceReducer(state: VoiceState, action: VoiceAction): VoiceState {
 
 const VoiceContext = createContext<VoiceContextType | null>(null);
 
-export function VoiceProvider({ children }: { children: React.ReactNode }) {
+export function VoiceProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(voiceReducer, initialState);
   const conversation = useConversation();
 
@@ -88,32 +89,35 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
     if (conversation?.messages) {
       const lastMessage = conversation.messages[conversation.messages.length - 1];
       if (lastMessage) {
-        dispatch({ 
-          type: 'ADD_MESSAGE', 
-          payload: { 
+        dispatch({
+          type: 'ADD_MESSAGE',
+          payload: {
             role: lastMessage.source === 'user' ? 'user' : 'assistant',
-            content: lastMessage.message 
-          }
+            content: lastMessage.message,
+          },
         });
       }
     }
   }, [conversation?.messages]);
 
-  const connect = useCallback(async (agentId: string) => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      dispatch({ type: 'SET_ERROR', payload: null });
-      
-      await conversation?.startSession({ agentId });
-      
-      dispatch({ type: 'SET_CONNECTED', payload: true });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to connect';
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  }, [conversation]);
+  const connect = useCallback(
+    async (agentId: string) => {
+      try {
+        dispatch({ type: 'SET_LOADING', payload: true });
+        dispatch({ type: 'SET_ERROR', payload: null });
+
+        await conversation?.startSession({ agentId });
+
+        dispatch({ type: 'SET_CONNECTED', payload: true });
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to connect';
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false });
+      }
+    },
+    [conversation]
+  );
 
   const disconnect = useCallback(async () => {
     try {
@@ -125,18 +129,21 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
     }
   }, [conversation]);
 
-  const setVolume = useCallback((volume: number) => {
-    dispatch({ type: 'SET_VOLUME', payload: volume });
-    // Apply volume to audio stream if available
-    if (state.audioStream) {
-      const audioContext = new AudioContext();
-      const source = audioContext.createMediaStreamSource(state.audioStream);
-      const gainNode = audioContext.createGain();
-      gainNode.gain.value = volume;
-      source.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-    }
-  }, [state.audioStream]);
+  const setVolume = useCallback(
+    (volume: number) => {
+      dispatch({ type: 'SET_VOLUME', payload: volume });
+      // Apply volume to audio stream if available
+      if (state.audioStream) {
+        const audioContext = new AudioContext();
+        const source = audioContext.createMediaStreamSource(state.audioStream);
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = volume;
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+      }
+    },
+    [state.audioStream]
+  );
 
   const clearError = useCallback(() => {
     dispatch({ type: 'SET_ERROR', payload: null });
@@ -150,13 +157,10 @@ export function VoiceProvider({ children }: { children: React.ReactNode }) {
     clearError,
   };
 
-  return (
-    <VoiceContext.Provider value={value}>
-      {children}
-    </VoiceContext.Provider>
-  );
+  return <VoiceContext.Provider value={value}>{children}</VoiceContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useVoice() {
   const context = useContext(VoiceContext);
   if (!context) {

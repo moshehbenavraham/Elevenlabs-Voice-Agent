@@ -1,12 +1,12 @@
-import React from 'react';
+import type { FC } from 'react';
 import { motion } from 'framer-motion';
 
-export const BackgroundEffects: React.FC = () => {
+export const BackgroundEffects: FC = () => {
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden">
       {/* Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-pink-900/20" />
-      
+
       {/* Animated Gradient Orbs */}
       <motion.div
         className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-full blur-3xl"
@@ -21,7 +21,7 @@ export const BackgroundEffects: React.FC = () => {
           ease: 'easeInOut',
         }}
       />
-      
+
       <motion.div
         className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"
         animate={{
@@ -36,7 +36,7 @@ export const BackgroundEffects: React.FC = () => {
           delay: 5,
         }}
       />
-      
+
       <motion.div
         className="absolute top-1/2 right-1/3 w-64 h-64 bg-gradient-to-r from-pink-500/10 to-red-500/10 rounded-full blur-3xl"
         animate={{
@@ -51,7 +51,7 @@ export const BackgroundEffects: React.FC = () => {
           delay: 10,
         }}
       />
-      
+
       {/* Floating Elements */}
       <motion.div
         className="absolute top-20 left-20 w-16 h-16 bg-purple-500/20 rounded-full blur-md"
@@ -66,7 +66,7 @@ export const BackgroundEffects: React.FC = () => {
           ease: 'easeInOut',
         }}
       />
-      
+
       <motion.div
         className="absolute top-40 right-32 w-12 h-12 bg-pink-500/20 rounded-full blur-md"
         animate={{
@@ -81,7 +81,7 @@ export const BackgroundEffects: React.FC = () => {
           delay: 2,
         }}
       />
-      
+
       <motion.div
         className="absolute bottom-40 left-32 w-20 h-20 bg-blue-500/20 rounded-full blur-md"
         animate={{
@@ -96,7 +96,7 @@ export const BackgroundEffects: React.FC = () => {
           delay: 4,
         }}
       />
-      
+
       <motion.div
         className="absolute bottom-20 right-20 w-14 h-14 bg-purple-500/20 rounded-full blur-md"
         animate={{
@@ -111,7 +111,7 @@ export const BackgroundEffects: React.FC = () => {
           delay: 6,
         }}
       />
-      
+
       {/* Grid Background Effect */}
       <div className="absolute inset-0 grid-bg opacity-30" />
     </div>

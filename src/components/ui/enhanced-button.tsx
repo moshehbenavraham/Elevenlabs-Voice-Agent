@@ -1,9 +1,9 @@
-import React from 'react';
+import type { FC, ReactNode } from 'react';
 import { motion, Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface EnhancedButtonProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   variant?: 'primary' | 'secondary' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
@@ -61,7 +61,7 @@ const rippleVariants: Variants = {
   },
 };
 
-export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
+export const EnhancedButton: FC<EnhancedButtonProps> = ({
   children,
   className,
   variant = 'primary',
@@ -105,7 +105,7 @@ export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
         initial="idle"
         whileTap="tap"
       />
-      
+
       {/* Loading Spinner */}
       {isLoading && (
         <motion.div
@@ -114,7 +114,7 @@ export const EnhancedButton: React.FC<EnhancedButtonProps> = ({
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         />
       )}
-      
+
       {/* Button Content */}
       <span className="relative z-10">{children}</span>
     </motion.button>

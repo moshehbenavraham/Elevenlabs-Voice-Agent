@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import type { FC } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Palette, Settings, Download, Share2, RotateCcw } from 'lucide-react';
 import { Card } from './ui/card';
 import { Button } from './ui/button';
 import { Slider } from './ui/slider';
-import { Switch } from './ui/switch';
 
 interface ThemeConfig {
   primaryHue: number;
@@ -31,12 +31,8 @@ const presetThemes = {
   aurora: { primaryHue: 280, secondaryHue: 320, saturation: 85, lightness: 65 },
 };
 
-export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
-  isOpen,
-  onClose,
-  onThemeChange,
-}) => {
-  const [theme, setTheme] = useState<ThemeConfig>({
+const getInitialTheme = (): ThemeConfig => {
+  const defaultTheme: ThemeConfig = {
     primaryHue: 262,
     secondaryHue: 316,
     saturation: 83,
@@ -45,7 +41,23 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
     particleCount: 100,
     glassIntensity: 0.8,
     motionPreset: 'balanced',
-  });
+  };
+
+  if (typeof window === 'undefined') return defaultTheme;
+
+  try {
+    const savedTheme = localStorage.getItem('voiceTheme');
+    if (savedTheme) {
+      return JSON.parse(savedTheme);
+    }
+  } catch {
+    // Ignore errors and use default
+  }
+  return defaultTheme;
+};
+
+export const ThemeCustomizer: FC<ThemeCustomizerProps> = ({ isOpen, onClose, onThemeChange }) => {
+  const [theme, setTheme] = useState<ThemeConfig>(getInitialTheme);
 
   const [activeTab, setActiveTab] = useState<'colors' | 'effects' | 'presets'>('colors');
 
@@ -53,21 +65,19 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
   useEffect(() => {
     if (isOpen) {
       onThemeChange(theme);
-      
+
       // Update CSS custom properties
       const root = document.documentElement;
-      root.style.setProperty('--voice-primary', `${theme.primaryHue} ${theme.saturation}% ${theme.lightness}%`);
-      root.style.setProperty('--voice-secondary', `${theme.secondaryHue} ${theme.saturation}% ${theme.lightness}%`);
+      root.style.setProperty(
+        '--voice-primary',
+        `${theme.primaryHue} ${theme.saturation}% ${theme.lightness}%`
+      );
+      root.style.setProperty(
+        '--voice-secondary',
+        `${theme.secondaryHue} ${theme.saturation}% ${theme.lightness}%`
+      );
     }
   }, [theme, isOpen, onThemeChange]);
-
-  // Load saved theme
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('voiceTheme');
-    if (savedTheme) {
-      setTheme(JSON.parse(savedTheme));
-    }
-  }, []);
 
   // Save theme
   const saveTheme = () => {
@@ -92,8 +102,8 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
   // Export theme
   const exportTheme = () => {
     const dataStr = JSON.stringify(theme, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+
     const exportFileDefaultName = 'voice-theme.json';
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
@@ -112,7 +122,7 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
     if (navigator.share) {
       try {
         await navigator.share(shareData);
-      } catch (err) {
+      } catch {
         // Fallback to clipboard
         navigator.clipboard.writeText(shareData.url);
       }
@@ -124,10 +134,12 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
   // Apply preset
   const applyPreset = (presetName: keyof typeof presetThemes) => {
     const preset = presetThemes[presetName];
-    setTheme(prev => ({ ...prev, ...preset }));
+    setTheme((prev) => ({ ...prev, ...preset }));
   };
 
-  const tabs = [
+  type TabId = 'colors' | 'effects' | 'presets';
+
+  const tabs: Array<{ id: TabId; label: string; icon: typeof Palette }> = [
     { id: 'colors', label: 'Colors', icon: Palette },
     { id: 'effects', label: 'Effects', icon: Settings },
     { id: 'presets', label: 'Presets', icon: RotateCcw },
@@ -145,7 +157,7 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
             onClick={onClose}
           />
-          
+
           {/* Customizer Panel */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -175,7 +187,7 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
+                    onClick={() => setActiveTab(tab.id)}
                     className={`flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
                       activeTab === tab.id
                         ? 'bg-primary text-white'
@@ -203,7 +215,9 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                       </label>
                       <Slider
                         value={[theme.primaryHue]}
-                        onValueChange={(value) => setTheme(prev => ({ ...prev, primaryHue: value[0] }))}
+                        onValueChange={(value) =>
+                          setTheme((prev) => ({ ...prev, primaryHue: value[0] }))
+                        }
                         min={0}
                         max={360}
                         step={1}
@@ -218,7 +232,9 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                       </label>
                       <Slider
                         value={[theme.secondaryHue]}
-                        onValueChange={(value) => setTheme(prev => ({ ...prev, secondaryHue: value[0] }))}
+                        onValueChange={(value) =>
+                          setTheme((prev) => ({ ...prev, secondaryHue: value[0] }))
+                        }
                         min={0}
                         max={360}
                         step={1}
@@ -233,7 +249,9 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                       </label>
                       <Slider
                         value={[theme.saturation]}
-                        onValueChange={(value) => setTheme(prev => ({ ...prev, saturation: value[0] }))}
+                        onValueChange={(value) =>
+                          setTheme((prev) => ({ ...prev, saturation: value[0] }))
+                        }
                         min={0}
                         max={100}
                         step={1}
@@ -248,7 +266,9 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                       </label>
                       <Slider
                         value={[theme.lightness]}
-                        onValueChange={(value) => setTheme(prev => ({ ...prev, lightness: value[0] }))}
+                        onValueChange={(value) =>
+                          setTheme((prev) => ({ ...prev, lightness: value[0] }))
+                        }
                         min={20}
                         max={80}
                         step={1}
@@ -271,7 +291,9 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                       </label>
                       <Slider
                         value={[theme.animationSpeed]}
-                        onValueChange={(value) => setTheme(prev => ({ ...prev, animationSpeed: value[0] }))}
+                        onValueChange={(value) =>
+                          setTheme((prev) => ({ ...prev, animationSpeed: value[0] }))
+                        }
                         min={0.5}
                         max={2}
                         step={0.1}
@@ -286,7 +308,9 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                       </label>
                       <Slider
                         value={[theme.particleCount]}
-                        onValueChange={(value) => setTheme(prev => ({ ...prev, particleCount: value[0] }))}
+                        onValueChange={(value) =>
+                          setTheme((prev) => ({ ...prev, particleCount: value[0] }))
+                        }
                         min={0}
                         max={200}
                         step={10}
@@ -301,7 +325,9 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                       </label>
                       <Slider
                         value={[theme.glassIntensity]}
-                        onValueChange={(value) => setTheme(prev => ({ ...prev, glassIntensity: value[0] }))}
+                        onValueChange={(value) =>
+                          setTheme((prev) => ({ ...prev, glassIntensity: value[0] }))
+                        }
                         min={0}
                         max={1}
                         step={0.1}
@@ -315,10 +341,10 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                         Motion Preset
                       </label>
                       <div className="flex space-x-2">
-                        {['minimal', 'balanced', 'dramatic'].map((preset) => (
+                        {(['minimal', 'balanced', 'dramatic'] as const).map((preset) => (
                           <button
                             key={preset}
-                            onClick={() => setTheme(prev => ({ ...prev, motionPreset: preset as any }))}
+                            onClick={() => setTheme((prev) => ({ ...prev, motionPreset: preset }))}
                             className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all ${
                               theme.motionPreset === preset
                                 ? 'bg-primary text-white'
@@ -349,17 +375,22 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({
                           <div>
                             <h3 className="font-medium text-white capitalize">{name}</h3>
                             <p className="text-sm text-white/70">
-                              H: {preset.primaryHue}° | S: {preset.saturation}% | L: {preset.lightness}%
+                              H: {preset.primaryHue}° | S: {preset.saturation}% | L:{' '}
+                              {preset.lightness}%
                             </p>
                           </div>
                           <div className="flex space-x-1">
                             <div
                               className="w-6 h-6 rounded-full"
-                              style={{ backgroundColor: `hsl(${preset.primaryHue}, ${preset.saturation}%, ${preset.lightness}%)` }}
+                              style={{
+                                backgroundColor: `hsl(${preset.primaryHue}, ${preset.saturation}%, ${preset.lightness}%)`,
+                              }}
                             />
                             <div
                               className="w-6 h-6 rounded-full"
-                              style={{ backgroundColor: `hsl(${preset.secondaryHue}, ${preset.saturation}%, ${preset.lightness}%)` }}
+                              style={{
+                                backgroundColor: `hsl(${preset.secondaryHue}, ${preset.saturation}%, ${preset.lightness}%)`,
+                              }}
                             />
                           </div>
                         </div>

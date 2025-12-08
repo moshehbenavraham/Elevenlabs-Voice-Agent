@@ -1,8 +1,41 @@
-import { render } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
-import App from '../App';
+import type { ReactNode } from 'react';
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { App } from '../App';
+
+// Mock the pages to avoid complex component rendering with animations
+vi.mock('../pages/Index', () => ({
+  Index: () => <div data-testid="index-page">Index Page</div>,
+}));
+
+vi.mock('../pages/NotFound', () => ({
+  NotFound: () => <div data-testid="not-found-page">Not Found</div>,
+}));
+
+// Mock the contexts to prevent initialization issues
+vi.mock('@/contexts/ThemeContext', () => ({
+  ThemeProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
+  useTheme: () => ({ theme: 'dark', toggleTheme: vi.fn() }),
+}));
+
+vi.mock('@/contexts/VoiceContext', () => ({
+  VoiceProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
+  useVoice: () => ({
+    isConnected: false,
+    isLoading: false,
+    isSpeaking: false,
+    error: null,
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+    clearError: vi.fn(),
+  }),
+}));
 
 describe('App', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders without crashing', () => {
     render(<App />);
     // Basic test to ensure the app renders
@@ -13,5 +46,10 @@ describe('App', () => {
     const { container } = render(<App />);
     // Check that the app component renders something
     expect(container.firstChild).not.toBeNull();
+  });
+
+  it('renders the index page on root route', () => {
+    render(<App />);
+    expect(screen.getByTestId('index-page')).toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, WifiOff, Mic, Settings, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,11 +10,11 @@ interface ErrorDisplayProps {
   onOpenSettings?: () => void;
 }
 
-export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ 
-  error, 
-  onRetry, 
+export const ErrorDisplay: FC<ErrorDisplayProps> = ({
+  error,
+  onRetry,
   onDismiss,
-  onOpenSettings 
+  onOpenSettings,
 }) => {
   if (!error) return null;
 
@@ -81,11 +81,11 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
             <div className="flex-shrink-0">
               <Icon className="w-5 h-5 mt-0.5" />
             </div>
-            
+
             <div className="flex-1 space-y-1">
               <h3 className="font-medium text-white">{errorDetails.title}</h3>
               <p className="text-sm text-white/70">{errorDetails.description}</p>
-              
+
               <div className="flex items-center gap-2 mt-3">
                 {errorDetails.onAction && (
                   <Button
@@ -96,7 +96,7 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
                     {errorDetails.action}
                   </Button>
                 )}
-                
+
                 {onDismiss && (
                   <Button
                     size="sm"
@@ -109,7 +109,7 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
                 )}
               </div>
             </div>
-            
+
             {onDismiss && (
               <button
                 onClick={onDismiss}

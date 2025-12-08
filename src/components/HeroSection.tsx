@@ -1,5 +1,4 @@
-
-import React from 'react';
+import type { FC } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, Zap, MessageCircle, Mic } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,11 +9,7 @@ interface HeroSectionProps {
   error: string | null;
 }
 
-export const HeroSection: React.FC<HeroSectionProps> = ({ 
-  onStartConversation, 
-  isLoading, 
-  error 
-}) => {
+export const HeroSection: FC<HeroSectionProps> = ({ onStartConversation, isLoading, error }) => {
   const features = [
     {
       icon: MessageCircle,
@@ -37,7 +32,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 grid-bg">
       {/* Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-transparent to-pink-900/20" />
-      
+
       {/* Hero Content */}
       <motion.div
         className="relative z-10 text-center max-w-4xl mx-auto"
@@ -64,8 +59,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
         >
-          Experience the future of AI interaction with real-time voice conversations 
-          that feel natural and intelligent.
+          Experience the future of AI interaction with real-time voice conversations that feel
+          natural and intelligent.
         </motion.p>
 
         {/* Feature Cards */}
@@ -98,10 +93,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 1.2 }}
         >
-          <p className="text-white/60 text-sm mb-6">
-            Start your voice conversation now
-          </p>
-          
+          <p className="text-white/60 text-sm mb-6">Start your voice conversation now</p>
+
           <Button
             onClick={onStartConversation}
             disabled={isLoading}
@@ -120,7 +113,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               </>
             )}
           </Button>
-          
+
           {error && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -130,9 +123,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               {error}
             </motion.div>
           )}
-          
+
           {!isLoading && !error && (
-            <motion.div 
+            <motion.div
               className="flex flex-col items-center gap-2 mt-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -143,8 +136,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <span className="text-green-400 text-sm font-medium">Ready to connect</span>
               </div>
               <p className="text-white/40 text-xs">
-                {import.meta.env.VITE_ELEVENLABS_AGENT_ID && import.meta.env.VITE_ELEVENLABS_AGENT_ID !== 'your_agent_id_here' 
-                  ? 'Agent configured' 
+                {import.meta.env.VITE_ELEVENLABS_AGENT_ID &&
+                import.meta.env.VITE_ELEVENLABS_AGENT_ID !== 'your_agent_id_here'
+                  ? 'Agent configured'
                   : 'Configure agent in settings'}
               </p>
             </motion.div>

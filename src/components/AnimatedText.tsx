@@ -1,4 +1,4 @@
-import React from 'react';
+import type { FC } from 'react';
 import { motion, Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -49,16 +49,15 @@ const gradientVariants: Variants = {
   },
 };
 
-export const AnimatedText: React.FC<AnimatedTextProps> = ({
+export const AnimatedText: FC<AnimatedTextProps> = ({
   children,
   className = '',
   variant = 'reveal',
   delay = 0,
-  duration = 0.6,
 }) => {
   if (variant === 'reveal') {
     const words = children.split(' ');
-    
+
     return (
       <motion.div
         className={cn('inline-block', className)}

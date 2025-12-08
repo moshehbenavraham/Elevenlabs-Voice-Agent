@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
 import { useVoice } from '@/contexts/VoiceContext';
@@ -11,30 +11,25 @@ interface VoiceButtonProps {
   onDisconnect?: () => void;
 }
 
-export function VoiceButton({ 
-  className, 
-  size = 'lg',
-  onConnect,
-  onDisconnect 
-}: VoiceButtonProps) {
+export function VoiceButton({ className, size = 'lg', onConnect, onDisconnect }: VoiceButtonProps) {
   const { isConnected, isLoading, isSpeaking, connect, disconnect, error } = useVoice();
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const sizeClasses = {
     sm: 'w-12 h-12',
     md: 'w-16 h-16',
-    lg: 'w-20 h-20'
+    lg: 'w-20 h-20',
   };
 
   const iconSizes = {
     sm: 20,
     md: 24,
-    lg: 28
+    lg: 28,
   };
 
   const handleClick = async () => {
     if (isLoading) return;
-    
+
     if (isConnected) {
       await disconnect();
       onDisconnect?.();
@@ -60,7 +55,7 @@ export function VoiceButton({
     idle: { scale: 1 },
     hover: { scale: 1.05 },
     tap: { scale: 0.95 },
-    speaking: { scale: [1, 1.1, 1], transition: { repeat: Infinity, duration: 1.5 } }
+    speaking: { scale: [1, 1.1, 1], transition: { repeat: Infinity, duration: 1.5 } },
   };
 
   const getButtonState = () => {
@@ -120,7 +115,7 @@ export function VoiceButton({
       disabled={isLoading}
       variants={buttonVariants}
       initial="idle"
-      animate={isSpeaking ? "speaking" : "idle"}
+      animate={isSpeaking ? 'speaking' : 'idle'}
       whileHover="hover"
       whileTap="tap"
       className={cn(
@@ -142,31 +137,28 @@ export function VoiceButton({
           className="absolute inset-0 rounded-full border-2 border-green-500"
           animate={{
             scale: [1, 1.5, 1],
-            opacity: [0.7, 0, 0.7]
+            opacity: [0.7, 0, 0.7],
           }}
           transition={{
             duration: 1.5,
             repeat: Infinity,
-            ease: "easeInOut"
+            ease: 'easeInOut',
           }}
         />
       )}
-      
+
       {/* Icon */}
-      <div className="flex items-center justify-center">
-        {getIcon()}
-      </div>
-      
+      <div className="flex items-center justify-center">{getIcon()}</div>
+
       {/* Status indicator */}
-      <div className={cn(
-        'absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white/20',
-        {
+      <div
+        className={cn('absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white/20', {
           'bg-green-500': isConnected && !error,
           'bg-red-500': error,
           'bg-yellow-500': isLoading,
-          'bg-gray-500': !isConnected && !error && !isLoading
-        }
-      )} />
+          'bg-gray-500': !isConnected && !error && !isLoading,
+        })}
+      />
     </motion.button>
   );
 }

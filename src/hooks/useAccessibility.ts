@@ -8,42 +8,45 @@ interface AccessibilitySettings {
   focusManagement: boolean;
 }
 
+// Helper functions for initial detection (called once at init)
+const getInitialMotionPreference = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+};
+
+const getInitialContrastPreference = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-contrast: high)').matches;
+};
+
+const getInitialScreenReaderDetection = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return !!(
+    window.navigator.userAgent.match(/NVDA|JAWS|VoiceOver|ORCA|Narrator/i) ||
+    window.speechSynthesis ||
+    document.body.getAttribute('aria-hidden') === 'true'
+  );
+};
+
+const getInitialSettings = (): AccessibilitySettings => ({
+  reduceMotion: getInitialMotionPreference(),
+  highContrast: getInitialContrastPreference(),
+  screenReader: getInitialScreenReaderDetection(),
+  keyboardNavigation: true,
+  focusManagement: true,
+});
+
 export const useAccessibility = () => {
-  const [settings, setSettings] = useState<AccessibilitySettings>({
-    reduceMotion: false,
-    highContrast: false,
-    screenReader: false,
-    keyboardNavigation: true,
-    focusManagement: true,
-  });
+  const [settings, setSettings] = useState<AccessibilitySettings>(getInitialSettings);
 
-  // Detect motion preferences
-  const detectMotionPreference = useCallback(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setSettings(prev => ({ ...prev, reduceMotion: mediaQuery.matches }));
-    
-    return mediaQuery;
+  // Get media query for motion preferences
+  const getMotionMediaQuery = useCallback(() => {
+    return window.matchMedia('(prefers-reduced-motion: reduce)');
   }, []);
 
-  // Detect high contrast preference
-  const detectContrastPreference = useCallback(() => {
-    const mediaQuery = window.matchMedia('(prefers-contrast: high)');
-    setSettings(prev => ({ ...prev, highContrast: mediaQuery.matches }));
-    
-    return mediaQuery;
-  }, []);
-
-  // Screen reader detection
-  const detectScreenReader = useCallback(() => {
-    // Basic screen reader detection
-    const isScreenReader = !!(
-      window.navigator.userAgent.match(/NVDA|JAWS|VoiceOver|ORCA|Narrator/i) ||
-      window.speechSynthesis ||
-      document.body.getAttribute('aria-hidden') === 'true'
-    );
-    
-    setSettings(prev => ({ ...prev, screenReader: isScreenReader }));
-    return isScreenReader;
+  // Get media query for high contrast preference
+  const getContrastMediaQuery = useCallback(() => {
+    return window.matchMedia('(prefers-contrast: high)');
   }, []);
 
   // Keyboard navigation enhancement
@@ -77,30 +80,30 @@ export const useAccessibility = () => {
 
   // Focus management system
   const createFocusManager = useCallback(() => {
-    let focusStack: HTMLElement[] = [];
-    
+    const focusStack: HTMLElement[] = [];
+
     const pushFocus = (element: HTMLElement) => {
       if (document.activeElement instanceof HTMLElement) {
         focusStack.push(document.activeElement);
       }
       element.focus();
     };
-    
+
     const popFocus = () => {
       const previousElement = focusStack.pop();
       if (previousElement) {
         previousElement.focus();
       }
     };
-    
+
     const trapFocus = (container: HTMLElement) => {
       const focusableElements = container.querySelectorAll(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
       );
-      
+
       const firstElement = focusableElements[0] as HTMLElement;
       const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
-      
+
       const handleTabKey = (event: KeyboardEvent) => {
         if (event.key === 'Tab') {
           if (event.shiftKey) {
@@ -116,18 +119,18 @@ export const useAccessibility = () => {
           }
         }
       };
-      
+
       container.addEventListener('keydown', handleTabKey);
       return () => container.removeEventListener('keydown', handleTabKey);
     };
-    
+
     return { pushFocus, popFocus, trapFocus };
   }, []);
 
   // Get reduced motion alternatives
   const getReducedMotionAlternatives = useCallback(() => {
     if (!settings.reduceMotion) return null;
-    
+
     return {
       // Replace complex animations with simple transitions
       fadeIn: { opacity: 1, transition: { duration: 0.2 } },
@@ -143,11 +146,11 @@ export const useAccessibility = () => {
   // Screen reader optimizations
   const getScreenReaderOptimizations = useCallback(() => {
     if (!settings.screenReader) return {};
-    
+
     return {
       'aria-live': 'polite',
       'aria-atomic': 'true',
-      'role': 'status',
+      role: 'status',
       'aria-label': 'Voice chat interface',
       'aria-describedby': 'voice-status',
     };
@@ -156,7 +159,7 @@ export const useAccessibility = () => {
   // High contrast mode adjustments
   const getHighContrastStyles = useCallback(() => {
     if (!settings.highContrast) return {};
-    
+
     return {
       '--primary': '0 0% 100%',
       '--background': '0 0% 0%',
@@ -167,32 +170,32 @@ export const useAccessibility = () => {
   }, [settings.highContrast]);
 
   useEffect(() => {
-    const motionQuery = detectMotionPreference();
-    const contrastQuery = detectContrastPreference();
-    
-    detectScreenReader();
-    
-    const motionHandler = () => setSettings(prev => ({ 
-      ...prev, 
-      reduceMotion: motionQuery.matches 
-    }));
-    
-    const contrastHandler = () => setSettings(prev => ({ 
-      ...prev, 
-      highContrast: contrastQuery.matches 
-    }));
-    
+    const motionQuery = getMotionMediaQuery();
+    const contrastQuery = getContrastMediaQuery();
+
+    const motionHandler = () =>
+      setSettings((prev) => ({
+        ...prev,
+        reduceMotion: motionQuery.matches,
+      }));
+
+    const contrastHandler = () =>
+      setSettings((prev) => ({
+        ...prev,
+        highContrast: contrastQuery.matches,
+      }));
+
     motionQuery.addEventListener('change', motionHandler);
     contrastQuery.addEventListener('change', contrastHandler);
-    
+
     const keyboardCleanup = enhanceKeyboardNavigation();
-    
+
     return () => {
       motionQuery.removeEventListener('change', motionHandler);
       contrastQuery.removeEventListener('change', contrastHandler);
       keyboardCleanup();
     };
-  }, [detectMotionPreference, detectContrastPreference, detectScreenReader, enhanceKeyboardNavigation]);
+  }, [getMotionMediaQuery, getContrastMediaQuery, enhanceKeyboardNavigation]);
 
   return {
     settings,

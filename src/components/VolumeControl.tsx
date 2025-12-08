@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import type { FC } from 'react';
 import { motion } from 'framer-motion';
 import { Volume2, VolumeX, Volume1 } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface VolumeControlProps {
   volume: number;
@@ -15,7 +12,7 @@ interface VolumeControlProps {
   className?: string;
 }
 
-export const VolumeControl: React.FC<VolumeControlProps> = ({
+export const VolumeControl: FC<VolumeControlProps> = ({
   volume,
   onVolumeChange,
   className = '',
@@ -44,33 +41,27 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
     }
   };
 
-  const getVolumeIcon = () => {
-    if (isMuted || volume === 0) return VolumeX;
-    if (volume < 0.5) return Volume1;
-    return Volume2;
+  const renderVolumeIcon = (size: string) => {
+    if (isMuted || volume === 0) return <VolumeX className={size} />;
+    if (volume < 0.5) return <Volume1 className={size} />;
+    return <Volume2 className={size} />;
   };
-
-  const VolumeIcon = getVolumeIcon();
 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`glass hover:bg-white/10 ${className}`}
-        >
-          <VolumeIcon className="w-5 h-5" />
+        <Button variant="ghost" size="sm" className={`glass hover:bg-white/10 ${className}`}>
+          {renderVolumeIcon('w-5 h-5')}
         </Button>
       </PopoverTrigger>
-      
+
       <PopoverContent className="glass-enhanced border-white/20 p-4 w-64">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-white">Volume</span>
             <span className="text-sm text-white/60">{Math.round(volume * 100)}%</span>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -78,9 +69,9 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
               onClick={handleMuteToggle}
               className="text-white/60 hover:text-white hover:bg-white/10"
             >
-              <VolumeIcon className="w-4 h-4" />
+              {renderVolumeIcon('w-4 h-4')}
             </Button>
-            
+
             <Slider
               value={[isMuted ? 0 : volume]}
               onValueChange={handleVolumeChange}
@@ -102,8 +93,8 @@ export const VolumeControl: React.FC<VolumeControlProps> = ({
                       ? i < 3
                         ? 'bg-green-500'
                         : i < 7
-                        ? 'bg-yellow-500'
-                        : 'bg-red-500'
+                          ? 'bg-yellow-500'
+                          : 'bg-red-500'
                       : 'bg-white/10'
                   }`}
                   animate={{

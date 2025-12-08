@@ -1,17 +1,16 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "@/contexts/ThemeContext";
-import { VoiceProvider } from "@/contexts/VoiceContext";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import { Toaster } from '@/components/ui/toaster';
+import { Toaster as Sonner } from '@/components/ui/sonner';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { VoiceProvider } from '@/contexts/VoiceContext';
+import { Index } from './pages/Index';
+import { NotFound } from './pages/NotFound';
 
 const queryClient = new QueryClient();
 
-const App = () => (
+export const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <VoiceProvider>
@@ -30,5 +29,3 @@ const App = () => (
     </ThemeProvider>
   </QueryClientProvider>
 );
-
-export default App;

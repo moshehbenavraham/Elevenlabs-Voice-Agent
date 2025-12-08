@@ -1,5 +1,5 @@
-
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import type { FC, ReactNode } from 'react';
 
 type Theme = 'dark' | 'light';
 
@@ -11,6 +11,7 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (context === undefined) {
@@ -20,21 +21,24 @@ export const useTheme = () => {
 };
 
 interface ThemeProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [theme, setTheme] = useState<Theme>('dark');
-
-  useEffect(() => {
+const getInitialTheme = (): Theme => {
+  if (typeof window === 'undefined') return 'dark';
+  try {
     const savedTheme = localStorage.getItem('voice-ai-theme') as Theme;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    } else {
-      // Default to dark theme for the brand aesthetic
-      setTheme('dark');
+    if (savedTheme && (savedTheme === 'dark' || savedTheme === 'light')) {
+      return savedTheme;
     }
-  }, []);
+  } catch {
+    // Ignore errors
+  }
+  return 'dark';
+};
+
+export const ThemeProvider: FC<ThemeProviderProps> = ({ children }) => {
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -53,9 +57,5 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     setTheme,
   };
 
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };

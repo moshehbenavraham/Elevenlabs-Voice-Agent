@@ -5,13 +5,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ### Development
+
 - **Start dev server**: `npm run dev` or `bun dev` - Runs on port 8080
 - **Build production**: `npm run build` - Creates optimized build in `dist/`
 - **Build development**: `npm run build:dev` - Development mode build
 - **Preview build**: `npm run preview` - Preview production build locally
 - **Lint code**: `npm run lint` - Run ESLint checks (MVP config: warnings only)
+- **Format code**: `npm run format` - Format source files with Prettier
+- **Check formatting**: `npm run format:check` - Check Prettier formatting without changes
 
 ### Testing
+
 - **Run tests**: `npm run test` - Interactive test watcher with Vitest
 - **Run tests once**: `npm run test:run` - Single test run for CI/CD
 - **Test UI**: `npm run test:ui` - Visual test interface
@@ -21,6 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Architecture
 
 ### Technology Stack
+
 - **Framework**: React 18.3.1 with TypeScript
 - **Build Tool**: Vite with SWC for fast compilation
 - **Styling**: Tailwind CSS with custom glassmorphism design system
@@ -30,6 +35,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **State**: React Context (theme), Tanstack Query (server state), custom hooks
 
 ### Project Structure
+
 ```
 src/
 ├── components/          # UI components
@@ -60,6 +66,7 @@ src/
 ```
 
 ### Environment Variables
+
 - **Required**: `.env` file with ElevenLabs credentials (not tracked by git)
 - **Template**: `.env.example` shows required format
 - **Variables**:
@@ -69,7 +76,7 @@ src/
 
 ### Key Integration Points
 
-1. **ElevenLabs Voice Agent**: 
+1. **ElevenLabs Voice Agent**:
    - Agent ID is configured via environment variable `VITE_ELEVENLABS_AGENT_ID`
    - Uses ElevenLabs React SDK Conversation component
    - Requires HTTPS in production for microphone access
@@ -109,7 +116,7 @@ src/
 
 ### Production Considerations
 
-1. **Security**: 
+1. **Security**:
    - Environment variables properly configured (.env ignored by git)
    - API keys stored in environment variables (not hardcoded)
    - Consider backend proxy for production API key management

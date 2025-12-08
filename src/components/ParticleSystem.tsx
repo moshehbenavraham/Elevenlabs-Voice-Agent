@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { FC } from 'react';
 
 interface Particle {
   x: number;
@@ -15,9 +16,9 @@ interface ParticleSystemProps {
   isActive?: boolean;
 }
 
-export const ParticleSystem: React.FC<ParticleSystemProps> = ({ 
+export const ParticleSystem: FC<ParticleSystemProps> = ({
   particleCount = 50,
-  isActive = true 
+  isActive = true,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
@@ -25,9 +26,9 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   // Initialize particles
-  const initializeParticles = useCallback((width: number, height: number) => {
+  const initializeParticles = (width: number, height: number, count: number) => {
     const particles: Particle[] = [];
-    for (let i = 0; i < particleCount; i++) {
+    for (let i = 0; i < count; i++) {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
@@ -39,7 +40,7 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
       });
     }
     particlesRef.current = particles;
-  }, [particleCount]);
+  };
 
   // Update particle positions
   const updateParticles = (width: number, height: number) => {
@@ -62,38 +63,26 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
   // Render particles
   const renderParticles = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
     ctx.clearRect(0, 0, width, height);
-    
+
     particlesRef.current.forEach((particle) => {
       const gradient = ctx.createRadialGradient(
-        particle.x, particle.y, 0,
-        particle.x, particle.y, particle.size * 2
+        particle.x,
+        particle.y,
+        0,
+        particle.x,
+        particle.y,
+        particle.size * 2
       );
-      
+
       gradient.addColorStop(0, `hsla(${particle.hue}, 70%, 60%, ${particle.opacity})`);
       gradient.addColorStop(1, `hsla(${particle.hue}, 70%, 60%, 0)`);
-      
+
       ctx.fillStyle = gradient;
       ctx.beginPath();
       ctx.arc(particle.x, particle.y, particle.size * 2, 0, Math.PI * 2);
       ctx.fill();
     });
   };
-
-  // Animation loop
-  const animate = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !isActive) return;
-
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const { width, height } = canvas;
-    
-    updateParticles(width, height);
-    renderParticles(ctx, width, height);
-    
-    animationRef.current = requestAnimationFrame(animate);
-  }, [isActive]);
 
   // Handle resize
   useEffect(() => {
@@ -115,33 +104,42 @@ export const ParticleSystem: React.FC<ParticleSystemProps> = ({
   // Initialize particles when dimensions change
   useEffect(() => {
     if (dimensions.width && dimensions.height) {
-      initializeParticles(dimensions.width, dimensions.height);
+      initializeParticles(dimensions.width, dimensions.height, particleCount);
     }
-  }, [dimensions, particleCount, initializeParticles]);
+  }, [dimensions, particleCount]);
 
-  // Start/stop animation based on isActive
+  // Animation loop using refs to avoid circular dependencies
   useEffect(() => {
-    if (isActive && dimensions.width && dimensions.height) {
-      animate();
-    } else if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
+    if (!isActive || !dimensions.width || !dimensions.height) {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+      return;
     }
+
+    const animate = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const { width, height } = canvas;
+
+      updateParticles(width, height);
+      renderParticles(ctx, width, height);
+
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
 
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isActive, dimensions, animate]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, []);
+  }, [isActive, dimensions]);
 
   if (!isActive) return null;
 

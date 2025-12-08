@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, CheckCircle, Clock, Wifi, WifiOff } from 'lucide-react';
 import { useVoice } from '@/contexts/VoiceContext';
@@ -47,10 +46,8 @@ export function VoiceStatus({ className, showMessages = true }: VoiceStatusProps
         )}
       >
         {getStatusIcon()}
-        <span className="text-sm text-white/90 font-medium">
-          {getStatusText()}
-        </span>
-        
+        <span className="text-sm text-white/90 font-medium">{getStatusText()}</span>
+
         {/* Connection indicator */}
         <div className="ml-auto">
           {isConnected ? (
@@ -69,10 +66,8 @@ export function VoiceStatus({ className, showMessages = true }: VoiceStatusProps
           exit={{ opacity: 0, height: 0 }}
           className="space-y-3"
         >
-          <h3 className="text-sm font-medium text-white/70 px-1">
-            Conversation
-          </h3>
-          
+          <h3 className="text-sm font-medium text-white/70 px-1">Conversation</h3>
+
           <div className="max-h-40 overflow-y-auto space-y-2" role="log" aria-live="polite">
             <AnimatePresence mode="popLayout">
               {messages.slice(-5).map((message, index) => (
@@ -89,17 +84,17 @@ export function VoiceStatus({ className, showMessages = true }: VoiceStatusProps
                   )}
                 >
                   <div className="flex items-start gap-2">
-                    <span className={cn(
-                      'text-xs font-medium px-2 py-1 rounded-full',
-                      message.role === 'user'
-                        ? 'bg-purple-500/30 text-purple-200'
-                        : 'bg-blue-500/30 text-blue-200'
-                    )}>
+                    <span
+                      className={cn(
+                        'text-xs font-medium px-2 py-1 rounded-full',
+                        message.role === 'user'
+                          ? 'bg-purple-500/30 text-purple-200'
+                          : 'bg-blue-500/30 text-blue-200'
+                      )}
+                    >
                       {message.role === 'user' ? 'You' : 'AI'}
                     </span>
-                    <p className="text-white/90 leading-relaxed">
-                      {message.content}
-                    </p>
+                    <p className="text-white/90 leading-relaxed">{message.content}</p>
                   </div>
                 </motion.div>
               ))}
@@ -124,12 +119,12 @@ export function VoiceStatus({ className, showMessages = true }: VoiceStatusProps
                   className="w-2 h-2 bg-green-400 rounded-full"
                   animate={{
                     scale: [1, 1.5, 1],
-                    opacity: [0.5, 1, 0.5]
+                    opacity: [0.5, 1, 0.5],
                   }}
                   transition={{
                     duration: 1,
                     repeat: Infinity,
-                    delay: i * 0.2
+                    delay: i * 0.2,
                   }}
                 />
               ))}
