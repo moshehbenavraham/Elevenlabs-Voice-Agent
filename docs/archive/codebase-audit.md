@@ -58,6 +58,7 @@ This audit evaluates the codebase across three critical dimensions: project scaf
    - **Recommendation:** Rename to `elevenlabs-voice-agent`
 
 2. **Missing tailwind.config.ts** (referenced in `components.json:8`)
+
    ```json
    "config": "tailwind.config.ts"
    ```
@@ -274,6 +275,7 @@ This audit evaluates the codebase across three critical dimensions: project scaf
 
 8. **localStorage Usage Without Encryption**
    - `ThemeContext.tsx:29`:
+
    ```typescript
    const savedTheme = localStorage.getItem('voice-ai-theme');
    ```
@@ -423,11 +425,13 @@ The following checks run automatically before each commit:
 - ESLint with auto-fix for TypeScript/TSX files
 - Prettier formatting for all staged files
 
-### Remaining Items (Lower Priority)
+### Pending Items
 
-- Audit unused UI components - Deferred (50+ shadcn/ui components)
-- Code splitting - Deferred
-- Replace console.error with error tracking - Deferred
+| Item                                      | Status  | Notes                                            |
+| ----------------------------------------- | ------- | ------------------------------------------------ |
+| Audit unused UI components                | Pending | 50+ shadcn/ui components to review for dead code |
+| Implement code splitting                  | Pending | Lazy load routes and heavy components            |
+| Replace console.error with error tracking | Pending | Integrate proper error monitoring service        |
 
 ---
 
