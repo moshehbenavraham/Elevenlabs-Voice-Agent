@@ -10,7 +10,7 @@ const PORT = process.env.SERVER_PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+  origin: process.env.CORS_ORIGIN || 'http://localhost:8082',
   credentials: true,
 }));
 app.use(express.json());
@@ -78,7 +78,7 @@ app.get('/api/elevenlabs/signed-url', async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`[Server] Running on http://localhost:${PORT}`);
-  console.log(`[Server] CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:8080'}`);
+  console.log(`[Server] CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:8082'}`);
   console.log(`[Server] API key configured: ${process.env.ELEVENLABS_API_KEY ? 'Yes' : 'No'}`);
   console.log(`[Server] Agent ID configured: ${process.env.VITE_ELEVENLABS_AGENT_ID ? 'Yes' : 'No'}`);
 });

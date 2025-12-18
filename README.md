@@ -1,4 +1,3 @@
-
 # ElevenLabs Voice Agent
 
 > **Project assembled by [AI with Apex](https://AIwithApex.com)**  
@@ -9,13 +8,13 @@
 
 Learn how to create and configure ElevenLabs agents for this application:
 
-| Tutorial | Description |
-|----------|-------------|
+| Tutorial                                                                                    | Description                                                        |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | 📚 [Building Your First ElevenLabs Agent](https://youtu.be/oEkyNSWRqxc?si=30fMIpIhm0hgbzfz) | Complete walkthrough of creating your base conversational AI agent |
-| 🗂️ [Setting Up Knowledge Base (RAG)](https://youtu.be/S93uZ9Cuz4w?si=WxEtWKrEzx_e5XBL) | Quick 60-second guide to prepare your agent's knowledge base |
-| 🛠️ [Creating Agent Tools & Functions](https://youtu.be/jHTMYmptHI0?si=1O0kVsWjTDr6bbVC) | Build your first agent tool for contact detail collection |
-| 📝 [Handling Call Transcripts](https://youtu.be/--j6hfnCc-w?si=Hz12v8ukPi4y2pU4) | Process and manage post-call transcripts effectively |
-| ✨ [Advanced Features & Configuration](https://youtu.be/55UJWHi_ZMk?si=p58wnk-bmEkgDg2_) | Explore new features and advanced usage patterns |
+| 🗂️ [Setting Up Knowledge Base (RAG)](https://youtu.be/S93uZ9Cuz4w?si=WxEtWKrEzx_e5XBL)      | Quick 60-second guide to prepare your agent's knowledge base       |
+| 🛠️ [Creating Agent Tools & Functions](https://youtu.be/jHTMYmptHI0?si=1O0kVsWjTDr6bbVC)     | Build your first agent tool for contact detail collection          |
+| 📝 [Handling Call Transcripts](https://youtu.be/--j6hfnCc-w?si=Hz12v8ukPi4y2pU4)            | Process and manage post-call transcripts effectively               |
+| ✨ [Advanced Features & Configuration](https://youtu.be/55UJWHi_ZMk?si=p58wnk-bmEkgDg2_)    | Explore new features and advanced usage patterns                   |
 
 ---
 
@@ -35,43 +34,49 @@ A sophisticated voice AI web application built with React, TypeScript, and the E
 This project includes comprehensive documentation to help you get started, contribute, and deploy successfully:
 
 ### 🔧 **Getting Started**
+
 - **[Quick Start Guide](#-quick-start)** - Get up and running in minutes
 - **[Installation & Configuration](#configuration)** - Detailed setup instructions
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment for Vercel, Netlify, AWS, Firebase
 
 ### 🏗️ **Technical Documentation**
+
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - System design, components, and data flow
 - **[API Integration Guide](docs/API_INTEGRATION.md)** - ElevenLabs React SDK integration and best practices
 - **[Voice Features Documentation](docs/VOICE_FEATURES.md)** - Voice orb, audio visualization, and voice interactions
 - **[Mobile Optimization Guide](docs/MOBILE_OPTIMIZATION.md)** - Touch interactions, PWA features, and mobile performance
 
 ### 🤖 **AI-Assistant Documentation**
+
 - **[Claude Code Integration Guide](CLAUDE.md)** - Development commands, architecture overview, and guidelines for Claude Code
 
 ### 🤝 **Community & Support**
+
 - **[Contributing Guidelines](CONTRIBUTING.md)** - Development setup, code style, and contribution process
 - **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community standards and guidelines
 - **[Support Guide](SUPPORT.md)** - Getting help, troubleshooting, and community resources
 - **[Security Policy](SECURITY.md)** - Vulnerability reporting and security best practices
 
 ### 🔍 **Help & Troubleshooting**
+
 - **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues, solutions, and diagnostic tools
 - **[Changelog](CHANGELOG.md)** - Version history and release notes
 - **[Issue Templates](.github/ISSUE_TEMPLATE/)** - Bug reports, feature requests, and voice integration issues
 - **[License](LICENSE)** - MIT License terms and conditions
 
 ### 📋 **Quick Links**
-| Type | Documentation | Description |
-|------|---------------|-------------|
-| 🚀 | **[Deployment](docs/DEPLOYMENT.md)** | Production deployment guides |
-| 🏗️ | **[Architecture](docs/ARCHITECTURE.md)** | Technical system design |
-| 🎤 | **[Voice Features](docs/VOICE_FEATURES.md)** | Voice AI functionality |
-| 📱 | **[Mobile Guide](docs/MOBILE_OPTIMIZATION.md)** | Mobile optimization |
-| 🔌 | **[API Integration](docs/API_INTEGRATION.md)** | ElevenLabs React SDK guide |
-| 🆘 | **[Troubleshooting](docs/TROUBLESHOOTING.md)** | Problem resolution |
-| 🤖 | **[Claude Integration](CLAUDE.md)** | AI assistant development guide |
-| 🤝 | **[Contributing](CONTRIBUTING.md)** | Development guidelines |
-| 🔒 | **[Security](SECURITY.md)** | Security policies |
+
+| Type | Documentation                                   | Description                    |
+| ---- | ----------------------------------------------- | ------------------------------ |
+| 🚀   | **[Deployment](docs/DEPLOYMENT.md)**            | Production deployment guides   |
+| 🏗️   | **[Architecture](docs/ARCHITECTURE.md)**        | Technical system design        |
+| 🎤   | **[Voice Features](docs/VOICE_FEATURES.md)**    | Voice AI functionality         |
+| 📱   | **[Mobile Guide](docs/MOBILE_OPTIMIZATION.md)** | Mobile optimization            |
+| 🔌   | **[API Integration](docs/API_INTEGRATION.md)**  | ElevenLabs React SDK guide     |
+| 🆘   | **[Troubleshooting](docs/TROUBLESHOOTING.md)**  | Problem resolution             |
+| 🤖   | **[Claude Integration](CLAUDE.md)**             | AI assistant development guide |
+| 🤝   | **[Contributing](CONTRIBUTING.md)**             | Development guidelines         |
+| 🔒   | **[Security](SECURITY.md)**                     | Security policies              |
 
 ## 🚀 Quick Start
 
@@ -146,6 +151,7 @@ npm run dev
 ## 📱 Mobile Support
 
 The app is built mobile-first with:
+
 - Touch-optimized controls (44px+ tap targets)
 - Responsive breakpoints: 375px → 768px → 1024px+
 - Thumb-reachable CTAs in bottom 20% of viewport
@@ -154,17 +160,20 @@ The app is built mobile-first with:
 ## 🎨 Design System
 
 ### Color Palette
+
 - **Primary**: Purple (#7C3AED) to Pink (#EC4899) gradients
 - **Background**: Dark slate (#050714) with glassmorphism overlays
 - **Glass**: Semi-transparent containers with backdrop blur
 - **Text**: High contrast white/slate for accessibility
 
 ### Typography
+
 - **Font**: Inter (300-700 weights)
 - **Scale**: Mobile-first responsive scaling
 - **Hierarchy**: Clear visual hierarchy with gradient text accents
 
 ### Animations
+
 - **Duration**: 0.8s for major transitions, 0.2s for interactions
 - **Easing**: `ease-out` for natural motion
 - **Respect**: `prefers-reduced-motion` for accessibility
@@ -181,6 +190,7 @@ bun add -D @testing-library/react @testing-library/jest-dom @testing-library/use
 ```
 
 ### Recommended Test Strategy
+
 - **Unit Tests**: Component behavior and props validation
 - **Integration Tests**: Hook interactions and ElevenLabs React SDK integration
 - **Accessibility Tests**: ARIA labels, keyboard navigation, screen reader compatibility
@@ -190,6 +200,7 @@ bun add -D @testing-library/react @testing-library/jest-dom @testing-library/use
 ## 🚀 Deployment
 
 ### Build for Production
+
 ```bash
 # Build the application
 bun run build
@@ -205,6 +216,7 @@ npm run preview
 ### Deployment Options
 
 #### Vercel (Recommended)
+
 ```bash
 # Install Vercel CLI
 npm i -g vercel
@@ -214,17 +226,20 @@ vercel --prod
 ```
 
 #### Netlify
+
 ```bash
 # Build command: npm run build
 # Publish directory: dist
 ```
 
 #### Traditional Web Hosting
+
 - Build the project with `npm run build`
 - Upload the `dist` folder contents to your web server
 - Ensure HTTPS is configured for microphone access
 
 ### Production Considerations
+
 - **HTTPS Required**: Microphone access requires HTTPS in production
 - **ElevenLabs API**: Implement server-side signed URL generation
 - **Error Handling**: Add proper error boundaries and fallbacks
@@ -253,6 +268,7 @@ vercel --prod
 5. Open a Pull Request
 
 ### Commit Convention
+
 - `feat:` New features
 - `fix:` Bug fixes
 - `docs:` Documentation changes
@@ -299,18 +315,21 @@ src/
 ### Key Components
 
 #### VoiceOrb Component
+
 - Central voice interaction interface
 - Real-time audio visualization
 - Connection status indicators
 - Touch and click interactions
 
 #### ElevenLabs Integration
+
 - Real-time conversation handling via [`useElevenLabsConversation.ts`](src/hooks/useElevenLabsConversation.ts)
 - Message transcription and history
 - Connection state management
 - Error handling and recovery
 
 #### Audio Visualization
+
 - 60fps Canvas-based audio visualization
 - Real-time frequency analysis
 - Dynamic particle effects
@@ -319,12 +338,14 @@ src/
 ## 🐛 Known Issues & Browser Compatibility
 
 ### Browser Compatibility
+
 - **Chrome/Edge**: Full feature support ✅
 - **Firefox**: Full support, some animation optimizations may vary ✅
 - **Safari**: WebAudio API requires user gesture for initialization ⚠️
 - **Mobile Browsers**: Optimized for mobile, background tab throttling may affect audio ⚠️
 
 ### Known Issues
+
 1. **Agent ID Configuration**: Must set `VITE_ELEVENLABS_AGENT_ID` in `.env` file
 2. **Safari WebAudio**: May require user interaction before audio processing starts
 3. **Mobile Chrome**: Background tab throttling affects audio visualization
@@ -334,18 +355,21 @@ src/
 ### Troubleshooting
 
 #### "Connection Failed" Error
+
 - Verify your ElevenLabs Agent ID is correctly configured
 - Check browser console for specific error messages
 - Ensure microphone permissions are granted
 - Verify HTTPS is used in production
 
 #### Audio Visualization Not Working
+
 - Check browser compatibility with Web Audio API
 - Ensure microphone permissions are granted
 - Verify audio input device is working
 - Check for browser tab throttling
 
 #### Performance Issues
+
 - Reduce animation complexity in [`src/components/VoiceEnvironment.tsx`](src/components/VoiceEnvironment.tsx)
 - Disable particle effects on lower-end devices
 - Check for browser-specific optimizations
@@ -353,12 +377,14 @@ src/
 ## 🔧 Development Setup
 
 ### Prerequisites
+
 - Node.js 18+
 - Bun (recommended) or npm
 - Modern browser with microphone support
 - ElevenLabs account and Agent ID
 
 ### Development Commands
+
 ```bash
 # Development server
 bun dev
@@ -374,11 +400,12 @@ bun run lint
 ```
 
 ### Environment Setup
+
 1. Clone the repository
 2. Install dependencies with `bun install`
 3. Configure your ElevenLabs Agent ID in `.env` file (copy from `.env.example`)
 4. Start development server with `bun dev`
-5. Open `http://localhost:8080` in your browser
+5. Open `http://localhost:8082` in your browser
 
 ## 📄 License
 

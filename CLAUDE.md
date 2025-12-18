@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Development
 
-- **Start dev server**: `npm run dev` or `bun dev` - Runs on port 8080
+- **Start dev server**: `npm run dev` or `bun dev` - Runs on port 8082
 - **Build production**: `npm run build` - Creates optimized build in `dist/`
 - **Build development**: `npm run build:dev` - Development mode build
 - **Preview build**: `npm run preview` - Preview production build locally
