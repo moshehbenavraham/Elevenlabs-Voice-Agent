@@ -37,11 +37,11 @@ This application supports multiple voice AI providers through a tabbed interface
 
 ### Supported Providers
 
-| Provider       | Status      | Description                                                 |
-| -------------- | ----------- | ----------------------------------------------------------- |
-| **ElevenLabs** | Available   | High-quality conversational AI with natural voice synthesis |
-| **xAI Grok**   | Available   | Grok-powered voice assistant with realtime API              |
-| **OpenAI**     | Coming Soon | OpenAI voice capabilities (in development)                  |
+| Provider       | Status    | Description                                                 |
+| -------------- | --------- | ----------------------------------------------------------- |
+| **ElevenLabs** | Available | High-quality conversational AI with natural voice synthesis |
+| **xAI Grok**   | Available | Grok-powered voice assistant with realtime API              |
+| **OpenAI**     | Available | GPT-4o realtime voice conversations with server VAD         |
 
 ### Configuration
 
@@ -62,6 +62,19 @@ XAI_API_KEY=your_xai_api_key_here
 VITE_XAI_ENABLED=true
 VITE_API_BASE_URL=http://localhost:3001
 ```
+
+#### OpenAI Setup
+
+```bash
+# Server-side environment (OpenAI requires backend for ephemeral tokens)
+OPENAI_API_KEY=sk-your_openai_api_key_here
+
+# Client-side (enable OpenAI in frontend)
+VITE_OPENAI_ENABLED=true
+VITE_API_BASE_URL=http://localhost:3001
+```
+
+OpenAI uses the Realtime API with ephemeral tokens for secure WebSocket connections. The backend generates short-lived tokens (60s expiry) so your API key is never exposed to the client.
 
 ### Provider Features
 

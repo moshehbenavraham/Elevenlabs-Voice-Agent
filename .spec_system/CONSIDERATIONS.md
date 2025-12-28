@@ -1,7 +1,7 @@
 # Considerations
 
 > Institutional memory for AI assistants. Updated between phases via /carryforward.
-> **Line budget**: 600 max | **Last updated**: Phase 00 (2025-12-28)
+> **Line budget**: 600 max | **Last updated**: Phase 01 (2025-12-28)
 
 ---
 
@@ -10,18 +10,21 @@
 Items requiring attention in upcoming phases. Review before each session.
 
 ### Technical Debt
+
 <!-- Max 5 items -->
 
 - [P00] **react-refresh/only-export-components warnings**: 7 occurrences across provider/tab components. Intentional pattern for co-located components - suppress if needed or restructure exports.
 
 ### External Dependencies
+
 <!-- Max 5 items -->
 
 - [P00] **xAI Realtime API**: No official React SDK; using native WebSocket with ephemeral tokens. Works well but monitor for SDK release.
 - [P00] **ElevenLabs SDK**: Currently v0.12.1; monitor for breaking changes.
-- [P01] **OpenAI Realtime API**: GA version available. Uses ephemeral tokens via POST /v1/realtime/client_secrets. Compatible audio format (24kHz PCM16).
+- [P01] **OpenAI Realtime API**: GA version. Uses ephemeral tokens via POST /v1/realtime/sessions. Fully integrated with same patterns as xAI.
 
 ### Performance / Security
+
 <!-- Max 5 items -->
 
 - [P00] **API Keys**: Must use backend proxy for xAI (ephemeral token pattern); never expose in browser.
@@ -29,11 +32,13 @@ Items requiring attention in upcoming phases. Review before each session.
 - [P00] **Base64 Audio Overhead**: xAI API requires base64 encoding, adding ~33% data overhead. Acceptable for real-time voice but monitor bandwidth.
 
 ### Architecture
+
 <!-- Max 5 items -->
 
 - [P00] **Single Connection at a Time**: Disconnect active provider before switching tabs to prevent resource conflicts.
 - [P00] **AudioWorklet Thread Model**: Audio processing runs in separate thread via AudioWorklet; main thread stays responsive.
-- [P00] **Provider-Specific Contexts**: Each provider has dedicated context (VoiceContext for ElevenLabs, XAIVoiceContext for xAI) for isolation.
+- [P00] **Provider-Specific Contexts**: Each provider has dedicated context (VoiceContext, XAIVoiceContext, OpenAIVoiceContext) for isolation.
+- [P01] **OpenAI WebSocket Auth**: Uses protocol array for auth (`['realtime', 'openai-insecure-api-key.{token}']`) since WebSocket doesn't support headers.
 
 ---
 
@@ -42,6 +47,7 @@ Items requiring attention in upcoming phases. Review before each session.
 Proven patterns and anti-patterns. Reference during implementation.
 
 ### What Worked
+
 <!-- Max 15 items -->
 
 - [P00] **Radix UI Tabs for accessibility**: Provides robust keyboard navigation (Tab, Arrow keys, Enter/Space) out of the box. No need to reimplement.
@@ -56,8 +62,12 @@ Proven patterns and anti-patterns. Reference during implementation.
 - [P00] **localStorage for persistence**: Provider selection persists across refreshes with simple localStorage pattern.
 - [P00] **Playback queue with ref pattern**: Queue audio chunks with useRef for playNextInQueue to handle async WebSocket arrival.
 - [P00] **Switch statement for WebSocket messages**: Cleaner than nested if-else for routing xAI realtime message types.
+- [P01] **~80% Code Reuse for New Providers**: OpenAI integration reused vast majority of xAI patterns (audio utils, WebSocket handling, playback queue).
+- [P01] **Empty state component for unconfigured providers**: OpenAIEmptyState shows clear setup instructions when API key missing.
+- [P01] **Health endpoint for config validation**: /api/openai/health checks if OPENAI_API_KEY is configured before showing provider.
 
 ### What to Avoid
+
 <!-- Max 10 items -->
 
 - [P00] **External AudioWorklet files with Vite**: Don't use separate .worklet.ts files - causes bundling and CORS issues. Use inline Blob URLs.
@@ -68,6 +78,7 @@ Proven patterns and anti-patterns. Reference during implementation.
 - [P00] **ScriptProcessorNode for audio**: Deprecated. Use AudioWorklet instead for real-time audio processing.
 
 ### Tool/Library Notes
+
 <!-- Max 5 items -->
 
 - [P00] **@radix-ui/react-tabs**: Excellent accessibility out of the box. Use Radix Tabs primitive for keyboard navigation.
@@ -82,12 +93,16 @@ Proven patterns and anti-patterns. Reference during implementation.
 
 Recently closed items (buffer - rotates out after 2 phases).
 
-| Phase | Item | Resolution |
-|-------|------|------------|
-| P00 | Separate Contexts per Provider | Implemented XAIVoiceContext in session03, isolated from VoiceContext |
-| P00 | xAI Backend Integration | Ephemeral token endpoint at /api/xai/session working |
-| P00 | Tab System with Keyboard A11y | Radix UI Tabs provides full accessibility |
-| P00 | Audio Visualization for xAI | XAIVoiceVisualizer with AnalyserNode frequency data |
+| Phase | Item                           | Resolution                                                                 |
+| ----- | ------------------------------ | -------------------------------------------------------------------------- |
+| P00   | Separate Contexts per Provider | Implemented XAIVoiceContext in session03, isolated from VoiceContext       |
+| P00   | xAI Backend Integration        | Ephemeral token endpoint at /api/xai/session working                       |
+| P00   | Tab System with Keyboard A11y  | Radix UI Tabs provides full accessibility                                  |
+| P00   | Audio Visualization for xAI    | XAIVoiceVisualizer with AnalyserNode frequency data                        |
+| P01   | OpenAI Realtime API Research   | Audio format matches xAI, ephemeral tokens work, ~80% code reuse confirmed |
+| P01   | OpenAI Backend Integration     | Ephemeral token endpoint at /api/openai/session implemented                |
+| P01   | OpenAI Frontend Integration    | OpenAIVoiceContext, OpenAIProvider components fully working                |
+| P01   | Three-Provider Architecture    | ElevenLabs, xAI, and OpenAI tabs all functional with clean switching       |
 
 ---
 
@@ -102,16 +117,16 @@ Items explicitly deferred for future phases:
 5. **E2E test automation** - Playwright integration
 6. **Token caching with TTL** - Reduce xAI API calls
 
-## OpenAI Integration Notes (P01 Research)
+## Phase 02 Considerations
 
-Key findings from phase01-session01-openai-research:
+Items to address in upcoming phases:
 
-1. **Audio Format Compatibility**: OpenAI uses identical specs to xAI (24kHz, PCM16, mono, base64). All audio utilities are reusable.
-2. **Ephemeral Tokens**: OpenAI provides POST /v1/realtime/client_secrets endpoint for browser-safe tokens.
-3. **VAD Options**: OpenAI supports server_vad (like xAI) plus semantic_vad for intent-based turn detection.
-4. **Event Compatibility**: OpenAI and xAI share same WebSocket event structure (session.created, response.audio.delta, etc.).
-5. **Reuse Strategy**: ~80% of XAIVoiceContext code can be reused for OpenAIVoiceContext with URL/model changes.
+1. **Voice Selection UI** - Allow users to choose voice (alloy, ash, ballad, etc.) from frontend
+2. **Conversation History/Transcript** - Display text alongside audio for accessibility
+3. **Function Calling Integration** - Connect OpenAI function calling to backend actions
+4. **Reconnection with Exponential Backoff** - Handle network flakiness gracefully
+5. **E2E Test Automation** - Playwright tests for voice flows (deferred from P00)
 
 ---
 
-*Auto-generated by /carryforward. Manual edits allowed but may be overwritten.*
+_Auto-generated by /carryforward. Manual edits allowed but may be overwritten._

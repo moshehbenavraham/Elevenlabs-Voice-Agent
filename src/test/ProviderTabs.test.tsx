@@ -87,7 +87,7 @@ describe('ProviderTabs', () => {
       expect(xaiTab).not.toBeDisabled();
     });
 
-    it('disables OpenAI tab (not available)', () => {
+    it('enables OpenAI tab when VITE_OPENAI_ENABLED=true', () => {
       render(
         <TestWrapper>
           <ProviderTabs />
@@ -95,18 +95,8 @@ describe('ProviderTabs', () => {
       );
 
       const openaiTab = screen.getByRole('tab', { name: /openai/i });
-      expect(openaiTab).toBeDisabled();
-    });
-
-    it('shows disabled tooltip for unavailable providers (OpenAI)', () => {
-      render(
-        <TestWrapper>
-          <ProviderTabs />
-        </TestWrapper>
-      );
-
-      const openaiTab = screen.getByRole('tab', { name: /openai/i });
-      expect(openaiTab).toHaveAttribute('title', 'OpenAI coming soon');
+      // OpenAI is now enabled via env var
+      expect(openaiTab).not.toBeDisabled();
     });
   });
 
@@ -129,21 +119,22 @@ describe('ProviderTabs', () => {
       expect(onProviderChange).toHaveBeenCalledWith('xai');
     });
 
-    it('does not switch to disabled OpenAI tab when clicked', async () => {
+    it('switches to OpenAI tab when clicked', async () => {
       const user = userEvent.setup();
+      const onProviderChange = vi.fn();
 
       render(
         <TestWrapper>
-          <ProviderTabs />
+          <ProviderTabs onProviderChange={onProviderChange} />
         </TestWrapper>
       );
 
       const openaiTab = screen.getByRole('tab', { name: /openai/i });
       await user.click(openaiTab);
 
-      // ElevenLabs should still be selected since OpenAI is disabled
-      const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs/i });
-      expect(elevenlabsTab).toHaveAttribute('data-state', 'active');
+      // OpenAI should now be selected since it's enabled
+      expect(openaiTab).toHaveAttribute('data-state', 'active');
+      expect(onProviderChange).toHaveBeenCalledWith('openai');
     });
   });
 
