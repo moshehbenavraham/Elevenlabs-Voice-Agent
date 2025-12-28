@@ -16,6 +16,7 @@ import {
   XAI_SAMPLE_RATE,
 } from '@/lib/audio/audioUtils';
 import { getSavedVoice, saveVoice } from '@/lib/voiceConfig';
+import { useReconnection, type ReconnectionState } from '@/hooks/useReconnection';
 import type { VoiceMessage } from '@/types';
 
 const DEBUG = import.meta.env.DEV;
@@ -55,6 +56,8 @@ export interface XAIVoiceContextValue extends XAIVoiceState {
   setVolume: (volume: number) => void;
   clearError: () => void;
   getAnalyserNode: () => AnalyserNode | null;
+  reconnection: ReconnectionState;
+  manualReconnect: () => void;
 }
 
 const initialState: XAIVoiceState = {
@@ -195,6 +198,9 @@ interface XAIVoiceProviderProps {
 export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderProps) {
   const [state, dispatch] = useReducer(xaiVoiceReducer, initialState);
 
+  // Track if disconnect was intentional to prevent auto-reconnect
+  const intentionalDisconnectRef = useRef(false);
+
   // Voice selection state with localStorage persistence
   const [selectedVoice, setSelectedVoiceState] = useState(() => getSavedVoice('xai'));
   const selectedVoiceRef = useRef(selectedVoice);
@@ -220,6 +226,129 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
   const audioQueueRef = useRef<AudioBuffer[]>([]);
   const isPlayingRef = useRef(false);
   const playNextInQueueRef = useRef<(() => void) | null>(null);
+  const handleWSMessageRef = useRef<((event: MessageEvent) => void) | null>(null);
+
+  /**
+   * Reconnect function - fetches fresh token and re-establishes connection
+   * Used by useReconnection hook on auto-reconnect attempts
+   */
+  const performReconnect = useCallback(async () => {
+    debugLog('reconnect', 'Attempting to reconnect with fresh token...');
+
+    // Skip if intentional disconnect
+    if (intentionalDisconnectRef.current) {
+      debugLog('reconnect', 'Skipping - intentional disconnect');
+      return;
+    }
+
+    // Get fresh ephemeral token
+    const token = await getEphemeralToken();
+
+    // Initialize AudioContext
+    const audioContext = new AudioContext({ sampleRate: XAI_SAMPLE_RATE });
+    audioContextRef.current = audioContext;
+
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+
+    // Create gain node for volume control
+    const gainNode = audioContext.createGain();
+    gainNode.gain.value = state.volume;
+    gainNodeRef.current = gainNode;
+
+    // Create analyser for visualization
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+    analyserRef.current = analyser;
+
+    // Initialize microphone capture
+    const workletUrl = new URL('../lib/audio/pcmEncoder.worklet.ts', import.meta.url).href;
+    await audioContext.audioWorklet.addModule(workletUrl);
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: 1,
+        sampleRate: { ideal: 48000 },
+        echoCancellation: true,
+        noiseSuppression: true,
+      },
+    });
+    mediaStreamRef.current = stream;
+
+    const source = audioContext.createMediaStreamSource(stream);
+    const workletNode = new AudioWorkletNode(audioContext, 'pcm-encoder-processor');
+    workletNodeRef.current = workletNode;
+
+    workletNode.port.onmessage = (event) => {
+      if (event.data.type === 'audio' && wsRef.current?.readyState === WebSocket.OPEN) {
+        const pcm16Data = event.data.audio as Int16Array;
+        const bytes = int16ToBytes(pcm16Data);
+        const base64Audio = encodeBase64(bytes);
+        wsRef.current.send(
+          JSON.stringify({
+            type: 'input_audio_buffer.append',
+            audio: base64Audio,
+          })
+        );
+      }
+    };
+
+    source.connect(workletNode);
+
+    // Connect to xAI WebSocket
+    const wsUrl = `${XAI_REALTIME_URL}?model=grok-2-public`;
+    debugLog('ws', `Reconnecting to ${wsUrl}`);
+
+    return new Promise<void>((resolve, reject) => {
+      const ws = new WebSocket(wsUrl, ['realtime', `openai-insecure-api-key.${token}`]);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        debugLog('ws', 'WebSocket reconnected');
+      };
+
+      ws.onmessage = (event) => {
+        handleWSMessageRef.current?.(event);
+        // Resolve on session.updated (connection fully established)
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'session.updated') {
+            resolve();
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      };
+
+      ws.onerror = () => {
+        reject(new Error('WebSocket reconnection failed'));
+      };
+
+      ws.onclose = (event) => {
+        debugLog('ws', `WebSocket closed during reconnect: ${event.code}`);
+        if (event.code !== 1000) {
+          reject(new Error('WebSocket closed unexpectedly'));
+        }
+      };
+
+      // Timeout after 30 seconds
+      setTimeout(() => {
+        if (ws.readyState !== WebSocket.OPEN) {
+          ws.close();
+          reject(new Error('Reconnection timeout'));
+        }
+      }, 30000);
+    });
+  }, [state.volume]);
+
+  // Reconnection hook
+  const reconnectionHook = useReconnection(performReconnect, {
+    maxRetries: 5,
+    baseDelay: 1000,
+    maxDelay: 30000,
+    jitterFactor: 0.3,
+  });
 
   /**
    * Play queued audio buffers sequentially
@@ -392,6 +521,11 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
     [playNextInQueue]
   );
 
+  // Keep handleWSMessage ref in sync
+  useEffect(() => {
+    handleWSMessageRef.current = handleWSMessage;
+  }, [handleWSMessage]);
+
   /**
    * Initialize audio worklet for microphone capture
    */
@@ -456,6 +590,9 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
       return;
     }
 
+    // Reset intentional disconnect flag for new connection
+    intentionalDisconnectRef.current = false;
+
     try {
       dispatch({ type: 'SET_STATUS', payload: 'connecting' });
       dispatch({ type: 'SET_ERROR', payload: null });
@@ -516,7 +653,12 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
 
       ws.onclose = (event) => {
         debugLog('ws', `WebSocket closed: ${event.code} ${event.reason}`);
-        if (state.status === 'connected') {
+        // Only trigger reconnection if we were connected and it's not intentional
+        if (state.status === 'connected' && !intentionalDisconnectRef.current) {
+          dispatch({ type: 'SET_STATUS', payload: 'idle' });
+          // Trigger reconnection for abnormal closures
+          reconnectionHook.onDisconnected(event.code);
+        } else if (intentionalDisconnectRef.current) {
           dispatch({ type: 'SET_STATUS', payload: 'idle' });
           onDisconnect?.();
         }
@@ -527,18 +669,33 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
       dispatch({ type: 'SET_ERROR', payload: errorMsg });
       dispatch({ type: 'SET_STATUS', payload: 'error' });
     }
-  }, [state.status, state.volume, handleWSMessage, initializeAudioCapture, onDisconnect]);
+  }, [
+    state.status,
+    state.volume,
+    handleWSMessage,
+    initializeAudioCapture,
+    onDisconnect,
+    reconnectionHook,
+  ]);
 
   /**
    * Disconnect and cleanup all resources
    */
   const disconnect = useCallback(async () => {
     debugLog('disconnect', 'Disconnecting...');
+
+    // Mark as intentional disconnect to prevent auto-reconnect
+    intentionalDisconnectRef.current = true;
+
+    // Cancel any pending reconnection attempts
+    reconnectionHook.cancelReconnect();
+    reconnectionHook.resetReconnection();
+
     dispatch({ type: 'SET_STATUS', payload: 'disconnecting' });
 
-    // Close WebSocket
+    // Close WebSocket with normal closure code
     if (wsRef.current) {
-      wsRef.current.close();
+      wsRef.current.close(1000, 'User disconnected');
       wsRef.current = null;
     }
 
@@ -571,7 +728,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
     dispatch({ type: 'RESET' });
     onDisconnect?.();
     debugLog('disconnect', 'Disconnected');
-  }, [onDisconnect]);
+  }, [onDisconnect, reconnectionHook]);
 
   /**
    * Set volume
@@ -621,6 +778,13 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
     setVolume,
     clearError,
     getAnalyserNode,
+    reconnection: {
+      status: reconnectionHook.status,
+      attempt: reconnectionHook.attempt,
+      countdown: reconnectionHook.countdown,
+      isOnline: reconnectionHook.isOnline,
+    },
+    manualReconnect: reconnectionHook.manualReconnect,
   };
 
   return <XAIVoiceContext.Provider value={value}>{children}</XAIVoiceContext.Provider>;

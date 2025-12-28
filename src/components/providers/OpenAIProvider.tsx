@@ -4,6 +4,7 @@ import { Mic, MicOff, Loader2, Phone, AlertCircle, Wifi, WifiOff, Settings } fro
 import { OpenAIVoiceProvider } from '@/contexts/OpenAIVoiceContext';
 import { useOpenAIVoice } from '@/hooks/useOpenAIVoice';
 import { VoiceSelector } from '@/components/voice/VoiceSelector';
+import { ReconnectionStatus } from '@/components/voice/ReconnectionStatus';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 
@@ -354,10 +355,21 @@ interface OpenAIVoiceStatusProps {
  * Voice status display for OpenAI provider
  */
 export function OpenAIVoiceStatus({ className }: OpenAIVoiceStatusProps) {
-  const { isConnected, isLoading, isSpeaking, error } = useOpenAIVoice();
+  const { isConnected, isLoading, isSpeaking, error, reconnection, manualReconnect } =
+    useOpenAIVoice();
 
   return (
     <div className={cn('space-y-4', className)}>
+      {/* Reconnection Status */}
+      <ReconnectionStatus
+        status={reconnection.status}
+        attempt={reconnection.attempt}
+        maxAttempts={5}
+        countdown={reconnection.countdown}
+        isOnline={reconnection.isOnline}
+        onManualReconnect={manualReconnect}
+      />
+
       {/* Connection Status Bar */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}

@@ -4,7 +4,7 @@
 **Sessions**: 5
 **Estimated Duration**: 3-5 days
 
-**Progress**: 2/5 sessions (40%)
+**Progress**: 3/5 sessions (60%)
 
 ---
 
@@ -20,7 +20,7 @@ Enhance the multi-provider voice agent application with advanced features that i
 | ------- | --------------------------------- | ----------- | ---------- | ---------- |
 | 01      | Voice Selection UI                | Complete    | 22         | 2025-12-28 |
 | 02      | Conversation History & Transcript | Complete    | 22         | 2025-12-28 |
-| 03      | Connection Resilience             | Not Started | ~18        | -          |
+| 03      | Reconnection & Backoff            | Complete    | 25         | 2025-12-28 |
 | 04      | Function Calling Integration      | Not Started | ~25        | -          |
 | 05      | Polish & Validation               | Not Started | ~20        | -          |
 
@@ -45,11 +45,20 @@ Enhance the multi-provider voice agent application with advanced features that i
 - Auto-scroll, copy-to-clipboard, and accessibility (aria-live) support
 - 21/22 tasks completed (manual testing deferred), 20 new tests added
 
+### Session 03: Reconnection & Backoff (2025-12-28)
+
+- Created reusable useReconnection hook with exponential backoff and jitter
+- Integrated reconnection logic into XAIVoiceContext and OpenAIVoiceContext
+- Added ReconnectionStatus component with countdown timer and manual retry
+- Network status detection (online/offline events) for pause/resume
+- Fresh ephemeral token fetch on each reconnection attempt
+- 25/25 tasks completed, 26 new tests added (148 total)
+
 ---
 
 ## Upcoming Sessions
 
-- Session 03: Connection Resilience
+- Session 04: Function Calling Integration
 
 ---
 
