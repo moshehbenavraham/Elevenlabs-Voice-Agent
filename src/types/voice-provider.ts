@@ -12,6 +12,25 @@
 export type ProviderType = 'elevenlabs' | 'xai' | 'openai';
 
 /**
+ * Message role type for conversation messages
+ */
+export type MessageRole = 'user' | 'assistant';
+
+/**
+ * Individual message in a voice conversation
+ */
+export interface VoiceMessage {
+  /** Unique identifier for the message */
+  id: string;
+  /** Who sent the message */
+  role: MessageRole;
+  /** Message text content */
+  content: string;
+  /** Timestamp when message was created */
+  timestamp: number;
+}
+
+/**
  * Connection lifecycle states for voice providers
  */
 export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnecting' | 'error';

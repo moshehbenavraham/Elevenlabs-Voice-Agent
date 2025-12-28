@@ -179,7 +179,7 @@ function parseElevenLabsError(error: unknown): string {
   return 'An unexpected error occurred. Please try again.';
 }
 
-const VoiceContext = createContext<VoiceContextType | null>(null);
+export const VoiceContext = createContext<VoiceContextType | null>(null);
 
 export function VoiceProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(voiceReducer, initialState);

@@ -10,6 +10,11 @@ import { BackgroundEffects } from '@/components/BackgroundEffects';
 import { ConfigurationModal } from '@/components/ConfigurationModal';
 import { ProviderTabs } from '@/components/tabs';
 import {
+  ElevenLabsConversationPanel,
+  XAIConversationPanel,
+  OpenAIConversationPanel,
+} from '@/components/conversation';
+import {
   XAIProvider,
   XAIVoiceButton,
   XAIVoiceStatus,
@@ -443,6 +448,14 @@ export const Index = () => {
                   </motion.div>
 
                   <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.55 }}
+                  >
+                    <ElevenLabsConversationPanel className="w-full h-64" />
+                  </motion.div>
+
+                  <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.6 }}
@@ -552,6 +565,14 @@ export const Index = () => {
                         transition={{ delay: 0.5 }}
                       >
                         <XAIVoiceStatus />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.55 }}
+                      >
+                        <XAIConversationPanel className="w-full h-64" />
                       </motion.div>
 
                       <motion.div
@@ -668,6 +689,14 @@ export const Index = () => {
                         transition={{ delay: 0.5 }}
                       >
                         <OpenAIVoiceStatus />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.55 }}
+                      >
+                        <OpenAIConversationPanel className="w-full h-64" />
                       </motion.div>
 
                       <motion.div

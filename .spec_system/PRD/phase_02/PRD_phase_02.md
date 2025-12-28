@@ -4,7 +4,7 @@
 **Sessions**: 5
 **Estimated Duration**: 3-5 days
 
-**Progress**: 1/5 sessions (20%)
+**Progress**: 2/5 sessions (40%)
 
 ---
 
@@ -16,30 +16,40 @@ Enhance the multi-provider voice agent application with advanced features that i
 
 ## Progress Tracker
 
-| Session | Name                             | Status      | Est. Tasks | Validated  |
-| ------- | -------------------------------- | ----------- | ---------- | ---------- |
-| 01      | Voice Selection UI               | Complete    | 22         | 2025-12-28 |
-| 02      | Conversation History & Transcript| Not Started | ~22        | -          |
-| 03      | Connection Resilience            | Not Started | ~18        | -          |
-| 04      | Function Calling Integration     | Not Started | ~25        | -          |
-| 05      | Polish & Validation              | Not Started | ~20        | -          |
+| Session | Name                              | Status      | Est. Tasks | Validated  |
+| ------- | --------------------------------- | ----------- | ---------- | ---------- |
+| 01      | Voice Selection UI                | Complete    | 22         | 2025-12-28 |
+| 02      | Conversation History & Transcript | Complete    | 22         | 2025-12-28 |
+| 03      | Connection Resilience             | Not Started | ~18        | -          |
+| 04      | Function Calling Integration      | Not Started | ~25        | -          |
+| 05      | Polish & Validation               | Not Started | ~20        | -          |
 
 ---
 
 ## Completed Sessions
 
 ### Session 01: Voice Selection UI (2025-12-28)
+
 - Created reusable VoiceSelector component with Radix UI Select
 - Added voice state management to OpenAI and xAI contexts
 - Implemented localStorage persistence for voice selections
 - Integrated voice selection into provider tabs
 - 22/22 tasks completed, 29 new tests added
 
+### Session 02: Conversation History & Transcript (2025-12-28)
+
+- Created ConversationPanel and MessageBubble components with glassmorphism styling
+- Added provider-specific conversation panels for ElevenLabs, xAI, and OpenAI
+- Implemented real-time transcript capture from WebSocket events
+- Added useActiveProviderMessages hook for unified message access
+- Auto-scroll, copy-to-clipboard, and accessibility (aria-live) support
+- 21/22 tasks completed (manual testing deferred), 20 new tests added
+
 ---
 
 ## Upcoming Sessions
 
-- Session 02: Conversation History & Transcript
+- Session 03: Connection Resilience
 
 ---
 

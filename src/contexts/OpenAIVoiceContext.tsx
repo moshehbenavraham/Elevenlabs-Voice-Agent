@@ -1,4 +1,12 @@
-import { createContext, useReducer, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useReducer,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import { trackError } from '@/lib/errorTracking';
 import {
   encodeBase64,
@@ -8,6 +16,7 @@ import {
   XAI_SAMPLE_RATE,
 } from '@/lib/audio/audioUtils';
 import { getSavedVoice, saveVoice } from '@/lib/voiceConfig';
+import type { VoiceMessage } from '@/types';
 
 const DEBUG = import.meta.env.DEV;
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
@@ -41,6 +50,7 @@ interface OpenAIVoiceState {
   isListening: boolean;
   error: string | null;
   volume: number;
+  messages: VoiceMessage[];
 }
 
 export interface OpenAIVoiceContextValue extends OpenAIVoiceState {
@@ -61,6 +71,7 @@ const initialState: OpenAIVoiceState = {
   isListening: false,
   error: null,
   volume: 0.7,
+  messages: [],
 };
 
 type OpenAIVoiceAction =
@@ -69,6 +80,8 @@ type OpenAIVoiceAction =
   | { type: 'SET_LISTENING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_VOLUME'; payload: number }
+  | { type: 'ADD_MESSAGE'; payload: VoiceMessage }
+  | { type: 'UPDATE_LAST_MESSAGE'; payload: string }
   | { type: 'RESET' };
 
 function openAIVoiceReducer(state: OpenAIVoiceState, action: OpenAIVoiceAction): OpenAIVoiceState {
@@ -88,6 +101,18 @@ function openAIVoiceReducer(state: OpenAIVoiceState, action: OpenAIVoiceAction):
       return { ...state, error: action.payload, status: action.payload ? 'error' : state.status };
     case 'SET_VOLUME':
       return { ...state, volume: action.payload };
+    case 'ADD_MESSAGE':
+      return { ...state, messages: [...state.messages, action.payload] };
+    case 'UPDATE_LAST_MESSAGE': {
+      if (state.messages.length === 0) return state;
+      const updatedMessages = [...state.messages];
+      const lastMessage = updatedMessages[updatedMessages.length - 1];
+      updatedMessages[updatedMessages.length - 1] = {
+        ...lastMessage,
+        content: lastMessage.content + action.payload,
+      };
+      return { ...state, messages: updatedMessages };
+    }
     case 'RESET':
       return { ...initialState, volume: state.volume };
     default:
@@ -267,6 +292,9 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
                     instructions: OPENAI_INSTRUCTIONS,
                     input_audio_format: 'pcm16',
                     output_audio_format: 'pcm16',
+                    input_audio_transcription: {
+                      model: 'whisper-1',
+                    },
                     turn_detection: {
                       type: 'server_vad',
                       threshold: 0.5,
@@ -292,6 +320,44 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
 
           case 'input_audio_buffer.speech_stopped':
             debugLog('audio', 'User stopped speaking');
+            break;
+
+          case 'conversation.item.input_audio_transcription.completed':
+            // User's speech has been transcribed
+            if (data.transcript) {
+              debugLog('transcript', 'User transcript received', data.transcript);
+              dispatch({
+                type: 'ADD_MESSAGE',
+                payload: {
+                  id: `openai-user-${data.item_id || Date.now()}`,
+                  role: 'user',
+                  content: data.transcript,
+                  timestamp: Date.now(),
+                },
+              });
+            }
+            break;
+
+          case 'response.audio_transcript.delta':
+            // Streaming assistant transcript - append to current message
+            if (data.delta) {
+              debugLog('transcript', 'Assistant transcript delta', data.delta);
+              dispatch({ type: 'UPDATE_LAST_MESSAGE', payload: data.delta });
+            }
+            break;
+
+          case 'response.created':
+            // New response starting - create placeholder message for streaming
+            debugLog('response', 'New response created', data.response?.id);
+            dispatch({
+              type: 'ADD_MESSAGE',
+              payload: {
+                id: `openai-assistant-${data.response?.id || Date.now()}`,
+                role: 'assistant',
+                content: '',
+                timestamp: Date.now(),
+              },
+            });
             break;
 
           case 'response.audio.delta':
