@@ -1,10 +1,48 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Loader2, Phone, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { Mic, MicOff, Loader2, Phone, AlertCircle, Wifi, WifiOff, Settings } from 'lucide-react';
 import { XAIVoiceProvider } from '@/contexts/XAIVoiceContext';
 import { useXAIVoice } from '@/hooks/useXAIVoice';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
+
+/**
+ * Check if xAI backend is configured
+ * Returns true if the server has xAI API key configured
+ */
+export async function checkXAIConfiguration(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/xai/health`, {
+      method: 'GET',
+      credentials: 'include',
+    });
+    if (response.ok) {
+      const data = await response.json();
+      return data.configured === true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Hook to check xAI configuration status
+ */
+export function useXAIConfigured(): { isConfigured: boolean | null; isChecking: boolean } {
+  const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    checkXAIConfiguration()
+      .then(setIsConfigured)
+      .finally(() => setIsChecking(false));
+  }, []);
+
+  return { isConfigured, isChecking };
+}
 
 interface XAIProviderProps {
   children?: ReactNode;
@@ -15,11 +53,7 @@ interface XAIProviderProps {
  * XAI Voice Provider wrapper that provides the xAI context
  */
 export function XAIProvider({ children, onDisconnect }: XAIProviderProps) {
-  return (
-    <XAIVoiceProvider onDisconnect={onDisconnect}>
-      {children}
-    </XAIVoiceProvider>
-  );
+  return <XAIVoiceProvider onDisconnect={onDisconnect}>{children}</XAIVoiceProvider>;
 }
 
 interface XAIVoiceButtonProps {
@@ -627,9 +661,7 @@ export function XAIVoiceVisualizer({
         style={!responsive ? { width, height } : undefined}
         role="img"
         aria-label={
-          isConnected
-            ? 'Real-time xAI audio visualization'
-            : 'xAI audio visualization placeholder'
+          isConnected ? 'Real-time xAI audio visualization' : 'xAI audio visualization placeholder'
         }
       />
 
@@ -656,6 +688,75 @@ export function XAIVoiceVisualizer({
               : 'inset 0 0 20px hsla(200, 80%, 50%, 0.05)',
           }}
         />
+      )}
+    </motion.div>
+  );
+}
+
+interface XAIEmptyStateProps {
+  className?: string;
+  onOpenSettings?: () => void;
+}
+
+/**
+ * Empty state component for unconfigured xAI provider
+ * Displays when XAI_API_KEY is not set on the server
+ */
+export function XAIEmptyState({ className, onOpenSettings }: XAIEmptyStateProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className={cn(
+        'flex flex-col items-center justify-center p-8 rounded-xl',
+        'bg-zinc-900/50 backdrop-blur-lg border border-zinc-800/50',
+        'text-center min-h-[300px]',
+        className
+      )}
+    >
+      {/* Icon */}
+      <div
+        className={cn(
+          'flex items-center justify-center w-16 h-16 rounded-full mb-6',
+          'bg-sky-500/10 border border-sky-500/20'
+        )}
+      >
+        <AlertCircle className="w-8 h-8 text-sky-400" />
+      </div>
+
+      {/* Title */}
+      <h3 className="font-display text-xl text-zinc-100 mb-2">xAI Setup Required</h3>
+
+      {/* Description */}
+      <p className="text-zinc-400 mb-4">xAI Grok voice is not configured</p>
+
+      {/* Missing config */}
+      <div className="px-4 py-2 rounded-lg bg-zinc-800/50 border border-zinc-700/50 mb-4">
+        <code className="text-sm text-sky-400/80 font-mono">XAI_API_KEY</code>
+      </div>
+
+      {/* Instructions */}
+      <p className="text-zinc-500 text-sm max-w-md mb-6">
+        Add your xAI API key to the server environment variables to enable Grok voice conversations.
+      </p>
+
+      {/* Settings button */}
+      {onOpenSettings && (
+        <button
+          onClick={onOpenSettings}
+          className={cn(
+            'flex items-center gap-2 px-6 py-3 rounded-lg',
+            'bg-sky-500/10 border border-sky-500/30',
+            'text-sky-400 hover:text-sky-300 hover:bg-sky-500/20',
+            'transition-all duration-200',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/50'
+          )}
+        >
+          <Settings className="w-4 h-4" />
+          <span className="text-sm font-medium">Open Settings</span>
+        </button>
       )}
     </motion.div>
   );

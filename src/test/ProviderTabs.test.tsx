@@ -57,7 +57,9 @@ describe('ProviderTabs', () => {
         </TestWrapper>
       );
 
-      expect(screen.getByRole('tablist', { name: /voice provider selection/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('tablist', { name: /voice provider selection/i })
+      ).toBeInTheDocument();
     });
 
     it('shows ElevenLabs as selected by default', () => {
@@ -162,6 +164,110 @@ describe('ProviderTabs', () => {
 
       // One of the tabs should be focused
       expect(tabList.contains(document.activeElement)).toBe(true);
+    });
+
+    it('arrow right moves to next available tab', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <TestWrapper>
+          <ProviderTabs />
+        </TestWrapper>
+      );
+
+      // Focus the first tab
+      const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs/i });
+      elevenlabsTab.focus();
+
+      // Press arrow right to move to xAI (skipping disabled OpenAI happens via Radix)
+      await user.keyboard('{ArrowRight}');
+
+      // xAI tab should now be focused (it's enabled)
+      const xaiTab = screen.getByRole('tab', { name: /xai/i });
+      expect(xaiTab).toHaveFocus();
+    });
+
+    it('arrow left moves to previous tab', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <TestWrapper>
+          <ProviderTabs />
+        </TestWrapper>
+      );
+
+      // Focus xAI tab first
+      const xaiTab = screen.getByRole('tab', { name: /xai/i });
+      xaiTab.focus();
+
+      // Press arrow left to move to ElevenLabs
+      await user.keyboard('{ArrowLeft}');
+
+      // ElevenLabs should be focused
+      const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs/i });
+      expect(elevenlabsTab).toHaveFocus();
+    });
+
+    it('enter key activates focused tab', async () => {
+      const user = userEvent.setup();
+      const onProviderChange = vi.fn();
+
+      render(
+        <TestWrapper>
+          <ProviderTabs onProviderChange={onProviderChange} />
+        </TestWrapper>
+      );
+
+      // Focus xAI tab
+      const xaiTab = screen.getByRole('tab', { name: /xai/i });
+      xaiTab.focus();
+
+      // Press enter to activate
+      await user.keyboard('{Enter}');
+
+      expect(onProviderChange).toHaveBeenCalledWith('xai');
+    });
+
+    it('space key activates focused tab', async () => {
+      const user = userEvent.setup();
+      const onProviderChange = vi.fn();
+
+      render(
+        <TestWrapper>
+          <ProviderTabs onProviderChange={onProviderChange} />
+        </TestWrapper>
+      );
+
+      // Focus xAI tab
+      const xaiTab = screen.getByRole('tab', { name: /xai/i });
+      xaiTab.focus();
+
+      // Press space to activate
+      await user.keyboard(' ');
+
+      expect(onProviderChange).toHaveBeenCalledWith('xai');
+    });
+
+    it('tab key moves focus out of tablist', async () => {
+      const user = userEvent.setup();
+
+      render(
+        <TestWrapper>
+          <ProviderTabs>
+            <button data-testid="content-button">Content Button</button>
+          </ProviderTabs>
+        </TestWrapper>
+      );
+
+      // Focus a tab
+      const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs/i });
+      elevenlabsTab.focus();
+
+      // Press Tab to move focus out
+      await user.tab();
+
+      // Focus should have moved to content (or out of tablist)
+      expect(elevenlabsTab).not.toHaveFocus();
     });
   });
 

@@ -1,84 +1,126 @@
 # ElevenLabs Voice Agent
 
-> **Project assembled by [AI with Apex](https://AIwithApex.com)**  
-> 🚀 **[Remix this project on Lovable](https://elevenlabs-voice-agent.lovable.app/)**  
-> 💻 **Developed on [Lovable.dev](https://lovable.dev/)**
+> **Project assembled by [AI with Apex](https://AIwithApex.com)**
+> [NEW] **[Remix this project on Lovable](https://elevenlabs-voice-agent.lovable.app/)**
+> [DEV] **Developed on [Lovable.dev](https://lovable.dev/)**
 
-## 🎥 Video Tutorial Series
+## [VIDEO] Video Tutorial Series
 
 Learn how to create and configure ElevenLabs agents for this application:
 
-| Tutorial                                                                                    | Description                                                        |
-| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| 📚 [Building Your First ElevenLabs Agent](https://youtu.be/oEkyNSWRqxc?si=30fMIpIhm0hgbzfz) | Complete walkthrough of creating your base conversational AI agent |
-| 🗂️ [Setting Up Knowledge Base (RAG)](https://youtu.be/S93uZ9Cuz4w?si=WxEtWKrEzx_e5XBL)      | Quick 60-second guide to prepare your agent's knowledge base       |
-| 🛠️ [Creating Agent Tools & Functions](https://youtu.be/jHTMYmptHI0?si=1O0kVsWjTDr6bbVC)     | Build your first agent tool for contact detail collection          |
-| 📝 [Handling Call Transcripts](https://youtu.be/--j6hfnCc-w?si=Hz12v8ukPi4y2pU4)            | Process and manage post-call transcripts effectively               |
-| ✨ [Advanced Features & Configuration](https://youtu.be/55UJWHi_ZMk?si=p58wnk-bmEkgDg2_)    | Explore new features and advanced usage patterns                   |
+| Tutorial                                                                                        | Description                                                        |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| [DOCS] [Building Your First ElevenLabs Agent](https://youtu.be/oEkyNSWRqxc?si=30fMIpIhm0hgbzfz) | Complete walkthrough of creating your base conversational AI agent |
+| [FILES] [Setting Up Knowledge Base (RAG)](https://youtu.be/S93uZ9Cuz4w?si=WxEtWKrEzx_e5XBL)     | Quick 60-second guide to prepare your agent's knowledge base       |
+| [TOOLS] [Creating Agent Tools & Functions](https://youtu.be/jHTMYmptHI0?si=1O0kVsWjTDr6bbVC)    | Build your first agent tool for contact detail collection          |
+| [NOTES] [Handling Call Transcripts](https://youtu.be/--j6hfnCc-w?si=Hz12v8ukPi4y2pU4)           | Process and manage post-call transcripts effectively               |
+| [NEW] [Advanced Features & Configuration](https://youtu.be/55UJWHi_ZMk?si=p58wnk-bmEkgDg2_)     | Explore new features and advanced usage patterns                   |
 
 ---
 
 A sophisticated voice AI web application built with React, TypeScript, and the ElevenLabs Conversational AI SDK. Experience real-time voice conversations with advanced AI featuring beautiful audio visualizations and a modern glassmorphism UI.
 
-## ✨ Features
+## [FEATURES] Features
 
 - **Real-time Voice Conversation**: Talk naturally with advanced AI using ElevenLabs technology
+- **Multi-Provider Support**: Switch between ElevenLabs and xAI Grok voice providers with smooth tab animations
 - **Audio Visualization**: Beautiful 60fps audio visualizer with real-time frequency analysis
 - **Glassmorphism Design**: Modern, premium UI with dark/light theme toggle
 - **Mobile-First**: Responsive design optimized for all devices (375px to 1920px)
 - **Real-time Transcript**: Live conversation transcript with message history
 - **Voice Intelligence**: Powered by ElevenLabs for the most natural voice interactions
+- **Accessibility**: Full keyboard navigation, ARIA support, and respects prefers-reduced-motion
 
-## 📚 Documentation
+## [MIC] Multi-Provider Voice System
+
+This application supports multiple voice AI providers through a tabbed interface:
+
+### Supported Providers
+
+| Provider       | Status      | Description                                                 |
+| -------------- | ----------- | ----------------------------------------------------------- |
+| **ElevenLabs** | Available   | High-quality conversational AI with natural voice synthesis |
+| **xAI Grok**   | Available   | Grok-powered voice assistant with realtime API              |
+| **OpenAI**     | Coming Soon | OpenAI voice capabilities (in development)                  |
+
+### Configuration
+
+#### ElevenLabs Setup
+
+```bash
+# Add to your .env file
+VITE_ELEVENLABS_AGENT_ID=your_agent_id_here
+```
+
+#### xAI Grok Setup
+
+```bash
+# Server-side environment (xAI requires backend authentication)
+XAI_API_KEY=your_xai_api_key_here
+
+# Client-side (enable xAI in frontend)
+VITE_XAI_ENABLED=true
+VITE_API_BASE_URL=http://localhost:3001
+```
+
+### Provider Features
+
+- **Smooth Tab Transitions**: Framer Motion animations for seamless provider switching
+- **Empty State Guidance**: Clear setup instructions when providers aren't configured
+- **Keyboard Navigation**: Arrow keys to navigate tabs, Enter/Space to select
+- **Mobile Responsive**: Horizontal scrolling tabs on smaller screens
+- **Touch Optimized**: 44px minimum touch targets for accessibility
+
+## [DOCS] Documentation
 
 This project includes comprehensive documentation to help you get started, contribute, and deploy successfully:
 
-### 🔧 **Getting Started**
+### [SETUP] **Getting Started**
 
 - **[Quick Start Guide](#-quick-start)** - Get up and running in minutes
 - **[Installation & Configuration](#configuration)** - Detailed setup instructions
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment for Vercel, Netlify, AWS, Firebase
 
-### 🏗️ **Technical Documentation**
+### [ARCH] **Technical Documentation**
 
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - System design, components, and data flow
 - **[API Integration Guide](docs/API_INTEGRATION.md)** - ElevenLabs React SDK integration and best practices
 - **[Voice Features Documentation](docs/VOICE_FEATURES.md)** - Voice orb, audio visualization, and voice interactions
 - **[Mobile Optimization Guide](docs/MOBILE_OPTIMIZATION.md)** - Touch interactions, PWA features, and mobile performance
 
-### 🤖 **AI-Assistant Documentation**
+### [AI] **AI-Assistant Documentation**
 
 - **[Claude Code Integration Guide](CLAUDE.md)** - Development commands, architecture overview, and guidelines for Claude Code
 
-### 🤝 **Community & Support**
+### [CONTRIB] **Community & Support**
 
 - **[Contributing Guidelines](CONTRIBUTING.md)** - Development setup, code style, and contribution process
 - **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community standards and guidelines
 - **[Support Guide](SUPPORT.md)** - Getting help, troubleshooting, and community resources
 - **[Security Policy](SECURITY.md)** - Vulnerability reporting and security best practices
 
-### 🔍 **Help & Troubleshooting**
+### [HELP] **Help & Troubleshooting**
 
 - **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues, solutions, and diagnostic tools
 - **[Changelog](CHANGELOG.md)** - Version history and release notes
 - **[Issue Templates](.github/ISSUE_TEMPLATE/)** - Bug reports, feature requests, and voice integration issues
 - **[License](LICENSE)** - MIT License terms and conditions
 
-### 📋 **Quick Links**
+### [LINKS] **Quick Links**
 
-| Type | Documentation                                   | Description                    |
-| ---- | ----------------------------------------------- | ------------------------------ |
-| 🚀   | **[Deployment](docs/DEPLOYMENT.md)**            | Production deployment guides   |
-| 🏗️   | **[Architecture](docs/ARCHITECTURE.md)**        | Technical system design        |
-| 🎤   | **[Voice Features](docs/VOICE_FEATURES.md)**    | Voice AI functionality         |
-| 📱   | **[Mobile Guide](docs/MOBILE_OPTIMIZATION.md)** | Mobile optimization            |
-| 🔌   | **[API Integration](docs/API_INTEGRATION.md)**  | ElevenLabs React SDK guide     |
-| 🆘   | **[Troubleshooting](docs/TROUBLESHOOTING.md)**  | Problem resolution             |
-| 🤖   | **[Claude Integration](CLAUDE.md)**             | AI assistant development guide |
-| 🤝   | **[Contributing](CONTRIBUTING.md)**             | Development guidelines         |
-| 🔒   | **[Security](SECURITY.md)**                     | Security policies              |
+| Type      | Documentation                                   | Description                    |
+| --------- | ----------------------------------------------- | ------------------------------ |
+| [DEPLOY]  | **[Deployment](docs/DEPLOYMENT.md)**            | Production deployment guides   |
+| [ARCH]    | **[Architecture](docs/ARCHITECTURE.md)**        | Technical system design        |
+| [VOICE]   | **[Voice Features](docs/VOICE_FEATURES.md)**    | Voice AI functionality         |
+| [MOBILE]  | **[Mobile Guide](docs/MOBILE_OPTIMIZATION.md)** | Mobile optimization            |
+| [API]     | **[API Integration](docs/API_INTEGRATION.md)**  | ElevenLabs React SDK guide     |
+| [HELP]    | **[Troubleshooting](docs/TROUBLESHOOTING.md)**  | Problem resolution             |
+| [AI]      | **[Claude Integration](CLAUDE.md)**             | AI assistant development guide |
+| [CONTRIB] | **[Contributing](CONTRIBUTING.md)**             | Development guidelines         |
+| [SECURE]  | **[Security](SECURITY.md)**                     | Security policies              |
 
-## 🚀 Quick Start
+## [START] Quick Start
 
 ### Prerequisites
 
@@ -133,7 +175,7 @@ npm run dev
    - For production use, implement proper API key management on your backend
    - The app uses the ElevenLabs React SDK for real-time conversation handling
 
-## 🛠 Technologies
+## [TOOLS] Technologies
 
 - **Frontend**: React 18, TypeScript, Vite
 - **Build Tool**: Vite with SWC for fast compilation
@@ -148,16 +190,16 @@ npm run dev
 - **Notifications**: Sonner for toast notifications
 - **Package Manager**: Bun (with npm fallback support)
 
-## 📱 Mobile Support
+## [MOBILE] Mobile Support
 
 The app is built mobile-first with:
 
 - Touch-optimized controls (44px+ tap targets)
-- Responsive breakpoints: 375px → 768px → 1024px+
+- Responsive breakpoints: 375px -> 768px -> 1024px+
 - Thumb-reachable CTAs in bottom 20% of viewport
 - Optimized for both portrait and landscape orientations
 
-## 🎨 Design System
+## [DESIGN] Design System
 
 ### Color Palette
 
@@ -178,7 +220,7 @@ The app is built mobile-first with:
 - **Easing**: `ease-out` for natural motion
 - **Respect**: `prefers-reduced-motion` for accessibility
 
-## 🧪 Testing
+## [TEST] Testing
 
 **Note**: Testing infrastructure is not currently set up in this project. To add testing capabilities:
 
@@ -197,7 +239,7 @@ bun add -D @testing-library/react @testing-library/jest-dom @testing-library/use
 - **Visual Tests**: Theme switching, responsive behavior, animation states
 - **Audio Tests**: Microphone permissions, audio visualization, conversation flow
 
-## 🚀 Deployment
+## [DEPLOY] Deployment
 
 ### Build for Production
 
@@ -245,21 +287,21 @@ vercel --prod
 - **Error Handling**: Add proper error boundaries and fallbacks
 - **Performance**: Enable gzip compression and CDN for static assets
 
-## 📊 Performance
+## [PERF] Performance
 
 - **Audio Processing**: 60fps canvas animation with WebAudio API
 - **Bundle Size**: Optimized with Vite tree-shaking
 - **Loading**: Progressive enhancement with loading states
 - **Accessibility**: Full ARIA support and keyboard navigation
 
-## 🔒 Privacy & Security
+## [SECURE] Privacy & Security
 
 - **Audio Data**: Processed locally and streamed securely to ElevenLabs
 - **No Storage**: Conversations are not stored locally
 - **Permissions**: Explicit microphone permission requests
 - **HTTPS**: Required for microphone access in production
 
-## 🤝 Contributing
+## [CONTRIB] Contributing
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feat/amazing-feature`
@@ -277,39 +319,39 @@ vercel --prod
 - `test:` Adding tests
 - `chore:` Maintenance tasks
 
-## 📖 Architecture
+## [ARCH] Architecture
 
 ```
 src/
-├── components/          # Reusable UI components
-│   ├── VoiceOrb.tsx    # Main voice interaction component
-│   ├── AudioVisualizer.tsx # Real-time audio visualization
-│   ├── ThemeToggle.tsx # Dark/light theme switcher
-│   ├── HeroSection.tsx # Landing page hero
-│   ├── BackgroundEffects.tsx # Dynamic background animations
-│   ├── VoiceEnvironment.tsx # Voice environment visualization
-│   ├── ParticleSystem.tsx # Particle effects
-│   ├── AnimatedText.tsx # Text animations
-│   ├── ThemeCustomizer.tsx # Theme customization
-│   └── ui/             # shadcn/ui components
-│       ├── button.tsx  # Button component
-│       ├── card.tsx    # Card component
-│       ├── dialog.tsx  # Dialog component
-│       └── ... (50+ UI components)
-├── contexts/           # React contexts
-│   └── ThemeContext.tsx # Theme management
-├── hooks/              # Custom React hooks
-│   ├── useElevenLabsConversation.ts # ElevenLabs integration
-│   ├── useVoiceAnimations.ts # Voice animation logic
-│   ├── usePerformanceOptimization.ts # Performance hooks
-│   ├── useMobileOptimization.ts # Mobile-specific optimizations
-│   ├── useAccessibility.ts # Accessibility features
-│   └── use-toast.ts    # Toast notifications
-├── pages/              # Page components
-│   ├── Index.tsx       # Main application page
-│   └── NotFound.tsx    # 404 page
-└── lib/                # Utility functions
-    └── utils.ts        # Helper functions and utilities
+|-- components/          # Reusable UI components
+|   |-- VoiceOrb.tsx    # Main voice interaction component
+|   |-- AudioVisualizer.tsx # Real-time audio visualization
+|   |-- ThemeToggle.tsx # Dark/light theme switcher
+|   |-- HeroSection.tsx # Landing page hero
+|   |-- BackgroundEffects.tsx # Dynamic background animations
+|   |-- VoiceEnvironment.tsx # Voice environment visualization
+|   |-- ParticleSystem.tsx # Particle effects
+|   |-- AnimatedText.tsx # Text animations
+|   |-- ThemeCustomizer.tsx # Theme customization
+|   \-- ui/             # shadcn/ui components
+|       |-- button.tsx  # Button component
+|       |-- card.tsx    # Card component
+|       |-- dialog.tsx  # Dialog component
+|       \-- ... (50+ UI components)
+|-- contexts/           # React contexts
+|   \-- ThemeContext.tsx # Theme management
+|-- hooks/              # Custom React hooks
+|   |-- useElevenLabsConversation.ts # ElevenLabs integration
+|   |-- useVoiceAnimations.ts # Voice animation logic
+|   |-- usePerformanceOptimization.ts # Performance hooks
+|   |-- useMobileOptimization.ts # Mobile-specific optimizations
+|   |-- useAccessibility.ts # Accessibility features
+|   \-- use-toast.ts    # Toast notifications
+|-- pages/              # Page components
+|   |-- Index.tsx       # Main application page
+|   \-- NotFound.tsx    # 404 page
+\-- lib/                # Utility functions
+    \-- utils.ts        # Helper functions and utilities
 ```
 
 ### Key Components
@@ -335,14 +377,14 @@ src/
 - Dynamic particle effects
 - Performance-optimized rendering
 
-## 🐛 Known Issues & Browser Compatibility
+## [ISSUES] Known Issues & Browser Compatibility
 
 ### Browser Compatibility
 
-- **Chrome/Edge**: Full feature support ✅
-- **Firefox**: Full support, some animation optimizations may vary ✅
-- **Safari**: WebAudio API requires user gesture for initialization ⚠️
-- **Mobile Browsers**: Optimized for mobile, background tab throttling may affect audio ⚠️
+- **Chrome/Edge**: Full feature support [x]
+- **Firefox**: Full support, some animation optimizations may vary [x]
+- **Safari**: WebAudio API requires user gesture for initialization [!]
+- **Mobile Browsers**: Optimized for mobile, background tab throttling may affect audio [!]
 
 ### Known Issues
 
@@ -374,7 +416,7 @@ src/
 - Disable particle effects on lower-end devices
 - Check for browser-specific optimizations
 
-## 🔧 Development Setup
+## [SETUP] Development Setup
 
 ### Prerequisites
 
@@ -407,11 +449,11 @@ bun run lint
 4. Start development server with `bun dev`
 5. Open `http://localhost:8082` in your browser
 
-## 📄 License
+## [LICENSE] License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## [THANKS] Acknowledgments
 
 - [ElevenLabs](https://elevenlabs.io) for conversational AI technology
 - [Radix UI](https://radix-ui.com) for accessible UI primitives
@@ -422,4 +464,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**⚠️ Important**: This is a demo implementation. For production use, implement proper API key management and server-side authentication with ElevenLabs.
+**[!] Important**: This is a demo implementation. For production use, implement proper API key management and server-side authentication with ElevenLabs.
