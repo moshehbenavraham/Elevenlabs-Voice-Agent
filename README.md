@@ -22,14 +22,23 @@ A sophisticated voice AI web application built with React, TypeScript, and the E
 
 ## [FEATURES] Features
 
+### Core Features
+
 - **Real-time Voice Conversation**: Talk naturally with advanced AI using ElevenLabs technology
-- **Multi-Provider Support**: Switch between ElevenLabs and xAI Grok voice providers with smooth tab animations
+- **Multi-Provider Support**: Switch between ElevenLabs, xAI Grok, and OpenAI voice providers with smooth tab animations
 - **Audio Visualization**: Beautiful 60fps audio visualizer with real-time frequency analysis
 - **Glassmorphism Design**: Modern, premium UI with dark/light theme toggle
 - **Mobile-First**: Responsive design optimized for all devices (375px to 1920px)
-- **Real-time Transcript**: Live conversation transcript with message history
-- **Voice Intelligence**: Powered by ElevenLabs for the most natural voice interactions
 - **Accessibility**: Full keyboard navigation, ARIA support, and respects prefers-reduced-motion
+
+### Phase 02 Features (Advanced)
+
+- **Voice Selection UI**: Choose from multiple voices per provider (8 OpenAI voices, 5 xAI voices)
+- **Real-time Transcript**: Live conversation transcript with user/AI message differentiation and auto-scroll
+- **Automatic Reconnection**: WebSocket reconnection with exponential backoff (1s, 2s, 4s, 8s, max 30s)
+- **Function Calling**: AI can execute tools like weather lookup, time queries, and calculations
+- **Connection Status**: Visual indicators for connecting, connected, reconnecting states
+- **Voice Persistence**: Selected voice saved to localStorage across sessions
 
 ## [MIC] Multi-Provider Voice System
 
@@ -250,7 +259,11 @@ npm run test:ui
 
 ### Test Coverage
 
-- **75+ tests** covering components, contexts, and utilities
+- **174+ tests** covering components, contexts, hooks, and utilities
+- **Voice configuration tests** - Provider voice selection, persistence
+- **Reconnection tests** - Backoff logic, retry limits, connection recovery
+- **Conversation tests** - Message bubbles, transcript panel, auto-scroll
+- **Function calling tests** - Tool definitions, execution, result handling
 - **ProviderContext tests** - Provider selection, localStorage persistence
 - **ProviderTabs tests** - Tab rendering, keyboard navigation, accessibility
 - **Audio utilities tests** - PCM encoding/decoding, base64 conversion
@@ -310,6 +323,48 @@ vercel --prod
 - **Error Handling**: Add proper error boundaries and fallbacks
 - **Performance**: Enable gzip compression and CDN for static assets
 
+### Production Deployment Checklist
+
+1. **Security**
+   - Configure environment variables on your hosting platform (never commit `.env`)
+   - Use server-side API key proxy for xAI and OpenAI (ephemeral token pattern)
+   - Enable HTTPS with valid SSL certificate
+   - Set appropriate CORS origins in backend
+
+2. **Backend Server**
+   - Deploy the Express backend (`server/` directory) separately or as serverless functions
+   - Configure `CORS_ORIGIN` to match your frontend URL
+   - Ensure API keys are set in server environment variables
+
+3. **Environment Variables for Production**
+
+   ```bash
+   # Frontend (build-time)
+   VITE_ELEVENLABS_AGENT_ID=your_agent_id
+   VITE_API_BASE_URL=https://your-backend-api.com
+   VITE_ELEVENLABS_ENABLED=true
+   VITE_XAI_ENABLED=true
+   VITE_OPENAI_ENABLED=true
+
+   # Backend (runtime)
+   ELEVENLABS_API_KEY=sk_xxx
+   XAI_API_KEY=xai-xxx
+   OPENAI_API_KEY=sk-xxx
+   CORS_ORIGIN=https://your-frontend.com
+   ```
+
+4. **Browser Compatibility**
+   - Chrome/Edge: Full support
+   - Firefox: Full support
+   - Safari: Requires user gesture for AudioContext (handled automatically)
+   - Mobile: Works on iOS Safari 15+ and Chrome for Android
+
+5. **Reconnection Behavior**
+   - Automatic reconnection on network interruption
+   - Exponential backoff: 1s, 2s, 4s, 8s, up to 30s max
+   - Maximum 10 retry attempts before giving up
+   - User can manually reconnect after max retries
+
 ## [PERF] Performance
 
 - **Audio Processing**: 60fps canvas animation with WebAudio API
@@ -362,19 +417,25 @@ src/
 |       |-- dialog.tsx  # Dialog component
 |       \-- ... (50+ UI components)
 |-- contexts/           # React contexts
-|   \-- ThemeContext.tsx # Theme management
+|   |-- ThemeContext.tsx # Theme management
+|   |-- VoiceContext.tsx # ElevenLabs voice state
+|   |-- XAIVoiceContext.tsx # xAI voice state with reconnection
+|   \-- OpenAIVoiceContext.tsx # OpenAI voice state with reconnection
 |-- hooks/              # Custom React hooks
 |   |-- useElevenLabsConversation.ts # ElevenLabs integration
+|   |-- useReconnection.ts # WebSocket reconnection with backoff
 |   |-- useVoiceAnimations.ts # Voice animation logic
 |   |-- usePerformanceOptimization.ts # Performance hooks
 |   |-- useMobileOptimization.ts # Mobile-specific optimizations
 |   |-- useAccessibility.ts # Accessibility features
 |   \-- use-toast.ts    # Toast notifications
-|-- pages/              # Page components
-|   |-- Index.tsx       # Main application page
-|   \-- NotFound.tsx    # 404 page
-\-- lib/                # Utility functions
-    \-- utils.ts        # Helper functions and utilities
+|-- lib/                # Utility functions
+|   |-- utils.ts        # Helper functions
+|   |-- audio/          # Audio processing utilities
+|   \-- tools/          # Function calling tool definitions
+\-- pages/              # Page components
+    |-- Index.tsx       # Main application page
+    \-- NotFound.tsx    # 404 page
 ```
 
 ### Key Components

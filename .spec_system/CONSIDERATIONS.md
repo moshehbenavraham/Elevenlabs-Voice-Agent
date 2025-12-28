@@ -1,7 +1,7 @@
 # Considerations
 
 > Institutional memory for AI assistants. Updated between phases via /carryforward.
-> **Line budget**: 600 max | **Last updated**: Phase 01 (2025-12-28)
+> **Line budget**: 600 max | **Last updated**: Phase 02 (2025-12-28)
 
 ---
 
@@ -14,6 +14,7 @@ Items requiring attention in upcoming phases. Review before each session.
 <!-- Max 5 items -->
 
 - [P00] **react-refresh/only-export-components warnings**: 18 occurrences across provider/tab/context components. Intentional pattern for co-located components - suppress if needed or restructure exports.
+- [P02] **act() warnings in keyboard tests**: ProviderTabs keyboard navigation tests have React state timing warnings. Would require waitFor wrappers but non-blocking.
 
 ### External Dependencies
 
@@ -27,18 +28,18 @@ Items requiring attention in upcoming phases. Review before each session.
 
 <!-- Max 5 items -->
 
-- [P00] **API Keys**: Must use backend proxy for xAI (ephemeral token pattern); never expose in browser.
+- [P00] **API Keys**: Must use backend proxy for xAI/OpenAI (ephemeral token pattern); never expose in browser.
 - [P00] **HTTPS Required**: Microphone access requires HTTPS in production.
-- [P00] **Base64 Audio Overhead**: xAI API requires base64 encoding, adding ~33% data overhead. Acceptable for real-time voice but monitor bandwidth.
+- [P02] **Function Allowlist**: Server-side allowlist validation for function calling security. Prevent arbitrary code execution.
 
 ### Architecture
 
 <!-- Max 5 items -->
 
 - [P00] **Single Connection at a Time**: Disconnect active provider before switching tabs to prevent resource conflicts.
-- [P00] **AudioWorklet Thread Model**: Audio processing runs in separate thread via AudioWorklet; main thread stays responsive.
 - [P00] **Provider-Specific Contexts**: Each provider has dedicated context (VoiceContext, XAIVoiceContext, OpenAIVoiceContext) for isolation.
 - [P01] **OpenAI WebSocket Auth**: Uses protocol array for auth (`['realtime', 'openai-insecure-api-key.{token}']`) since WebSocket doesn't support headers.
+- [P02] **Reconnection Split Responsibility**: useReconnection hook handles orchestration (timing, backoff); provider context handles actual connection (token fetch, WebSocket).
 
 ---
 
@@ -50,45 +51,44 @@ Proven patterns and anti-patterns. Reference during implementation.
 
 <!-- Max 15 items -->
 
-- [P00] **Radix UI Tabs for accessibility**: Provides robust keyboard navigation (Tab, Arrow keys, Enter/Space) out of the box. No need to reimplement.
+- [P00] **Radix UI Tabs for accessibility**: Provides robust keyboard navigation (Tab, Arrow keys, Enter/Space) out of the box.
 - [P00] **AudioWorklet for audio processing**: Runs in separate thread, non-blocking. Essential for real-time PCM encoding.
-- [P00] **Inline Blob URL for Worklets**: Avoids Vite bundling complexity and CORS issues. Inline worklet code as Blob URL.
-- [P00] **Compound component pattern**: ProviderTabs/ProviderTab separation allows clean styling separation and flexible composition.
+- [P00] **Inline Blob URL for Worklets**: Avoids Vite bundling complexity and CORS issues.
+- [P00] **Compound component pattern**: ProviderTabs/ProviderTab separation allows clean styling and flexible composition.
 - [P00] **Interface segregation (State vs Actions)**: VoiceProviderState vs VoiceProviderActions provides flexibility for different SDK patterns.
-- [P00] **Framer Motion variants with reduced motion**: Create animation variants with prefers-reduced-motion alternatives for clean accessibility.
-- [P00] **Environment-based feature flags**: VITE_XAI_ENABLED pattern cleanly toggles provider availability based on API key presence.
-- [P00] **Existing server patterns**: Express + CORS + dotenv already set up in server/index.js - extend rather than rewrite.
-- [P01] **Research-first 4-session structure**: For new provider integration, use research → backend → frontend → polish progression. Enables informed decisions before coding.
-- [P00] **Glassmorphism design system**: backdrop-blur + semi-transparent backgrounds (bg-white/10) create consistent premium UI.
-- [P00] **localStorage for persistence**: Provider selection persists across refreshes with simple localStorage pattern.
-- [P00] **Playback queue with ref pattern**: Queue audio chunks with useRef for playNextInQueue to handle async WebSocket arrival.
-- [P00] **Switch statement for WebSocket messages**: Cleaner than nested if-else for routing xAI realtime message types.
-- [P01] **~80% Code Reuse for New Providers**: OpenAI integration reused vast majority of xAI patterns (audio utils, WebSocket handling, playback queue).
-- [P01] **Empty state component for unconfigured providers**: OpenAIEmptyState shows clear setup instructions when API key missing.
-- [P01] **Health endpoint for config validation**: /api/openai/health checks if OPENAI_API_KEY is configured before showing provider.
-- [P01] **Shared audio utilities for compatible APIs**: When providers use identical audio specs (24kHz, PCM16, mono), share audioUtils.ts without modification.
+- [P00] **Environment-based feature flags**: VITE_XAI_ENABLED pattern cleanly toggles provider availability.
+- [P01] **Research-first 4-session structure**: For new provider integration, use research -> backend -> frontend -> polish progression.
+- [P01] **~80% Code Reuse for New Providers**: OpenAI integration reused vast majority of xAI patterns.
+- [P01] **Empty state component for unconfigured providers**: Clear setup instructions when API key missing.
+- [P02] **useRef for values in WebSocket handlers**: Avoids stale closures in callbacks without recreating them. Used for selectedVoice, handleWSMessage, intentionalDisconnect.
+- [P02] **Provider-specific wrapper components**: XAIVoiceSelector, OpenAIConversationPanel pattern - each accesses its own context automatically.
+- [P02] **Fresh token on each reconnect**: Ephemeral tokens may expire during backoff; fetch fresh token each attempt.
+- [P02] **Shared tool definitions with transformers**: Single source of truth for functions, getOpenAITools/getXAITools for provider-specific format.
+- [P02] **Index-based timestamps for VoiceMessage**: Avoids React purity issues with Date.now() in render.
+- [P02] **Streaming transcript with placeholder**: Create message on response.created, update with deltas for real-time display.
 
 ### What to Avoid
 
 <!-- Max 10 items -->
 
 - [P00] **External AudioWorklet files with Vite**: Don't use separate .worklet.ts files - causes bundling and CORS issues. Use inline Blob URLs.
-- [P00] **Safari audio without user gesture**: AudioContext must be resumed on user click, not on component mount. Safari enforces this strictly.
-- [P01] **Test assertions for provider availability**: Update test expectations when new providers become available to keep tests accurate.
-- [P00] **Exposing API keys to browser**: Always use backend proxy for sensitive credentials. Never import API keys in frontend code.
-- [P00] **Simultaneous voice connections**: Resource management is cleaner with single active provider. Auto-disconnect on tab switch.
-- [P00] **Nested if-else for message types**: Use switch statements for WebSocket message routing - more readable and maintainable.
-- [P00] **ScriptProcessorNode for audio**: Deprecated. Use AudioWorklet instead for real-time audio processing.
+- [P00] **Safari audio without user gesture**: AudioContext must be resumed on user click, not on component mount.
+- [P00] **Exposing API keys to browser**: Always use backend proxy for sensitive credentials.
+- [P00] **Simultaneous voice connections**: Resource management is cleaner with single active provider.
+- [P00] **ScriptProcessorNode for audio**: Deprecated. Use AudioWorklet instead.
+- [P02] **Date.now() in render or useRef init**: React 19 flags as impure. Use constants or index-based values.
+- [P02] **Self-referencing functions in useCallback**: Causes "accessed before declaration" error. Use ref pattern: `funcRef.current = func`.
+- [P02] **Checking for UI components**: Verify shadcn/ui components exist before using them (scroll-area, etc.).
 
 ### Tool/Library Notes
 
 <!-- Max 5 items -->
 
-- [P00] **@radix-ui/react-tabs**: Excellent accessibility out of the box. Use Radix Tabs primitive for keyboard navigation.
-- [P00] **@elevenlabs/react**: Uses signed URL pattern for secure connections. Currently v0.12.1.
-- [P00] **xAI Realtime API**: Requires base64 audio, 24kHz sample rate, 16-bit PCM, mono. Voice/instructions configured via session.update WebSocket message.
-- [P00] **Framer Motion**: AnimatePresence with variants for smooth transitions. Combine with useReducedMotion hook.
-- [P01] **OpenAI Realtime API**: Same audio specs as xAI (24kHz, PCM16, base64). Voice options: alloy, ash, ballad, coral, echo, sage, shimmer, verse. WebSocket URL: wss://api.openai.com/v1/realtime?model={MODEL}.
+- [P00] **@radix-ui/react-tabs**: Excellent accessibility out of the box. Use for keyboard navigation.
+- [P00] **@radix-ui/react-select**: Used for VoiceSelector dropdown. Accessible, customizable.
+- [P00] **xAI Realtime API**: Requires base64 audio, 24kHz, 16-bit PCM, mono. Voice via session.update.
+- [P01] **OpenAI Realtime API**: Same audio specs as xAI. 8 voices available. WebSocket URL: wss://api.openai.com/v1/realtime?model={MODEL}.
+- [P02] **useReconnection hook**: Exponential backoff with jitter, close code detection, network status monitoring. Max 10 retries, 30s max delay.
 
 ---
 
@@ -96,36 +96,40 @@ Proven patterns and anti-patterns. Reference during implementation.
 
 Recently closed items (buffer - rotates out after 2 phases).
 
-| Phase | Item                           | Resolution                                                                 |
-| ----- | ------------------------------ | -------------------------------------------------------------------------- |
-| P00   | Separate Contexts per Provider | Implemented XAIVoiceContext in session03, isolated from VoiceContext       |
-| P00   | xAI Backend Integration        | Ephemeral token endpoint at /api/xai/session working                       |
-| P00   | Tab System with Keyboard A11y  | Radix UI Tabs provides full accessibility                                  |
-| P00   | Audio Visualization for xAI    | XAIVoiceVisualizer with AnalyserNode frequency data                        |
-| P01   | OpenAI Realtime API Research   | Audio format matches xAI, ephemeral tokens work, ~80% code reuse confirmed |
-| P01   | OpenAI Backend Integration     | Ephemeral token endpoint at /api/openai/session implemented                |
-| P01   | OpenAI Frontend Integration    | OpenAIVoiceContext, OpenAIProvider components fully working                |
-| P01   | Three-Provider Architecture    | ElevenLabs, xAI, and OpenAI tabs all functional with clean switching       |
+| Phase | Item                          | Resolution                                                                       |
+| ----- | ----------------------------- | -------------------------------------------------------------------------------- |
+| P02   | Voice Selection UI            | VoiceSelector component with 8 OpenAI + 5 xAI voices, localStorage persistence   |
+| P02   | Conversation Transcript       | MessageBubble + ConversationPanel with streaming, auto-scroll, copy-to-clipboard |
+| P02   | Reconnection with Backoff     | useReconnection hook with exponential backoff, jitter, UI status indicators      |
+| P02   | Function Calling              | Tool definitions, server execution endpoint, FunctionCallIndicator UI            |
+| P01   | OpenAI Realtime API Research  | Audio format matches xAI, ephemeral tokens work, ~80% code reuse confirmed       |
+| P01   | OpenAI Backend Integration    | Ephemeral token endpoint at /api/openai/session implemented                      |
+| P01   | OpenAI Frontend Integration   | OpenAIVoiceContext, OpenAIProvider components fully working                      |
+| P01   | Three-Provider Architecture   | ElevenLabs, xAI, and OpenAI tabs all functional with clean switching             |
+| P00   | xAI Backend Integration       | Ephemeral token endpoint at /api/xai/session working                             |
+| P00   | Tab System with Keyboard A11y | Radix UI Tabs provides full accessibility                                        |
 
 ---
 
-## Phase 02 Roadmap
+## Phase 03 Roadmap
 
-Consolidated items for Advanced Features phase (Phase 02):
+Consolidated items for next phase planning:
 
 ### High Priority
-1. **Voice Selection UI** - Allow users to choose voice (alloy, ash, ballad, coral, echo, sage, shimmer, verse) from frontend
-2. **Conversation History/Transcript** - Display text alongside audio for accessibility
-3. **Reconnection with Exponential Backoff** - Handle network flakiness gracefully
+
+1. **E2E Test Automation** - Playwright tests for voice flows (stretch goal from P02)
+2. **Provider-specific configuration modals** - API key management UI (medium priority from P02)
 
 ### Medium Priority
-4. **Function Calling Integration** - Connect OpenAI/xAI function calling to backend actions
-5. **Provider-specific configuration modals** - API key management UI
+
+3. **Google Gemini Integration** - Fourth voice provider
+4. **Anthropic Claude Integration** - Fifth voice provider
 
 ### Lower Priority (Stretch Goals)
-6. **E2E Test Automation** - Playwright tests for voice flows
-7. **Swipe gestures for mobile tabs** - Touch-friendly tab navigation
-8. **Token caching with TTL** - Reduce API calls for repeated sessions
+
+5. **Swipe gestures for mobile tabs** - Touch-friendly tab navigation
+6. **Token caching with TTL** - Reduce API calls for repeated sessions
+7. **Voice activity visualization** - Show when user vs AI is speaking
 
 ---
 

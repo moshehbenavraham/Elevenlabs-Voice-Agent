@@ -30,7 +30,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build Tool**: Vite with SWC for fast compilation
 - **Styling**: Tailwind CSS with custom glassmorphism design system
 - **UI Components**: Radix UI primitives wrapped in shadcn/ui pattern
-- **Voice AI**: @elevenlabs/react SDK v0.1.4 for conversational AI
+- **Voice AI**: @elevenlabs/react SDK v0.12.1, OpenAI Realtime API, xAI Realtime API
 - **Animations**: Framer Motion for smooth transitions
 - **State**: React Context (theme), Tanstack Query (server state), custom hooks
 
@@ -38,41 +38,71 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 src/
-├── components/          # UI components
-│   ├── voice/          # Voice-specific components
-│   │   ├── VoiceButton.tsx # Voice interaction button
-│   │   ├── VoiceStatus.tsx # Connection status display
-│   │   └── VoiceVisualizer.tsx # Audio visualization component
-│   ├── BackgroundEffects.tsx # Dynamic background animations
-│   ├── HeroSection.tsx # Landing page hero section
-│   ├── VoiceEnvironment.tsx # 3D voice environment
-│   ├── ConfigurationModal.tsx # Settings modal
-│   └── ui/             # 50+ shadcn/ui components
-├── hooks/              # Business logic
-│   ├── useAccessibility.ts # Accessibility features
-│   ├── use-mobile.tsx  # Mobile detection hook
-│   └── use-toast.ts    # Toast notifications
-├── pages/              # Route components
-│   ├── Index.tsx       # Main app page (uses env vars for Agent ID)
-│   └── NotFound.tsx    # 404 error page
-├── test/               # Test infrastructure
-│   ├── setup.ts        # Test configuration and mocks
-│   └── App.test.tsx    # Basic app tests
-├── contexts/           # Global state
-│   ├── ThemeContext.tsx # Dark/light theme management
-│   └── VoiceContext.tsx # Voice state management
-└── lib/                # Utilities
-    └── utils.ts        # Helper functions
+|-- components/          # UI components
+|   |-- voice/          # Voice-specific components
+|   |   |-- VoiceButton.tsx # Voice interaction button
+|   |   |-- VoiceStatus.tsx # Connection status display
+|   |   |-- VoiceVisualizer.tsx # Audio visualization component
+|   |   |-- VoiceSelector.tsx # Voice selection dropdown (Phase 02)
+|   |   |-- ConversationPanel.tsx # Real-time transcript display (Phase 02)
+|   |   |-- MessageBubble.tsx # Individual message component (Phase 02)
+|   |   `-- FunctionCallIndicator.tsx # Function execution UI (Phase 02)
+|   |-- providers/      # Provider-specific components
+|   |   |-- ElevenLabsProvider.tsx # ElevenLabs voice interface
+|   |   |-- OpenAIProvider.tsx # OpenAI Realtime interface
+|   |   `-- XAIProvider.tsx # xAI Grok interface
+|   |-- tabs/           # Tab navigation
+|   |   |-- ProviderTabs.tsx # Provider tab container
+|   |   `-- ProviderTab.tsx # Individual tab component
+|   |-- BackgroundEffects.tsx # Dynamic background animations
+|   |-- HeroSection.tsx # Landing page hero section
+|   |-- VoiceEnvironment.tsx # 3D voice environment
+|   |-- ConfigurationModal.tsx # Settings modal
+|   `-- ui/             # 50+ shadcn/ui components
+|-- hooks/              # Business logic
+|   |-- useAccessibility.ts # Accessibility features
+|   |-- useReconnection.ts # WebSocket reconnection with backoff (Phase 02)
+|   |-- use-mobile.tsx  # Mobile detection hook
+|   `-- use-toast.ts    # Toast notifications
+|-- pages/              # Route components
+|   |-- Index.tsx       # Main app page (uses env vars for Agent ID)
+|   `-- NotFound.tsx    # 404 error page
+|-- test/               # Test infrastructure (174+ tests)
+|   |-- setup.ts        # Test configuration and mocks
+|   |-- useReconnection.test.ts # Reconnection logic tests
+|   |-- voiceConfig.test.ts # Voice selection tests
+|   |-- ConversationPanel.test.tsx # Transcript tests
+|   `-- ... (14 test files total)
+|-- contexts/           # Global state
+|   |-- ThemeContext.tsx # Dark/light theme management
+|   |-- VoiceContext.tsx # ElevenLabs voice state
+|   |-- XAIVoiceContext.tsx # xAI voice state with reconnection (Phase 02)
+|   |-- OpenAIVoiceContext.tsx # OpenAI voice state with reconnection (Phase 02)
+|   `-- ProviderContext.tsx # Active provider selection
+`-- lib/                # Utilities
+    |-- utils.ts        # Helper functions
+    |-- audio/          # Audio processing (Phase 02)
+    |   `-- audioUtils.ts # PCM encoding, base64 conversion
+    `-- tools/          # Function calling (Phase 02)
+        `-- toolDefinitions.ts # Weather, time, calculator tools
 ```
 
 ### Environment Variables
 
-- **Required**: `.env` file with ElevenLabs credentials (not tracked by git)
+- **Required**: `.env` file with credentials (not tracked by git)
 - **Template**: `.env.example` shows required format
-- **Variables**:
-  - `VITE_ELEVENLABS_AGENT_ID` - ElevenLabs Agent ID for voice conversations
-  - `VITE_ELEVENLABS_API_KEY` - ElevenLabs API key (if needed for future features)
-  - `VITE_NODE_ENV` - Development environment flag
+- **Frontend Variables** (VITE\_ prefix):
+  - `VITE_ELEVENLABS_AGENT_ID` - ElevenLabs Agent ID
+  - `VITE_ELEVENLABS_ENABLED` - Enable ElevenLabs provider (true/false)
+  - `VITE_XAI_ENABLED` - Enable xAI provider (true/false)
+  - `VITE_OPENAI_ENABLED` - Enable OpenAI provider (true/false)
+  - `VITE_API_BASE_URL` - Backend API URL (default: http://localhost:3001)
+  - `VITE_OPENAI_VOICE` / `VITE_XAI_VOICE` - Default voice selection
+- **Backend Variables** (server-side only):
+  - `ELEVENLABS_API_KEY` - ElevenLabs API key
+  - `XAI_API_KEY` - xAI API key for Grok
+  - `OPENAI_API_KEY` - OpenAI API key for Realtime API
+  - `CORS_ORIGIN` - Allowed frontend origin
 
 ### Key Integration Points
 
@@ -81,12 +111,35 @@ src/
    - Uses ElevenLabs React SDK Conversation component
    - Requires HTTPS in production for microphone access
 
-2. **Audio Visualization**:
+2. **OpenAI Realtime API** (Phase 02):
+   - Uses ephemeral tokens from backend (60s expiry for security)
+   - WebSocket connection at `wss://api.openai.com/v1/realtime`
+   - Protocol array auth: `['realtime', 'openai-insecure-api-key.{token}']`
+   - 8 voices available: alloy, ash, ballad, coral, echo, sage, shimmer, verse
+
+3. **xAI Realtime API** (Phase 02):
+   - Uses ephemeral tokens from backend
+   - WebSocket connection at `wss://api.x.ai/v1/realtime`
+   - 5 voices available: ash, ballad, coral, sage, verse
+
+4. **Reconnection with Backoff** (Phase 02):
+   - Automatic reconnection on WebSocket disconnect
+   - Exponential backoff: 1s, 2s, 4s, 8s, up to 30s max
+   - Maximum 10 retry attempts
+   - `useReconnection.ts` hook handles logic
+
+5. **Function Calling** (Phase 02):
+   - Tool definitions in `lib/tools/toolDefinitions.ts`
+   - Demo tools: weather, time, calculator
+   - Results displayed via `FunctionCallIndicator.tsx`
+   - AI incorporates function results into responses
+
+6. **Audio Visualization**:
    - `VoiceVisualizer.tsx` uses Web Audio API for real-time frequency analysis
    - Canvas-based rendering optimized for 60fps
    - Integrates with voice state from conversation events
 
-3. **Theme System**:
+7. **Theme System**:
    - Glassmorphism design with backdrop-filter effects
    - Theme toggle persists to localStorage
    - CSS variables defined in Tailwind config
@@ -107,7 +160,10 @@ src/
    - Theme: Context API (`ThemeContext`)
    - Server data: Tanstack Query
    - Local state: Custom hooks pattern
-   - Voice state: VoiceContext and ElevenLabs SDK
+   - Voice state: Provider-specific contexts (`VoiceContext`, `XAIVoiceContext`, `OpenAIVoiceContext`)
+   - Provider selection: `ProviderContext` with localStorage persistence
+   - Reconnection state: `useReconnection` hook (Phase 02)
+   - Conversation history: Stored in provider contexts (Phase 02)
 
 4. **Styling**:
    - Tailwind utilities first
