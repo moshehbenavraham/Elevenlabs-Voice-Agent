@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, AlertCircle, X } from 'lucide-react';
 import { HeroSection } from '@/components/HeroSection';
@@ -8,10 +8,13 @@ import { VoiceVisualizer } from '@/components/voice/VoiceVisualizer';
 import { VoiceWidget } from '@/components/voice/VoiceWidget';
 import { BackgroundEffects } from '@/components/BackgroundEffects';
 import { ConfigurationModal } from '@/components/ConfigurationModal';
+import { ProviderTabs } from '@/components/tabs';
 import { useVoice } from '@/contexts/VoiceContext';
+import { useProvider } from '@/contexts/ProviderContext';
 import { useConnectionMode } from '@/hooks/useConnectionMode';
 import { toast } from '@/hooks/use-toast';
 import { trackError } from '@/lib/errorTracking';
+import type { ProviderType } from '@/types';
 
 const DEBUG = import.meta.env.DEV;
 
@@ -23,9 +26,32 @@ function debugLog(context: string, message: string, data?: unknown) {
 
 export const Index = () => {
   const connectionMode = useConnectionMode();
-  const { error, clearError, isLoading, connect, disconnect } = useVoice();
+  const { error, clearError, isLoading, connect, disconnect, isConnected } = useVoice();
+  const { activeProvider } = useProvider();
   const [showConfig, setShowConfig] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+
+  // Handle provider change - disconnect active connection before switching
+  const handleProviderChange = useCallback(
+    async (newProvider: ProviderType) => {
+      debugLog('handleProviderChange', 'Switching provider', {
+        from: activeProvider,
+        to: newProvider,
+      });
+
+      // Disconnect active connection before switching providers
+      if (isConnected) {
+        debugLog('handleProviderChange', 'Disconnecting active connection before switch');
+        await disconnect();
+        setHasStarted(false);
+        toast({
+          title: 'Provider Changed',
+          description: `Switched to ${newProvider}`,
+        });
+      }
+    },
+    [activeProvider, isConnected, disconnect]
+  );
 
   // Check if agent ID is configured on mount
   useEffect(() => {
@@ -171,8 +197,21 @@ export const Index = () => {
           </div>
         </header>
 
+        {/* Provider Tabs - Below header */}
+        <div className="fixed top-20 left-0 right-0 z-40 px-6">
+          <div className="max-w-md mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+            >
+              <ProviderTabs onProviderChange={handleProviderChange} />
+            </motion.div>
+          </div>
+        </div>
+
         {/* Main Content - Widget Mode */}
-        <main className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6">
+        <main className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 pt-12">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -268,8 +307,21 @@ export const Index = () => {
         </div>
       </header>
 
+      {/* Provider Tabs - Below header */}
+      <div className="fixed top-20 left-0 right-0 z-40 px-6">
+        <div className="max-w-md mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+          >
+            <ProviderTabs onProviderChange={handleProviderChange} />
+          </motion.div>
+        </div>
+      </div>
+
       {/* Main Content */}
-      <main className="relative z-10 min-h-screen">
+      <main className="relative z-10 min-h-screen pt-12">
         <AnimatePresence mode="wait">
           {!hasStarted ? (
             // Hero Section - Landing state

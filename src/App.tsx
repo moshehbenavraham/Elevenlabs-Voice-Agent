@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { VoiceProvider } from '@/contexts/VoiceContext';
+import { ProviderProvider } from '@/contexts/ProviderContext';
 
 // Lazy load page components for code splitting
 const Index = lazy(() => import('./pages/Index').then((m) => ({ default: m.Index })));
@@ -23,8 +24,9 @@ const queryClient = new QueryClient();
 export const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <VoiceProvider>
-        <TooltipProvider>
+      <ProviderProvider>
+        <VoiceProvider>
+          <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -36,8 +38,9 @@ export const App = () => (
               </Routes>
             </Suspense>
           </BrowserRouter>
-        </TooltipProvider>
-      </VoiceProvider>
+          </TooltipProvider>
+        </VoiceProvider>
+      </ProviderProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

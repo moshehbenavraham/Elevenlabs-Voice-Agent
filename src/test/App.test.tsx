@@ -31,6 +31,16 @@ vi.mock('@/contexts/VoiceContext', () => ({
   }),
 }));
 
+vi.mock('@/contexts/ProviderContext', () => ({
+  ProviderProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
+  useProvider: () => ({
+    activeProvider: 'elevenlabs',
+    setActiveProvider: vi.fn(),
+    isProviderAvailable: vi.fn(() => true),
+    providers: ['elevenlabs', 'xai', 'openai'],
+  }),
+}));
+
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
