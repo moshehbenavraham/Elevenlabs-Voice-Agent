@@ -189,9 +189,10 @@ Based on `EXAMPLE/xai/backend-nodejs/`:
 
 ## 5. Phases
 
-| Phase | Name                 | Sessions | Status   |
-| ----- | -------------------- | -------- | -------- |
-| 00    | Multi-Provider Voice | 4        | Complete |
+| Phase | Name                 | Sessions | Status      |
+| ----- | -------------------- | -------- | ----------- |
+| 00    | Multi-Provider Voice | 4        | Complete    |
+| 01    | OpenAI Voice Agent   | 4        | Not Started |
 
 ---
 
@@ -408,8 +409,8 @@ OPENAI_API_KEY=sk-... # Server-side only
 | Provider        | Status     |
 | --------------- | ---------- |
 | ElevenLabs      | Complete   |
-| xAI (Grok)      | This Phase |
-| OpenAI          | Planned    |
+| xAI (Grok)      | Complete   |
+| OpenAI          | Phase 01   |
 | Google (Gemini) | Planned    |
 | Anthropic       | Planned    |
 

@@ -61,7 +61,7 @@ Thank you for your interest in contributing to the ElevenLabs Voice Agent! This 
    ```
 
 5. **Verify setup**
-   - Open `http://localhost:5173` in your browser
+   - Open `http://localhost:8082` in your browser
    - Allow microphone permissions when prompted
    - Test basic voice functionality
 

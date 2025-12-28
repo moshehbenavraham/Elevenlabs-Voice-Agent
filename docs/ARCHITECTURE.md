@@ -1,80 +1,122 @@
 # System Architecture
 
-This document outlines the technical architecture of the ElevenLabs Voice Agent application.
+This document outlines the technical architecture of the Conversational Voice AI Agents application.
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
-The ElevenLabs Voice Agent is a modern web application built with React and TypeScript, designed for real-time voice AI interactions. The architecture emphasizes performance, accessibility, and seamless voice processing.
+A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), and future providers. The architecture emphasizes provider abstraction, performance, and accessibility.
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [System Architecture](#system-architecture)
+- [System Overview](#system-overview)
+- [Multi-Provider Architecture](#multi-provider-architecture)
 - [Component Hierarchy](#component-hierarchy)
 - [Data Flow](#data-flow)
 - [Voice Processing Pipeline](#voice-processing-pipeline)
 - [State Management](#state-management)
 - [API Integration](#api-integration)
+- [Backend Services](#backend-services)
 - [Performance Considerations](#performance-considerations)
 - [Security Architecture](#security-architecture)
 - [Mobile Architecture](#mobile-architecture)
 - [Browser Compatibility](#browser-compatibility)
 
-## 🎯 High-Level Architecture
+## System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Browser Environment                       │
-├─────────────────────────────────────────────────────────────┤
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   React     │  │   Voice     │  │   ElevenLabs        │  │
-│  │Application  │◄─┤ Processing  │◄─┤   SDK Integration   │  │
-│  │             │  │             │  │                     │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-│         │                 │                     │           │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │   State     │  │  Web Audio  │  │   WebSocket/HTTP    │  │
-│  │ Management  │  │     API     │  │    Communication   │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-├─────────────────────────────────────────────────────────────┤
-│                    Platform APIs                            │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
-│  │  getUserMedia│  │MediaRecorder│  │   AudioContext      │  │
-│  │     API     │  │     API     │  │                     │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                    ┌─────────────────────┐
-                    │   ElevenLabs API    │
-                    │   ┌─────────────┐   │
-                    │   │Voice Agents │   │
-                    │   │Text-to-Speech│   │
-                    │   │Speech-to-Text│   │
-                    │   └─────────────┘   │
-                    └─────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Browser Environment                          │
+├─────────────────────────────────────────────────────────────────────┤
+│  ┌───────────────┐  ┌─────────────────────────────────────────────┐ │
+│  │   React App   │  │           Provider Layer                     │ │
+│  │ (ProviderCtx) │  │  ┌─────────────┐  ┌─────────────────────┐   │ │
+│  │               │◄─┤  │ ElevenLabs  │  │   xAI (Grok)        │   │ │
+│  │  Tab System   │  │  │ VoiceContext│  │  XAIVoiceContext    │   │ │
+│  └───────────────┘  │  └─────────────┘  └─────────────────────┘   │ │
+│         │           └─────────────────────────────────────────────┘ │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────────┐  │
+│  │ Audio Utils │  │  Web Audio  │  │      WebSocket/HTTP         │  │
+│  │ (PCM/Base64)│  │     API     │  │     Communication           │  │
+│  └─────────────┘  └─────────────┘  └─────────────────────────────┘  │
+├─────────────────────────────────────────────────────────────────────┤
+│                         Platform APIs                                │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ ┌─────────────┐  │
+│  │ getUserMedia│  │AudioWorklet │  │AudioContext │ │  WebSocket  │  │
+│  └─────────────┘  └─────────────┘  └─────────────┘ └─────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+           │                                     │
+┌──────────┴────────────┐           ┌───────────┴────────────┐
+│   Backend (Express)   │           │      Provider APIs      │
+│  ┌─────────────────┐  │           │  ┌─────────────────┐   │
+│  │ /api/elevenlabs │  │           │  │   ElevenLabs    │   │
+│  │ /api/xai        │  │           │  │   xAI Realtime  │   │
+│  │ /api/health     │  │           │  │   (Future)      │   │
+│  └─────────────────┘  │           │  └─────────────────┘   │
+└───────────────────────┘           └────────────────────────┘
 ```
 
-## 🧱 Component Hierarchy
+## Multi-Provider Architecture
+
+### Provider Abstraction Layer
+
+The application uses a unified provider interface allowing seamless switching between voice AI providers:
+
+```typescript
+// src/types/voice-provider.ts
+export type ProviderType = 'elevenlabs' | 'xai' | 'openai';
+
+export interface VoiceProvider {
+  id: ProviderType;
+  name: string;
+  description: string;
+  icon: string;
+  isAvailable: boolean;
+}
+```
+
+### Provider Context Pattern
+
+```
+ProviderContext (active provider selection)
+    ├── ElevenLabs VoiceContext (existing SDK integration)
+    └── XAIVoiceContext (WebSocket + ephemeral token)
+```
+
+**Key Benefits**:
+- Provider-specific logic stays isolated
+- Each context manages its own connection lifecycle
+- Provider switching changes which context is "active"
+- Future providers add new context without modifying existing ones
+
+## Component Hierarchy
 
 ### Application Structure
 ```
 App
 ├── ThemeProvider
+├── ProviderProvider              # NEW: Active provider selection
 ├── Router
 │   ├── Index (Main Page)
-│   │   ├── HeroSection
-│   │   ├── VoiceEnvironment
-│   │   │   ├── VoiceOrb
-│   │   │   ├── AudioVisualizer
-│   │   │   └── VoiceControls
+│   │   ├── ProviderTabs          # NEW: Tab navigation for providers
+│   │   │   └── ProviderTab       # Individual tab component
+│   │   ├── ElevenLabs Provider
+│   │   │   ├── HeroSection
+│   │   │   ├── VoiceButton
+│   │   │   ├── VoiceStatus
+│   │   │   ├── VoiceVisualizer
+│   │   │   └── ElevenLabsEmptyState
+│   │   ├── xAI Provider          # NEW: xAI voice integration
+│   │   │   ├── XAIVoiceButton
+│   │   │   ├── XAIVoiceStatus
+│   │   │   ├── XAIVoiceVisualizer
+│   │   │   └── XAIEmptyState
 │   │   ├── BackgroundEffects
-│   │   │   └── ParticleSystem
-│   │   └── ThemeCustomizer
+│   │   └── ConfigurationModal
 │   └── NotFound
 ├── UI Components
-│   ├── Button
-│   ├── Card
-│   ├── Dialog
-│   └── ... (shadcn/ui components)
+│   ├── EmptyState                # NEW: Generic empty state component
+│   ├── Button, Card, Dialog
+│   └── ... (50+ shadcn/ui components)
 └── Global Components
     ├── ThemeToggle
     └── AnimatedText
@@ -171,10 +213,18 @@ State Update → UI Update
                     └─────────────────┘    └─────────────────┘
 ```
 
-## 🔄 State Management
+## State Management
 
 ### Global State Architecture
 ```typescript
+// Provider Context - Active provider selection
+interface ProviderContextType {
+  activeProvider: ProviderType;
+  setActiveProvider: (provider: ProviderType) => void;
+  providers: VoiceProvider[];
+  isProviderAvailable: (id: ProviderType) => boolean;
+}
+
 // Theme Context
 interface ThemeContextType {
   theme: Theme;
@@ -183,22 +233,20 @@ interface ThemeContextType {
   toggleTheme: () => void;
 }
 
-// Voice State (Hook-based)
+// ElevenLabs Voice State
 interface VoiceState {
-  isRecording: boolean;
-  isPlaying: boolean;
-  isConnected: boolean;
+  status: 'idle' | 'connecting' | 'connected' | 'error';
+  isSpeaking: boolean;
+  volume: number;
   error: string | null;
-  audioStream: MediaStream | null;
-  conversation: ConversationState;
 }
 
-// Application State
-interface AppState {
-  user: UserState;
-  voice: VoiceState;
-  ui: UIState;
-  settings: SettingsState;
+// xAI Voice State
+interface XAIVoiceState {
+  status: 'idle' | 'connecting' | 'connected' | 'error';
+  isSpeaking: boolean;
+  error: string | null;
+  analyser: AnalyserNode | null;
 }
 ```
 
@@ -206,24 +254,26 @@ interface AppState {
 
 #### **Context API**
 Used for global state that needs to be accessed across many components:
-- Theme state
-- User preferences
-- Application configuration
+- `ProviderContext` - Active provider selection with localStorage persistence
+- `ThemeContext` - Theme state
+- `VoiceContext` - ElevenLabs voice state
+- `XAIVoiceContext` - xAI voice state
 
 #### **Custom Hooks**
 Used for feature-specific state management:
-- `useElevenLabsConversation` - Voice conversation state
-- `useVoiceAnimations` - Animation state
+- `useProvider` - Provider selection hook
+- `useVoice` - ElevenLabs voice hook
+- `useXAIVoice` - xAI voice hook
+- `useReducedMotion` - Accessibility preference detection
 - `useAccessibility` - Accessibility features
-- `usePerformanceOptimization` - Performance metrics
 
 #### **Local State**
 Used for component-specific state:
 - Form inputs
 - UI interaction state
-- Temporary display state
+- Tab animations
 
-## 🔌 API Integration
+## API Integration
 
 ### ElevenLabs SDK Integration
 ```typescript
@@ -277,7 +327,60 @@ class ConversationManager {
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## ⚡ Performance Considerations
+## Backend Services
+
+The application uses an Express.js backend (port 3001) for secure API key management.
+
+### Server Architecture
+
+```
+server/
+├── index.js              # Main Express server
+└── routes/
+    └── xai.js            # xAI ephemeral token endpoint
+```
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | Server health check |
+| GET | `/api/elevenlabs/signed-url` | ElevenLabs signed URL for SDK |
+| POST | `/api/xai/session` | Create xAI ephemeral token |
+
+### xAI Token Flow
+
+```
+Frontend                    Backend                     xAI API
+   │                          │                           │
+   │ POST /api/xai/session    │                           │
+   │─────────────────────────>│                           │
+   │                          │ POST /v1/realtime/        │
+   │                          │      client_secrets       │
+   │                          │──────────────────────────>│
+   │                          │                           │
+   │                          │ { client_secret }         │
+   │                          │<──────────────────────────│
+   │                          │                           │
+   │ { token, expiresAt }     │                           │
+   │<─────────────────────────│                           │
+   │                          │                           │
+   │ WebSocket: wss://api.x.ai/v1/realtime?model=grok-2-public
+   │─────────────────────────────────────────────────────>│
+```
+
+### Audio Processing (xAI)
+
+```typescript
+// src/lib/audio/audioUtils.ts
+// PCM 16-bit, 24kHz mono format for xAI Realtime API
+
+encodeAudioForXAI(float32Array) -> base64String
+decodeAudioFromXAI(base64String) -> Float32Array
+resampleAudio(audioData, fromRate, toRate) -> Float32Array
+```
+
+## Performance Considerations
 
 ### Bundle Optimization
 ```typescript
@@ -591,7 +694,6 @@ class ErrorBoundary extends React.Component {
 
 ---
 
-**Last Updated**: January 8, 2025
-**Next Review**: April 8, 2025
+**Last Updated**: December 28, 2025
 
-This architecture is designed to be maintainable, scalable, and performant while providing excellent user experience for voice AI interactions. 🏗️
+This architecture is designed to be maintainable, scalable, and performant while providing excellent user experience for multi-provider voice AI interactions.

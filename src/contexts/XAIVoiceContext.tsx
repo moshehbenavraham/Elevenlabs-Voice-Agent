@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useReducer,
-  useCallback,
-  useEffect,
-  useRef,
-  type ReactNode,
-} from 'react';
+import { createContext, useReducer, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { trackError } from '@/lib/errorTracking';
 import {
   encodeBase64,
@@ -322,10 +315,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
   const initializeAudioCapture = useCallback(async (audioContext: AudioContext) => {
     try {
       // Load the PCM encoder worklet
-      const workletUrl = new URL(
-        '../lib/audio/pcmEncoder.worklet.ts',
-        import.meta.url
-      ).href;
+      const workletUrl = new URL('../lib/audio/pcmEncoder.worklet.ts', import.meta.url).href;
       await audioContext.audioWorklet.addModule(workletUrl);
       debugLog('audio', 'AudioWorklet loaded');
 
@@ -425,10 +415,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
       const wsUrl = `${XAI_REALTIME_URL}?model=grok-2-public`;
       debugLog('ws', `Connecting to ${wsUrl}`);
 
-      const ws = new WebSocket(wsUrl, [
-        'realtime',
-        `openai-insecure-api-key.${token}`,
-      ]);
+      const ws = new WebSocket(wsUrl, ['realtime', `openai-insecure-api-key.${token}`]);
       wsRef.current = ws;
 
       ws.onopen = () => {

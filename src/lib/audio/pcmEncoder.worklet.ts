@@ -80,11 +80,7 @@ class PCMEncoderProcessor extends AudioWorkletProcessor {
     this.buffer = [];
 
     // Resample to target sample rate
-    const resampled = this.resample(
-      combined,
-      this.inputSampleRate,
-      TARGET_SAMPLE_RATE
-    );
+    const resampled = this.resample(combined, this.inputSampleRate, TARGET_SAMPLE_RATE);
 
     // Convert to PCM 16-bit
     const pcm16 = this.floatToPcm16(resampled);
@@ -96,11 +92,7 @@ class PCMEncoderProcessor extends AudioWorkletProcessor {
   /**
    * Linear interpolation resampling.
    */
-  private resample(
-    input: Float32Array,
-    inputRate: number,
-    outputRate: number
-  ): Float32Array {
+  private resample(input: Float32Array, inputRate: number, outputRate: number): Float32Array {
     if (inputRate === outputRate) {
       return input;
     }

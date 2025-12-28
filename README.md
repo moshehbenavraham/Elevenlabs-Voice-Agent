@@ -222,22 +222,32 @@ The app is built mobile-first with:
 
 ## [TEST] Testing
 
-**Note**: Testing infrastructure is not currently set up in this project. To add testing capabilities:
+The project includes a comprehensive test suite using Vitest and React Testing Library:
 
 ```bash
-# Install testing dependencies
-bun add -D @testing-library/react @testing-library/jest-dom @testing-library/user-event vitest jsdom
+# Run tests in watch mode
+npm run test
 
-# Add test scripts to package.json
+# Run tests once (CI mode)
+npm run test:run
+
+# Run tests with UI
+npm run test:ui
 ```
 
-### Recommended Test Strategy
+### Test Coverage
 
-- **Unit Tests**: Component behavior and props validation
-- **Integration Tests**: Hook interactions and ElevenLabs React SDK integration
-- **Accessibility Tests**: ARIA labels, keyboard navigation, screen reader compatibility
-- **Visual Tests**: Theme switching, responsive behavior, animation states
-- **Audio Tests**: Microphone permissions, audio visualization, conversation flow
+- **75+ tests** covering components, contexts, and utilities
+- **ProviderContext tests** - Provider selection, localStorage persistence
+- **ProviderTabs tests** - Tab rendering, keyboard navigation, accessibility
+- **Audio utilities tests** - PCM encoding/decoding, base64 conversion
+- **Voice context tests** - State management, error handling
+
+### Test Categories
+
+- **Unit Tests**: Component behavior, hooks, and utility functions
+- **Accessibility Tests**: ARIA labels, keyboard navigation (Arrow keys, Tab, Enter)
+- **Integration Tests**: Provider switching, voice connection flows
 
 ## [DEPLOY] Deployment
 

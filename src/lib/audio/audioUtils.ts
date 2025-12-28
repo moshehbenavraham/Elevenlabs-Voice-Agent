@@ -154,11 +154,7 @@ export function createAudioBuffer(
   float32Data: Float32Array,
   sampleRate: number = XAI_SAMPLE_RATE
 ): AudioBuffer {
-  const audioBuffer = audioContext.createBuffer(
-    XAI_CHANNELS,
-    float32Data.length,
-    sampleRate
-  );
+  const audioBuffer = audioContext.createBuffer(XAI_CHANNELS, float32Data.length, sampleRate);
   audioBuffer.copyToChannel(float32Data, 0);
   return audioBuffer;
 }
@@ -192,8 +188,7 @@ export function resampleAudio(
     const t = srcIndex - srcIndexFloor;
 
     // Linear interpolation
-    output[i] =
-      inputSamples[srcIndexFloor] * (1 - t) + inputSamples[srcIndexCeil] * t;
+    output[i] = inputSamples[srcIndexFloor] * (1 - t) + inputSamples[srcIndexCeil] * t;
   }
 
   return output;

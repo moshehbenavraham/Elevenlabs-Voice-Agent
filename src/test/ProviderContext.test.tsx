@@ -89,10 +89,7 @@ describe('ProviderContext', () => {
     it('persists active provider to localStorage', () => {
       renderHook(() => useProvider(), { wrapper });
 
-      expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        'voice-ai-provider',
-        'elevenlabs'
-      );
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('voice-ai-provider', 'elevenlabs');
     });
 
     it('reads saved provider from localStorage on mount', () => {
