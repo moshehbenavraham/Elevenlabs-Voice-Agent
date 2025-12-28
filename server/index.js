@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { config } from 'dotenv';
 import xaiRoutes from './routes/xai.js';
+import openaiRoutes from './routes/openai.js';
 
 // Load environment variables
 config();
@@ -18,6 +19,7 @@ app.use(express.json());
 
 // API Routes
 app.use('/api/xai', xaiRoutes);
+app.use('/api/openai', openaiRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -86,4 +88,5 @@ app.listen(PORT, () => {
   console.log(`[Server] ElevenLabs API key: ${process.env.ELEVENLABS_API_KEY ? 'Yes' : 'No'}`);
   console.log(`[Server] ElevenLabs Agent ID: ${process.env.VITE_ELEVENLABS_AGENT_ID ? 'Yes' : 'No'}`);
   console.log(`[Server] xAI API key: ${process.env.XAI_API_KEY ? 'Yes' : 'No'}`);
+  console.log(`[Server] OpenAI API key: ${process.env.OPENAI_API_KEY ? 'Yes' : 'No'}`);
 });

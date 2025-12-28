@@ -22,7 +22,8 @@
     "phase00-session02-xai-backend",
     "phase00-session03-xai-frontend",
     "phase00-session04-polish",
-    "phase01-session01-openai-research"
+    "phase01-session01-openai-research",
+    "phase01-session02-openai-backend"
   ],
   "next_session_history": [
     {
@@ -48,6 +49,11 @@
     {
       "date": "2025-12-28",
       "session": "phase01-session01-openai-research",
+      "status": "completed"
+    },
+    {
+      "date": "2025-12-28",
+      "session": "phase01-session02-openai-backend",
       "status": "completed"
     }
   ]
