@@ -73,7 +73,7 @@ describe('ProviderTabs', () => {
   });
 
   describe('disabled states', () => {
-    it('disables xAI tab (not available)', () => {
+    it('enables xAI tab when VITE_XAI_ENABLED=true', () => {
       render(
         <TestWrapper>
           <ProviderTabs />
@@ -81,7 +81,8 @@ describe('ProviderTabs', () => {
       );
 
       const xaiTab = screen.getByRole('tab', { name: /xai/i });
-      expect(xaiTab).toBeDisabled();
+      // xAI is now enabled via env var
+      expect(xaiTab).not.toBeDisabled();
     });
 
     it('disables OpenAI tab (not available)', () => {
@@ -95,20 +96,20 @@ describe('ProviderTabs', () => {
       expect(openaiTab).toBeDisabled();
     });
 
-    it('shows disabled tooltip for unavailable providers', () => {
+    it('shows disabled tooltip for unavailable providers (OpenAI)', () => {
       render(
         <TestWrapper>
           <ProviderTabs />
         </TestWrapper>
       );
 
-      const xaiTab = screen.getByRole('tab', { name: /xai/i });
-      expect(xaiTab).toHaveAttribute('title', 'xAI coming soon');
+      const openaiTab = screen.getByRole('tab', { name: /openai/i });
+      expect(openaiTab).toHaveAttribute('title', 'OpenAI coming soon');
     });
   });
 
   describe('interaction', () => {
-    it('calls onProviderChange when tab is clicked', async () => {
+    it('calls onProviderChange when switching to xAI tab', async () => {
       const user = userEvent.setup();
       const onProviderChange = vi.fn();
 
@@ -118,14 +119,15 @@ describe('ProviderTabs', () => {
         </TestWrapper>
       );
 
-      const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs/i });
-      await user.click(elevenlabsTab);
+      // xAI is now available, click it to switch
+      const xaiTab = screen.getByRole('tab', { name: /xai/i });
+      await user.click(xaiTab);
 
-      // ElevenLabs is already selected and available, so callback should be called
-      expect(onProviderChange).toHaveBeenCalledWith('elevenlabs');
+      // Callback should be called with xai
+      expect(onProviderChange).toHaveBeenCalledWith('xai');
     });
 
-    it('does not switch to disabled tab when clicked', async () => {
+    it('does not switch to disabled OpenAI tab when clicked', async () => {
       const user = userEvent.setup();
 
       render(
@@ -134,10 +136,10 @@ describe('ProviderTabs', () => {
         </TestWrapper>
       );
 
-      const xaiTab = screen.getByRole('tab', { name: /xai/i });
-      await user.click(xaiTab);
+      const openaiTab = screen.getByRole('tab', { name: /openai/i });
+      await user.click(openaiTab);
 
-      // ElevenLabs should still be selected
+      // ElevenLabs should still be selected since OpenAI is disabled
       const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs/i });
       expect(elevenlabsTab).toHaveAttribute('data-state', 'active');
     });

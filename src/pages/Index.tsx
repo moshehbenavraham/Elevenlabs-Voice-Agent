@@ -9,6 +9,12 @@ import { VoiceWidget } from '@/components/voice/VoiceWidget';
 import { BackgroundEffects } from '@/components/BackgroundEffects';
 import { ConfigurationModal } from '@/components/ConfigurationModal';
 import { ProviderTabs } from '@/components/tabs';
+import {
+  XAIProvider,
+  XAIVoiceButton,
+  XAIVoiceStatus,
+  XAIVoiceVisualizer,
+} from '@/components/providers';
 import { useVoice } from '@/contexts/VoiceContext';
 import { useProvider } from '@/contexts/ProviderContext';
 import { useConnectionMode } from '@/hooks/useConnectionMode';
@@ -30,6 +36,7 @@ export const Index = () => {
   const { activeProvider } = useProvider();
   const [showConfig, setShowConfig] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [xaiHasStarted, setXaiHasStarted] = useState(false);
 
   // Handle provider change - disconnect active connection before switching
   const handleProviderChange = useCallback(
@@ -39,19 +46,44 @@ export const Index = () => {
         to: newProvider,
       });
 
-      // Disconnect active connection before switching providers
-      if (isConnected) {
-        debugLog('handleProviderChange', 'Disconnecting active connection before switch');
+      // Disconnect ElevenLabs if active
+      if (isConnected && activeProvider === 'elevenlabs') {
+        debugLog('handleProviderChange', 'Disconnecting ElevenLabs before switch');
         await disconnect();
         setHasStarted(false);
-        toast({
-          title: 'Provider Changed',
-          description: `Switched to ${newProvider}`,
-        });
       }
+
+      // Disconnect xAI if active
+      if (xaiHasStarted && activeProvider === 'xai') {
+        debugLog('handleProviderChange', 'Disconnecting xAI before switch');
+        setXaiHasStarted(false);
+      }
+
+      toast({
+        title: 'Provider Changed',
+        description: `Switched to ${newProvider}`,
+      });
     },
-    [activeProvider, isConnected, disconnect]
+    [activeProvider, isConnected, disconnect, xaiHasStarted]
   );
+
+  // Handle xAI disconnect
+  const handleXAIDisconnect = useCallback(() => {
+    setXaiHasStarted(false);
+    toast({
+      title: 'Disconnected',
+      description: 'xAI voice conversation ended',
+    });
+  }, []);
+
+  // Handle xAI connect
+  const handleXAIConnect = useCallback(() => {
+    setXaiHasStarted(true);
+    toast({
+      title: 'Connected',
+      description: 'xAI voice conversation is now active',
+    });
+  }, []);
 
   // Check if agent ID is configured on mount
   useEffect(() => {
@@ -323,28 +355,27 @@ export const Index = () => {
       {/* Main Content */}
       <main className="relative z-10 min-h-screen pt-12">
         <AnimatePresence mode="wait">
-          {!hasStarted ? (
-            // Hero Section - Landing state
+          {/* ElevenLabs Provider */}
+          {activeProvider === 'elevenlabs' && !hasStarted && (
             <HeroSection
-              key="hero"
+              key="hero-elevenlabs"
               onStartConversation={handleStartConversation}
               isLoading={isLoading}
               error={error}
             />
-          ) : (
-            // Voice Interface - Active call state
+          )}
+
+          {activeProvider === 'elevenlabs' && hasStarted && (
             <motion.div
-              key="interface"
+              key="interface-elevenlabs"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.5 }}
               className="min-h-screen flex flex-col"
             >
-              {/* Voice interface content */}
               <div className="flex-1 flex flex-col items-center justify-center px-6 py-24">
                 <div className="w-full max-w-lg space-y-12">
-                  {/* Header text */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -357,7 +388,6 @@ export const Index = () => {
                     <p className="text-zinc-500 text-sm">Speak naturally - AI is listening</p>
                   </motion.div>
 
-                  {/* Voice Button - Central element */}
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -367,7 +397,6 @@ export const Index = () => {
                     <VoiceButton size="lg" onDisconnect={handleEndCall} />
                   </motion.div>
 
-                  {/* Audio Visualizer */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -376,7 +405,6 @@ export const Index = () => {
                     <VoiceVisualizer className="w-full" />
                   </motion.div>
 
-                  {/* Status and Messages */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -385,7 +413,6 @@ export const Index = () => {
                     <VoiceStatus />
                   </motion.div>
 
-                  {/* End call button */}
                   <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
@@ -403,6 +430,122 @@ export const Index = () => {
                 </div>
               </div>
             </motion.div>
+          )}
+
+          {/* xAI Provider */}
+          {activeProvider === 'xai' && (
+            <XAIProvider onDisconnect={handleXAIDisconnect}>
+              {!xaiHasStarted ? (
+                <motion.div
+                  key="hero-xai"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
+                  className="min-h-screen flex flex-col items-center justify-center px-6"
+                >
+                  <div className="text-center space-y-8">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <h1 className="font-display text-5xl sm:text-6xl text-zinc-100 mb-4">
+                        Talk to <span className="text-sky-400">Grok</span>
+                      </h1>
+                      <p className="text-zinc-400 text-lg max-w-md mx-auto">
+                        Experience voice conversations powered by xAI
+                      </p>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
+                      className="py-8"
+                    >
+                      <XAIVoiceButton size="lg" onConnect={handleXAIConnect} />
+                    </motion.div>
+
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6 }}
+                      className="text-zinc-500 text-sm"
+                    >
+                      Click to start your conversation with Grok
+                    </motion.p>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="interface-xai"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="min-h-screen flex flex-col"
+                >
+                  <div className="flex-1 flex flex-col items-center justify-center px-6 py-24">
+                    <div className="w-full max-w-lg space-y-12">
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-center"
+                      >
+                        <h2 className="font-display text-3xl sm:text-4xl text-zinc-100 mb-2">
+                          Grok is Listening
+                        </h2>
+                        <p className="text-zinc-500 text-sm">
+                          Speak naturally - xAI is processing
+                        </p>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+                        className="flex justify-center py-8"
+                      >
+                        <XAIVoiceButton size="lg" onDisconnect={handleXAIDisconnect} />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                      >
+                        <XAIVoiceVisualizer className="w-full" />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                      >
+                        <XAIVoiceStatus />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.6 }}
+                        className="flex justify-center pt-4"
+                      >
+                        <button
+                          onClick={handleXAIDisconnect}
+                          className="flex items-center gap-2 px-6 py-3 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all duration-200"
+                        >
+                          <X className="w-4 h-4" />
+                          <span className="text-sm">End conversation</span>
+                        </button>
+                      </motion.div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </XAIProvider>
           )}
         </AnimatePresence>
       </main>

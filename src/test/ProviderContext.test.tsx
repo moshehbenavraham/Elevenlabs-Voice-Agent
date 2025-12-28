@@ -51,7 +51,8 @@ describe('ProviderContext', () => {
       const { result } = renderHook(() => useProvider(), { wrapper });
 
       expect(result.current.isProviderAvailable('elevenlabs')).toBe(true);
-      expect(result.current.isProviderAvailable('xai')).toBe(false);
+      // xAI availability depends on VITE_XAI_ENABLED env var (true in test env)
+      expect(result.current.isProviderAvailable('xai')).toBe(true);
       expect(result.current.isProviderAvailable('openai')).toBe(false);
     });
   });
@@ -72,12 +73,13 @@ describe('ProviderContext', () => {
       const { result } = renderHook(() => useProvider(), { wrapper });
       const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
+      // openai is unavailable, test with that instead of xai
       act(() => {
-        result.current.setActiveProvider('xai');
+        result.current.setActiveProvider('openai');
       });
 
       expect(result.current.activeProvider).toBe('elevenlabs');
-      expect(consoleSpy).toHaveBeenCalledWith('Provider xai is not available');
+      expect(consoleSpy).toHaveBeenCalledWith('Provider openai is not available');
 
       consoleSpy.mockRestore();
     });

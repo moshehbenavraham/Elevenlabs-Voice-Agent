@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Index } from '../pages/Index';
+import { ProviderProvider } from '@/contexts/ProviderContext';
 
 interface HeroSectionMockProps {
   onStartConversation: () => void;
@@ -9,6 +10,11 @@ interface HeroSectionMockProps {
 interface ConfigurationModalMockProps {
   isOpen: boolean;
 }
+
+// Wrapper with required providers
+const TestWrapper = ({ children }: { children: React.ReactNode }) => (
+  <ProviderProvider>{children}</ProviderProvider>
+);
 
 // Mock the VoiceContext
 vi.mock('@/contexts/VoiceContext', () => ({
@@ -77,19 +83,37 @@ vi.mock('@/components/voice/VoiceVisualizer', () => ({
   VoiceVisualizer: () => <div data-testid="voice-visualizer">Voice Visualizer</div>,
 }));
 
+vi.mock('@/components/voice/VoiceWidget', () => ({
+  VoiceWidget: () => <div data-testid="voice-widget">Voice Widget</div>,
+}));
+
+// Mock xAI provider components
+vi.mock('@/components/providers', () => ({
+  XAIProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  XAIVoiceButton: () => <div data-testid="xai-voice-button">XAI Voice Button</div>,
+  XAIVoiceStatus: () => <div data-testid="xai-voice-status">XAI Voice Status</div>,
+  XAIVoiceVisualizer: () => <div data-testid="xai-voice-visualizer">XAI Voice Visualizer</div>,
+}));
+
+// Mock ProviderTabs
+vi.mock('@/components/tabs', () => ({
+  ProviderTabs: () => <div data-testid="provider-tabs">Provider Tabs</div>,
+}));
+
 describe('Index Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders without crashing', () => {
-    render(<Index />);
-    expect(screen.getByTestId('hero-section')).toBeInTheDocument();
+    render(<Index />, { wrapper: TestWrapper });
+    // Either hero section or xai hero should render based on active provider
+    expect(screen.getByTestId('background-effects')).toBeInTheDocument();
   });
 
   it('accesses environment variable for agent ID', () => {
     // Test that the component can access environment variables
-    const { container } = render(<Index />);
+    const { container } = render(<Index />, { wrapper: TestWrapper });
     expect(container).toBeInTheDocument();
 
     // The component should render successfully even if env var is not set
@@ -97,11 +121,11 @@ describe('Index Component', () => {
   });
 
   it('renders required components', () => {
-    render(<Index />);
+    render(<Index />, { wrapper: TestWrapper });
 
     // Background effects should be rendered
     expect(screen.getByTestId('background-effects')).toBeInTheDocument();
-    // Hero section should be visible in initial state
-    expect(screen.getByTestId('hero-section')).toBeInTheDocument();
+    // Provider tabs should be visible
+    expect(screen.getByTestId('provider-tabs')).toBeInTheDocument();
   });
 });

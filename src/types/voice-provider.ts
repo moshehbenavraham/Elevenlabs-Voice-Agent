@@ -62,6 +62,14 @@ export interface ProviderConfig {
 }
 
 /**
+ * Check if xAI provider is enabled via environment variable
+ */
+const isXAIEnabled = (): boolean => {
+  const envValue = import.meta.env.VITE_XAI_ENABLED;
+  return envValue === 'true' || envValue === true;
+};
+
+/**
  * Default provider configurations
  */
 export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
@@ -77,7 +85,7 @@ export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
     id: 'xai',
     name: 'xAI',
     description: 'Grok-powered voice conversations',
-    isAvailable: false,
+    isAvailable: isXAIEnabled(),
     requiresApiKey: true,
     icon: 'Bot',
   },
