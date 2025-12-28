@@ -34,7 +34,8 @@
     "phase01-session04-openai-polish",
     "phase02-session01-voice-selection",
     "phase02-session02-conversation-history",
-    "phase02-session03-reconnection-backoff"
+    "phase02-session03-reconnection-backoff",
+    "phase02-session04-function-calling"
   ],
   "next_session_history": [
     {
@@ -90,6 +91,11 @@
     {
       "date": "2025-12-28",
       "session": "phase02-session03-reconnection-backoff",
+      "status": "completed"
+    },
+    {
+      "date": "2025-12-28",
+      "session": "phase02-session04-function-calling",
       "status": "completed"
     }
   ]

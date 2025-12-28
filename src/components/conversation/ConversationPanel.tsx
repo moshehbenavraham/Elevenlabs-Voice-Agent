@@ -73,7 +73,11 @@ export function ConversationPanel({ messages, className }: ConversationPanelProp
       {/* Screen reader announcement for new messages */}
       {lastMessage && (
         <div className="sr-only" aria-live="assertive" aria-atomic="true">
-          {lastMessage.role === 'user' ? 'You said: ' : 'Assistant said: '}
+          {lastMessage.role === 'user'
+            ? 'You said: '
+            : lastMessage.role === 'function'
+              ? 'Function executed: '
+              : 'Assistant said: '}
           {lastMessage.content}
         </div>
       )}

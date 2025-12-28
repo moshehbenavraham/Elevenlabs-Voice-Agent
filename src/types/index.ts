@@ -10,6 +10,8 @@ export type {
   ProviderConfig,
   MessageRole,
   VoiceMessage,
+  FunctionCall,
+  FunctionCallStatus,
 } from './voice-provider';
 
 export { PROVIDERS, DEFAULT_PROVIDER } from './voice-provider';

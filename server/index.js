@@ -3,6 +3,7 @@ import cors from 'cors';
 import { config } from 'dotenv';
 import xaiRoutes from './routes/xai.js';
 import openaiRoutes from './routes/openai.js';
+import functionsRoutes from './routes/functions.js';
 
 // Load environment variables
 config();
@@ -20,6 +21,7 @@ app.use(express.json());
 // API Routes
 app.use('/api/xai', xaiRoutes);
 app.use('/api/openai', openaiRoutes);
+app.use('/api/functions', functionsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

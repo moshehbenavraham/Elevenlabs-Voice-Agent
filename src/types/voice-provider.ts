@@ -14,7 +14,30 @@ export type ProviderType = 'elevenlabs' | 'xai' | 'openai';
 /**
  * Message role type for conversation messages
  */
-export type MessageRole = 'user' | 'assistant';
+export type MessageRole = 'user' | 'assistant' | 'function';
+
+/**
+ * Function call status
+ */
+export type FunctionCallStatus = 'pending' | 'executing' | 'completed' | 'error';
+
+/**
+ * Represents a function call made by the voice agent
+ */
+export interface FunctionCall {
+  /** Unique call ID from the provider */
+  callId: string;
+  /** Name of the function being called */
+  name: string;
+  /** Arguments passed to the function (JSON object) */
+  arguments: Record<string, unknown>;
+  /** Result returned from function execution */
+  result?: unknown;
+  /** Error message if function failed */
+  error?: string;
+  /** Current execution status */
+  status: FunctionCallStatus;
+}
 
 /**
  * Individual message in a voice conversation
@@ -28,6 +51,8 @@ export interface VoiceMessage {
   content: string;
   /** Timestamp when message was created */
   timestamp: number;
+  /** Function call data (when role is 'function') */
+  functionCall?: FunctionCall;
 }
 
 /**

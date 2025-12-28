@@ -17,7 +17,8 @@ import {
 } from '@/lib/audio/audioUtils';
 import { getSavedVoice, saveVoice } from '@/lib/voiceConfig';
 import { useReconnection, type ReconnectionState } from '@/hooks/useReconnection';
-import type { VoiceMessage } from '@/types';
+import { getXAITools } from '@/lib/tools/toolDefinitions';
+import type { VoiceMessage, FunctionCall } from '@/types';
 
 const DEBUG = import.meta.env.DEV;
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
@@ -46,6 +47,7 @@ interface XAIVoiceState {
   error: string | null;
   volume: number;
   messages: VoiceMessage[];
+  pendingFunctionCall: FunctionCall | null;
 }
 
 export interface XAIVoiceContextValue extends XAIVoiceState {
@@ -69,6 +71,7 @@ const initialState: XAIVoiceState = {
   error: null,
   volume: 0.7,
   messages: [],
+  pendingFunctionCall: null,
 };
 
 type XAIVoiceAction =
@@ -79,6 +82,7 @@ type XAIVoiceAction =
   | { type: 'SET_VOLUME'; payload: number }
   | { type: 'ADD_MESSAGE'; payload: VoiceMessage }
   | { type: 'UPDATE_LAST_MESSAGE'; payload: string }
+  | { type: 'SET_PENDING_FUNCTION_CALL'; payload: FunctionCall | null }
   | { type: 'RESET' };
 
 function xaiVoiceReducer(state: XAIVoiceState, action: XAIVoiceAction): XAIVoiceState {
@@ -110,6 +114,8 @@ function xaiVoiceReducer(state: XAIVoiceState, action: XAIVoiceAction): XAIVoice
       };
       return { ...state, messages: updatedMessages };
     }
+    case 'SET_PENDING_FUNCTION_CALL':
+      return { ...state, pendingFunctionCall: action.payload };
     case 'RESET':
       return { ...initialState, volume: state.volume };
     default:
@@ -393,6 +399,147 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
   }, [playNextInQueue]);
 
   /**
+   * Execute a function call and send results back to xAI
+   */
+  const handleFunctionCall = useCallback(
+    async (callId: string, name: string, argumentsJson: string) => {
+      debugLog('function', `Executing function: ${name}`, { callId, argumentsJson });
+
+      // Parse arguments
+      let args: Record<string, unknown>;
+      try {
+        args = JSON.parse(argumentsJson);
+      } catch {
+        args = {};
+      }
+
+      // Set pending function call state
+      const functionCall: FunctionCall = {
+        callId,
+        name,
+        arguments: args,
+        status: 'executing',
+      };
+      dispatch({ type: 'SET_PENDING_FUNCTION_CALL', payload: functionCall });
+
+      // Add function call message to transcript
+      dispatch({
+        type: 'ADD_MESSAGE',
+        payload: {
+          id: `xai-function-${callId}`,
+          role: 'function',
+          content: `Calling ${name}...`,
+          timestamp: Date.now(),
+          functionCall,
+        },
+      });
+
+      try {
+        // Execute function via backend
+        const response = await fetch(`${API_BASE_URL}/api/functions/execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, arguments: args, callId }),
+        });
+
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.error || 'Function execution failed');
+        }
+
+        debugLog('function', `Function ${name} completed`, result);
+
+        // Update function call state to completed
+        const completedCall: FunctionCall = {
+          ...functionCall,
+          status: 'completed',
+          result: result.result,
+        };
+        dispatch({ type: 'SET_PENDING_FUNCTION_CALL', payload: null });
+
+        // Update the function message with result
+        dispatch({
+          type: 'ADD_MESSAGE',
+          payload: {
+            id: `xai-function-result-${callId}`,
+            role: 'function',
+            content: result.result?.formatted || JSON.stringify(result.result),
+            timestamp: Date.now(),
+            functionCall: completedCall,
+          },
+        });
+
+        // Send function result back to xAI
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          // Create a conversation item with the function call output
+          wsRef.current.send(
+            JSON.stringify({
+              type: 'conversation.item.create',
+              item: {
+                type: 'function_call_output',
+                call_id: callId,
+                output: JSON.stringify(result.result),
+              },
+            })
+          );
+
+          // Trigger a response to have the model speak the result
+          wsRef.current.send(
+            JSON.stringify({
+              type: 'response.create',
+            })
+          );
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Function execution failed';
+        trackError('XAIVoiceContext', `Function ${name} failed`, error);
+
+        // Update function call state to error
+        const errorCall: FunctionCall = {
+          ...functionCall,
+          status: 'error',
+          error: errorMessage,
+        };
+        dispatch({ type: 'SET_PENDING_FUNCTION_CALL', payload: null });
+
+        // Update the function message with error
+        dispatch({
+          type: 'ADD_MESSAGE',
+          payload: {
+            id: `xai-function-error-${callId}`,
+            role: 'function',
+            content: `Error: ${errorMessage}`,
+            timestamp: Date.now(),
+            functionCall: errorCall,
+          },
+        });
+
+        // Send error back to xAI so it can inform the user
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(
+            JSON.stringify({
+              type: 'conversation.item.create',
+              item: {
+                type: 'function_call_output',
+                call_id: callId,
+                output: JSON.stringify({ error: errorMessage }),
+              },
+            })
+          );
+
+          wsRef.current.send(
+            JSON.stringify({
+              type: 'response.create',
+            })
+          );
+        }
+      }
+    },
+    []
+  );
+
+  /**
    * Handle incoming WebSocket messages from xAI
    */
   const handleWSMessage = useCallback(
@@ -404,7 +551,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
         switch (data.type) {
           case 'session.created':
             debugLog('session', 'Session created, sending config...');
-            // Send session update with voice and instructions
+            // Send session update with voice, instructions, and tools
             if (wsRef.current?.readyState === WebSocket.OPEN) {
               wsRef.current.send(
                 JSON.stringify({
@@ -424,6 +571,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
                       prefix_padding_ms: 300,
                       silence_duration_ms: 500,
                     },
+                    tools: getXAITools(),
                   },
                 })
               );
@@ -508,6 +656,12 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
             debugLog('response', 'Response complete');
             break;
 
+          case 'response.function_call_arguments.done':
+            // Function call requested by the model
+            debugLog('function', 'Function call received', data);
+            handleFunctionCall(data.call_id, data.name, data.arguments);
+            break;
+
           case 'error':
             const errorMsg = data.error?.message || 'xAI error occurred';
             trackError('XAIVoiceContext', 'xAI WebSocket error', data.error);
@@ -518,7 +672,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
         debugLog('ws:message', 'Failed to parse message', err);
       }
     },
-    [playNextInQueue]
+    [playNextInQueue, handleFunctionCall]
   );
 
   // Keep handleWSMessage ref in sync

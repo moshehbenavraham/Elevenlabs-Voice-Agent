@@ -4,7 +4,7 @@
 **Sessions**: 5
 **Estimated Duration**: 3-5 days
 
-**Progress**: 3/5 sessions (60%)
+**Progress**: 4/5 sessions (80%)
 
 ---
 
@@ -21,7 +21,7 @@ Enhance the multi-provider voice agent application with advanced features that i
 | 01      | Voice Selection UI                | Complete    | 22         | 2025-12-28 |
 | 02      | Conversation History & Transcript | Complete    | 22         | 2025-12-28 |
 | 03      | Reconnection & Backoff            | Complete    | 25         | 2025-12-28 |
-| 04      | Function Calling Integration      | Not Started | ~25        | -          |
+| 04      | Function Calling Integration      | Complete    | 25         | 2025-12-28 |
 | 05      | Polish & Validation               | Not Started | ~20        | -          |
 
 ---
@@ -54,11 +54,21 @@ Enhance the multi-provider voice agent application with advanced features that i
 - Fresh ephemeral token fetch on each reconnection attempt
 - 25/25 tasks completed, 26 new tests added (148 total)
 
+### Session 04: Function Calling Integration (2025-12-28)
+
+- Created tool definitions system for OpenAI and xAI providers
+- Implemented backend function execution endpoint with security allowlist
+- Added 3 demo functions: get_weather, calculate, get_current_time
+- Integrated function calling into OpenAI and xAI voice contexts
+- Created FunctionCallIndicator component with loading/success/error states
+- Updated MessageBubble and ConversationPanel for function message display
+- 25/25 tasks completed, 26 new tests added (174 total)
+
 ---
 
 ## Upcoming Sessions
 
-- Session 04: Function Calling Integration
+- Session 05: Polish & Validation
 
 ---
 
