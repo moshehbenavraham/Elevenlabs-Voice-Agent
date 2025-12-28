@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, Loader2, Phone, AlertCircle, Wifi, WifiOff, Settings } from 'lucide-react';
 import { XAIVoiceProvider } from '@/contexts/XAIVoiceContext';
 import { useXAIVoice } from '@/hooks/useXAIVoice';
+import { VoiceSelector } from '@/components/voice/VoiceSelector';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 
@@ -690,6 +691,28 @@ export function XAIVoiceVisualizer({
         />
       )}
     </motion.div>
+  );
+}
+
+interface XAIVoiceSelectorProps {
+  className?: string;
+}
+
+/**
+ * Voice selector for xAI provider
+ * Shows voice selection dropdown, disabled when connected
+ */
+export function XAIVoiceSelector({ className }: XAIVoiceSelectorProps) {
+  const { selectedVoice, setVoice, isConnected, isLoading } = useXAIVoice();
+
+  return (
+    <VoiceSelector
+      provider="xai"
+      value={selectedVoice}
+      onValueChange={setVoice}
+      disabled={isConnected || isLoading}
+      className={className}
+    />
   );
 }
 

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, Loader2, Phone, AlertCircle, Wifi, WifiOff, Settings } from 'lucide-react';
 import { OpenAIVoiceProvider } from '@/contexts/OpenAIVoiceContext';
 import { useOpenAIVoice } from '@/hooks/useOpenAIVoice';
+import { VoiceSelector } from '@/components/voice/VoiceSelector';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 
@@ -661,7 +662,9 @@ export function OpenAIVoiceVisualizer({
         style={!responsive ? { width, height } : undefined}
         role="img"
         aria-label={
-          isConnected ? 'Real-time OpenAI audio visualization' : 'OpenAI audio visualization placeholder'
+          isConnected
+            ? 'Real-time OpenAI audio visualization'
+            : 'OpenAI audio visualization placeholder'
         }
       />
 
@@ -690,6 +693,28 @@ export function OpenAIVoiceVisualizer({
         />
       )}
     </motion.div>
+  );
+}
+
+interface OpenAIVoiceSelectorProps {
+  className?: string;
+}
+
+/**
+ * Voice selector for OpenAI provider
+ * Shows voice selection dropdown, disabled when connected
+ */
+export function OpenAIVoiceSelector({ className }: OpenAIVoiceSelectorProps) {
+  const { selectedVoice, setVoice, isConnected, isLoading } = useOpenAIVoice();
+
+  return (
+    <VoiceSelector
+      provider="openai"
+      value={selectedVoice}
+      onValueChange={setVoice}
+      disabled={isConnected || isLoading}
+      className={className}
+    />
   );
 }
 
@@ -739,7 +764,8 @@ export function OpenAIEmptyState({ className, onOpenSettings }: OpenAIEmptyState
 
       {/* Instructions */}
       <p className="text-zinc-500 text-sm max-w-md mb-6">
-        Add your OpenAI API key to the server environment variables to enable GPT-4o voice conversations.
+        Add your OpenAI API key to the server environment variables to enable GPT-4o voice
+        conversations.
       </p>
 
       {/* Settings button */}

@@ -19,8 +19,8 @@
     "2": {
       "name": "Advanced Features",
       "description": "Voice selection UI, conversation history, function calling, reconnection",
-      "status": "pending",
-      "session_count": 0
+      "status": "in_progress",
+      "session_count": 5
     }
   },
   "completed_sessions": [
@@ -31,7 +31,8 @@
     "phase01-session01-openai-research",
     "phase01-session02-openai-backend",
     "phase01-session03-openai-frontend",
-    "phase01-session04-openai-polish"
+    "phase01-session04-openai-polish",
+    "phase02-session01-voice-selection"
   ],
   "next_session_history": [
     {
@@ -72,6 +73,11 @@
     {
       "date": "2025-12-28",
       "session": "phase01-session04-openai-polish",
+      "status": "completed"
+    },
+    {
+      "date": "2025-12-28",
+      "session": "phase02-session01-voice-selection",
       "status": "completed"
     }
   ]

@@ -13,7 +13,7 @@ Items requiring attention in upcoming phases. Review before each session.
 
 <!-- Max 5 items -->
 
-- [P00] **react-refresh/only-export-components warnings**: 7 occurrences across provider/tab components. Intentional pattern for co-located components - suppress if needed or restructure exports.
+- [P00] **react-refresh/only-export-components warnings**: 18 occurrences across provider/tab/context components. Intentional pattern for co-located components - suppress if needed or restructure exports.
 
 ### External Dependencies
 
@@ -58,6 +58,7 @@ Proven patterns and anti-patterns. Reference during implementation.
 - [P00] **Framer Motion variants with reduced motion**: Create animation variants with prefers-reduced-motion alternatives for clean accessibility.
 - [P00] **Environment-based feature flags**: VITE_XAI_ENABLED pattern cleanly toggles provider availability based on API key presence.
 - [P00] **Existing server patterns**: Express + CORS + dotenv already set up in server/index.js - extend rather than rewrite.
+- [P01] **Research-first 4-session structure**: For new provider integration, use research → backend → frontend → polish progression. Enables informed decisions before coding.
 - [P00] **Glassmorphism design system**: backdrop-blur + semi-transparent backgrounds (bg-white/10) create consistent premium UI.
 - [P00] **localStorage for persistence**: Provider selection persists across refreshes with simple localStorage pattern.
 - [P00] **Playback queue with ref pattern**: Queue audio chunks with useRef for playNextInQueue to handle async WebSocket arrival.
@@ -65,6 +66,7 @@ Proven patterns and anti-patterns. Reference during implementation.
 - [P01] **~80% Code Reuse for New Providers**: OpenAI integration reused vast majority of xAI patterns (audio utils, WebSocket handling, playback queue).
 - [P01] **Empty state component for unconfigured providers**: OpenAIEmptyState shows clear setup instructions when API key missing.
 - [P01] **Health endpoint for config validation**: /api/openai/health checks if OPENAI_API_KEY is configured before showing provider.
+- [P01] **Shared audio utilities for compatible APIs**: When providers use identical audio specs (24kHz, PCM16, mono), share audioUtils.ts without modification.
 
 ### What to Avoid
 
@@ -72,6 +74,7 @@ Proven patterns and anti-patterns. Reference during implementation.
 
 - [P00] **External AudioWorklet files with Vite**: Don't use separate .worklet.ts files - causes bundling and CORS issues. Use inline Blob URLs.
 - [P00] **Safari audio without user gesture**: AudioContext must be resumed on user click, not on component mount. Safari enforces this strictly.
+- [P01] **Test assertions for provider availability**: Update test expectations when new providers become available to keep tests accurate.
 - [P00] **Exposing API keys to browser**: Always use backend proxy for sensitive credentials. Never import API keys in frontend code.
 - [P00] **Simultaneous voice connections**: Resource management is cleaner with single active provider. Auto-disconnect on tab switch.
 - [P00] **Nested if-else for message types**: Use switch statements for WebSocket message routing - more readable and maintainable.
@@ -106,26 +109,23 @@ Recently closed items (buffer - rotates out after 2 phases).
 
 ---
 
-## Future Considerations (Deferred from P00)
+## Phase 02 Roadmap
 
-Items explicitly deferred for future phases:
+Consolidated items for Advanced Features phase (Phase 02):
 
-1. **Provider-specific configuration modals** - API key management UI
-2. **Reconnection with exponential backoff** - Current implementation shows error on disconnect
-3. **Conversation history/transcript UI** - Text alongside audio for accessibility
-4. **Swipe gestures for mobile tabs** - Touch-friendly tab navigation
-5. **E2E test automation** - Playwright integration
-6. **Token caching with TTL** - Reduce xAI API calls
-
-## Phase 02 Considerations
-
-Items to address in upcoming phases:
-
-1. **Voice Selection UI** - Allow users to choose voice (alloy, ash, ballad, etc.) from frontend
+### High Priority
+1. **Voice Selection UI** - Allow users to choose voice (alloy, ash, ballad, coral, echo, sage, shimmer, verse) from frontend
 2. **Conversation History/Transcript** - Display text alongside audio for accessibility
-3. **Function Calling Integration** - Connect OpenAI function calling to backend actions
-4. **Reconnection with Exponential Backoff** - Handle network flakiness gracefully
-5. **E2E Test Automation** - Playwright tests for voice flows (deferred from P00)
+3. **Reconnection with Exponential Backoff** - Handle network flakiness gracefully
+
+### Medium Priority
+4. **Function Calling Integration** - Connect OpenAI/xAI function calling to backend actions
+5. **Provider-specific configuration modals** - API key management UI
+
+### Lower Priority (Stretch Goals)
+6. **E2E Test Automation** - Playwright tests for voice flows
+7. **Swipe gestures for mobile tabs** - Touch-friendly tab navigation
+8. **Token caching with TTL** - Reduce API calls for repeated sessions
 
 ---
 

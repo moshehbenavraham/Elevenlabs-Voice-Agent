@@ -640,7 +640,9 @@ export const Index = () => {
                         <h2 className="font-display text-3xl sm:text-4xl text-zinc-100 mb-2">
                           GPT-4o is Listening
                         </h2>
-                        <p className="text-zinc-500 text-sm">Speak naturally - OpenAI is processing</p>
+                        <p className="text-zinc-500 text-sm">
+                          Speak naturally - OpenAI is processing
+                        </p>
                       </motion.div>
 
                       <motion.div

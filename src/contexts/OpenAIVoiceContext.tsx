@@ -1,4 +1,4 @@
-import { createContext, useReducer, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { createContext, useReducer, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { trackError } from '@/lib/errorTracking';
 import {
   encodeBase64,
@@ -7,6 +7,7 @@ import {
   int16ToBytes,
   XAI_SAMPLE_RATE,
 } from '@/lib/audio/audioUtils';
+import { getSavedVoice, saveVoice } from '@/lib/voiceConfig';
 
 const DEBUG = import.meta.env.DEV;
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
@@ -19,7 +20,6 @@ const OPENAI_MODEL = 'gpt-4o-realtime-preview-2024-12-17';
 const OPENAI_SAMPLE_RATE = XAI_SAMPLE_RATE;
 
 // OpenAI configuration from environment
-const OPENAI_VOICE = import.meta.env.VITE_OPENAI_VOICE || 'alloy';
 const OPENAI_INSTRUCTIONS =
   import.meta.env.VITE_OPENAI_INSTRUCTIONS ||
   'You are a helpful voice assistant. Keep responses conversational and concise.';
@@ -44,6 +44,8 @@ interface OpenAIVoiceState {
 }
 
 export interface OpenAIVoiceContextValue extends OpenAIVoiceState {
+  selectedVoice: string;
+  setVoice: (voice: string) => void;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   setVolume: (volume: number) => void;
@@ -174,6 +176,21 @@ interface OpenAIVoiceProviderProps {
 export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProviderProps) {
   const [state, dispatch] = useReducer(openAIVoiceReducer, initialState);
 
+  // Voice selection state with localStorage persistence
+  const [selectedVoice, setSelectedVoiceState] = useState(() => getSavedVoice('openai'));
+  const selectedVoiceRef = useRef(selectedVoice);
+
+  // Keep ref in sync with state for use in callbacks
+  useEffect(() => {
+    selectedVoiceRef.current = selectedVoice;
+  }, [selectedVoice]);
+
+  // Set voice with localStorage persistence
+  const setVoice = useCallback((voice: string) => {
+    setSelectedVoiceState(voice);
+    saveVoice('openai', voice);
+  }, []);
+
   // Refs for cleanup
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -246,7 +263,7 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
                   type: 'session.update',
                   session: {
                     modalities: ['audio', 'text'],
-                    voice: OPENAI_VOICE,
+                    voice: selectedVoiceRef.current,
                     instructions: OPENAI_INSTRUCTIONS,
                     input_audio_format: 'pcm16',
                     output_audio_format: 'pcm16',
@@ -422,10 +439,7 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
       const wsUrl = `${OPENAI_REALTIME_URL}?model=${OPENAI_MODEL}`;
       debugLog('ws', `Connecting to ${wsUrl}`);
 
-      const ws = new WebSocket(wsUrl, [
-        'realtime',
-        `openai-insecure-api-key.${token}`,
-      ]);
+      const ws = new WebSocket(wsUrl, ['realtime', `openai-insecure-api-key.${token}`]);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -541,6 +555,8 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
 
   const value: OpenAIVoiceContextValue = {
     ...state,
+    selectedVoice,
+    setVoice,
     connect,
     disconnect,
     setVolume,

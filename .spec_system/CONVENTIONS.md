@@ -45,7 +45,7 @@
 - Server data: Tanstack Query
 - Local component state: `useState`/`useReducer`
 - Shared UI state: Custom hooks or Context
-- Provider-specific state: Separate contexts (e.g., `VoiceContext`, `XAIVoiceContext`)
+- Provider-specific state: Separate contexts (e.g., `VoiceContext`, `XAIVoiceContext`, `OpenAIVoiceContext`)
 
 ## Error Handling
 

@@ -1,4 +1,4 @@
-import { createContext, useReducer, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { createContext, useReducer, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { trackError } from '@/lib/errorTracking';
 import {
   encodeBase64,
@@ -7,13 +7,13 @@ import {
   int16ToBytes,
   XAI_SAMPLE_RATE,
 } from '@/lib/audio/audioUtils';
+import { getSavedVoice, saveVoice } from '@/lib/voiceConfig';
 
 const DEBUG = import.meta.env.DEV;
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 const XAI_REALTIME_URL = 'wss://api.x.ai/v1/realtime';
 
 // xAI configuration from environment
-const XAI_VOICE = import.meta.env.VITE_XAI_VOICE || 'verse';
 const XAI_INSTRUCTIONS =
   import.meta.env.VITE_XAI_INSTRUCTIONS ||
   'You are a helpful voice assistant. Keep responses conversational and concise.';
@@ -38,6 +38,8 @@ interface XAIVoiceState {
 }
 
 export interface XAIVoiceContextValue extends XAIVoiceState {
+  selectedVoice: string;
+  setVoice: (voice: string) => void;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   setVolume: (volume: number) => void;
@@ -168,6 +170,21 @@ interface XAIVoiceProviderProps {
 export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderProps) {
   const [state, dispatch] = useReducer(xaiVoiceReducer, initialState);
 
+  // Voice selection state with localStorage persistence
+  const [selectedVoice, setSelectedVoiceState] = useState(() => getSavedVoice('xai'));
+  const selectedVoiceRef = useRef(selectedVoice);
+
+  // Keep ref in sync with state for use in callbacks
+  useEffect(() => {
+    selectedVoiceRef.current = selectedVoice;
+  }, [selectedVoice]);
+
+  // Set voice with localStorage persistence
+  const setVoice = useCallback((voice: string) => {
+    setSelectedVoiceState(voice);
+    saveVoice('xai', voice);
+  }, []);
+
   // Refs for cleanup
   const wsRef = useRef<WebSocket | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -240,7 +257,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
                   type: 'session.update',
                   session: {
                     modalities: ['audio', 'text'],
-                    voice: XAI_VOICE,
+                    voice: selectedVoiceRef.current,
                     instructions: XAI_INSTRUCTIONS,
                     input_audio_format: 'pcm16',
                     output_audio_format: 'pcm16',
@@ -531,6 +548,8 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
 
   const value: XAIVoiceContextValue = {
     ...state,
+    selectedVoice,
+    setVoice,
     connect,
     disconnect,
     setVolume,
