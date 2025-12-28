@@ -12,12 +12,18 @@
     }
   },
   "completed_sessions": [
-    "phase00-session01-foundation"
+    "phase00-session01-foundation",
+    "phase00-session02-xai-backend"
   ],
   "next_session_history": [
     {
       "date": "2025-12-28",
       "session": "phase00-session01-foundation",
+      "status": "completed"
+    },
+    {
+      "date": "2025-12-28",
+      "session": "phase00-session02-xai-backend",
       "status": "completed"
     }
   ]

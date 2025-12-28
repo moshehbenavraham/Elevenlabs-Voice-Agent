@@ -1,7 +1,7 @@
 # Phase 00: Multi-Provider Voice
 
 **Status**: In Progress
-**Progress**: 1/4 sessions (25%)
+**Progress**: 2/4 sessions (50%)
 
 ## Overview
 
@@ -12,7 +12,7 @@ Implement a tabbed interface system that allows users to demo and interact with 
 | Session | Name | Status | Validated |
 |---------|------|--------|-----------|
 | 01 | Foundation - Provider Types & Tab System | Complete | 2025-12-28 |
-| 02 | xAI Backend Integration | Not Started | - |
+| 02 | xAI Backend Integration | Complete | 2025-12-28 |
 | 03 | xAI Frontend Integration | Not Started | - |
 | 04 | Polish & Testing | Not Started | - |
 
@@ -34,7 +34,7 @@ Implement a tabbed interface system that allows users to demo and interact with 
 - [x] `src/components/tabs/ProviderTab.tsx` - Individual tab component
 
 ### xAI Integration
-- [ ] `server/routes/xai.ts` - Backend ephemeral token endpoint
+- [x] `server/routes/xai.js` - Backend ephemeral token endpoint
 - [ ] `src/contexts/XAIVoiceContext.tsx` - xAI voice connection logic
 - [ ] `src/components/providers/XAIProvider.tsx` - xAI provider wrapper
 - [ ] Audio encoding/decoding for xAI (PCM 16-bit, 24kHz)
@@ -61,4 +61,4 @@ Implement a tabbed interface system that allows users to demo and interact with 
 
 ## Next Steps
 
-Run `/sessionspec` to generate the formal specification for the recommended session.
+Run `/nextsession` to get the recommendation for the next session.

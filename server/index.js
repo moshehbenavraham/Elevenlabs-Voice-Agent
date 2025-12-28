@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { config } from 'dotenv';
+import xaiRoutes from './routes/xai.js';
 
 // Load environment variables
 config();
@@ -14,6 +15,9 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+
+// API Routes
+app.use('/api/xai', xaiRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -79,6 +83,7 @@ app.get('/api/elevenlabs/signed-url', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`[Server] Running on http://localhost:${PORT}`);
   console.log(`[Server] CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:8082'}`);
-  console.log(`[Server] API key configured: ${process.env.ELEVENLABS_API_KEY ? 'Yes' : 'No'}`);
-  console.log(`[Server] Agent ID configured: ${process.env.VITE_ELEVENLABS_AGENT_ID ? 'Yes' : 'No'}`);
+  console.log(`[Server] ElevenLabs API key: ${process.env.ELEVENLABS_API_KEY ? 'Yes' : 'No'}`);
+  console.log(`[Server] ElevenLabs Agent ID: ${process.env.VITE_ELEVENLABS_AGENT_ID ? 'Yes' : 'No'}`);
+  console.log(`[Server] xAI API key: ${process.env.XAI_API_KEY ? 'Yes' : 'No'}`);
 });
