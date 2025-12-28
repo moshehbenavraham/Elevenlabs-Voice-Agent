@@ -19,3 +19,13 @@ export {
   useElevenLabsConfigured,
   checkElevenLabsConfiguration,
 } from './ElevenLabsProvider';
+
+export {
+  OpenAIProvider,
+  OpenAIVoiceButton,
+  OpenAIVoiceStatus,
+  OpenAIVoiceVisualizer,
+  OpenAIEmptyState,
+  useOpenAIConfigured,
+  checkOpenAIConfiguration,
+} from './OpenAIProvider';

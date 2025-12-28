@@ -134,6 +134,24 @@ async function createEphemeralToken(apiKey, expirySeconds = DEFAULT_EXPIRY_SECON
  *   - Success: { token: string, expiresAt: string }
  *   - Error: { error: string, message: string }
  */
+/**
+ * GET /api/xai/health
+ * Health check endpoint to verify xAI configuration status.
+ * Used by frontend to determine if xAI tab should be enabled.
+ *
+ * Response:
+ *   - { configured: boolean, provider: string }
+ */
+router.get('/health', (req, res) => {
+  const apiKey = process.env.XAI_API_KEY;
+  const configured = Boolean(apiKey && apiKey.length > 0);
+
+  res.json({
+    configured,
+    provider: 'xai'
+  });
+});
+
 router.post('/session', async (req, res) => {
   // Validate API key configuration
   const validation = validateApiKey();

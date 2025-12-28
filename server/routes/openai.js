@@ -136,6 +136,24 @@ async function createEphemeralToken(apiKey, model = DEFAULT_MODEL) {
  *   - Success: { token: string, expiresAt: string }
  *   - Error: { error: string, message: string }
  */
+/**
+ * GET /api/openai/health
+ * Health check endpoint to verify OpenAI configuration status.
+ * Used by frontend to determine if OpenAI tab should be enabled.
+ *
+ * Response:
+ *   - { configured: boolean, provider: string }
+ */
+router.get('/health', (req, res) => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  const configured = Boolean(apiKey && apiKey.length > 0);
+
+  res.json({
+    configured,
+    provider: 'openai'
+  });
+});
+
 router.post('/session', async (req, res) => {
   // Validate API key configuration
   const validation = validateApiKey();

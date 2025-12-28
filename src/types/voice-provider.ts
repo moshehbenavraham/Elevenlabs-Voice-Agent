@@ -70,6 +70,14 @@ const isXAIEnabled = (): boolean => {
 };
 
 /**
+ * Check if OpenAI provider is enabled via environment variable
+ */
+const isOpenAIEnabled = (): boolean => {
+  const envValue = import.meta.env.VITE_OPENAI_ENABLED;
+  return envValue === 'true' || envValue === true;
+};
+
+/**
  * Default provider configurations
  */
 export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
@@ -92,8 +100,8 @@ export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
   openai: {
     id: 'openai',
     name: 'OpenAI',
-    description: 'GPT-4 voice interactions',
-    isAvailable: false,
+    description: 'GPT-4o realtime voice conversations',
+    isAvailable: isOpenAIEnabled(),
     requiresApiKey: true,
     icon: 'Sparkles',
   },
