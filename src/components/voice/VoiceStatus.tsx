@@ -17,6 +17,7 @@ export function VoiceStatus({ className, showMessages = true }: VoiceStatusProps
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
+        data-testid="voice-status"
         className={cn(
           'flex items-center justify-between px-4 py-3 rounded-lg',
           'border backdrop-blur-sm transition-all duration-300',
@@ -52,6 +53,7 @@ export function VoiceStatus({ className, showMessages = true }: VoiceStatusProps
 
           {/* Status text */}
           <span
+            data-testid="voice-status-text"
             className={cn('text-sm font-medium', {
               'text-zinc-500': !isConnected && !error && !isLoading,
               'text-amber-400/90': isLoading,

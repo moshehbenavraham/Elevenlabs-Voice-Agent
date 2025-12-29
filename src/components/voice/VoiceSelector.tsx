@@ -40,6 +40,7 @@ export function VoiceSelector({
       <label className="block text-xs font-medium text-zinc-400 mb-1.5">Voice</label>
       <SelectPrimitive.Root value={value} onValueChange={onValueChange} disabled={disabled}>
         <SelectPrimitive.Trigger
+          data-testid="voice-selector"
           className={cn(
             'flex h-10 w-full items-center justify-between rounded-lg px-3 py-2',
             'bg-zinc-900/50 backdrop-blur-sm',

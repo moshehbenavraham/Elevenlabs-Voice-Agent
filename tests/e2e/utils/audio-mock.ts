@@ -3,6 +3,8 @@
  * Prevents actual microphone access while simulating voice interactions
  */
 
+import type { Page } from '@playwright/test';
+
 /**
  * Script to inject into the page that mocks MediaDevices, AudioContext, and MediaStream APIs
  * Must be injected via page.addInitScript() before page load
@@ -288,4 +290,14 @@ declare global {
   interface Window {
     __E2E_AUDIO_MOCK__?: E2EAudioMock;
   }
+}
+
+/**
+ * Set up audio mocking for a Playwright page
+ * Injects the audio mock script before page load
+ *
+ * @param page - Playwright page instance
+ */
+export async function setupAudioMock(page: Page): Promise<void> {
+  await page.addInitScript(audioMockScript);
 }

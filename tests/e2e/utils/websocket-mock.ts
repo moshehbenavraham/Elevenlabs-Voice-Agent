@@ -228,6 +228,61 @@ export const websocketMockScript = `
       if (conn) {
         conn.close(code, 'Simulated disconnect');
       }
+    },
+    simulateReconnect: (index) => {
+      const conn = mockConnections[index];
+      if (conn && conn.readyState === MockWebSocket.CLOSED) {
+        conn.readyState = MockWebSocket.CONNECTING;
+        setTimeout(() => {
+          conn._handleOpen();
+        }, 50);
+      }
+    },
+    simulateError: (index, errorMsg = 'Mock WebSocket error') => {
+      const conn = mockConnections[index];
+      if (conn) {
+        const event = new Event('error');
+        event.message = errorMsg;
+        if (conn.onerror) conn.onerror(event);
+        conn._eventListeners.error.forEach(fn => fn(event));
+        console.log('[E2E Mock] WebSocket error simulated:', errorMsg);
+      }
+    },
+    simulateNetworkDisconnect: () => {
+      mockConnections.forEach((conn, i) => {
+        if (conn.readyState === MockWebSocket.OPEN) {
+          conn.close(1006, 'Network disconnected');
+        }
+      });
+    },
+    simulateFunctionCall: (index, functionName, args, result) => {
+      const conn = mockConnections[index];
+      if (conn && conn.readyState === MockWebSocket.OPEN) {
+        // Send function call event
+        conn._sendMockMessage({
+          type: 'response.function_call_arguments.done',
+          call_id: 'call-' + Date.now(),
+          name: functionName,
+          arguments: JSON.stringify(args)
+        });
+        // Send function output after delay
+        setTimeout(() => {
+          conn._sendMockMessage({
+            type: 'response.function_call_output',
+            call_id: 'call-' + Date.now(),
+            output: JSON.stringify(result)
+          });
+        }, 200);
+      }
+    },
+    getConnectionCount: () => mockConnections.length,
+    clearConnections: () => {
+      mockConnections.forEach(conn => {
+        if (conn.readyState !== MockWebSocket.CLOSED) {
+          conn.close(1000, 'Test cleanup');
+        }
+      });
+      mockConnections.length = 0;
     }
   };
 
@@ -243,6 +298,17 @@ export interface E2EWebSocketMock {
   OriginalWebSocket: typeof WebSocket;
   getConnections: () => WebSocket[];
   simulateClose: (index: number, code?: number) => void;
+  simulateReconnect: (index: number) => void;
+  simulateError: (index: number, errorMsg?: string) => void;
+  simulateNetworkDisconnect: () => void;
+  simulateFunctionCall: (
+    index: number,
+    functionName: string,
+    args: Record<string, unknown>,
+    result: unknown
+  ) => void;
+  getConnectionCount: () => number;
+  clearConnections: () => void;
 }
 
 declare global {

@@ -167,6 +167,8 @@ export function VoiceButton({ className, size = 'lg', onConnect, onDisconnect }:
         ref={buttonRef}
         onClick={handleClick}
         disabled={isLoading}
+        data-testid="voice-button"
+        data-state={state}
         className={cn(
           config.button,
           'relative z-10 rounded-full',
@@ -271,6 +273,7 @@ export function VoiceButton({ className, size = 'lg', onConnect, onDisconnect }:
         transition={{ delay: 0.2 }}
       >
         <span
+          data-testid="voice-button-status"
           className={cn('font-mono text-xs tracking-wide uppercase', {
             'text-zinc-500': state === 'idle',
             'text-amber-400/80': state === 'loading',

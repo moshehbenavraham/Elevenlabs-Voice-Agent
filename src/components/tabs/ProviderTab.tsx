@@ -106,6 +106,7 @@ export function ProviderTab({
         value={provider}
         disabled={disabled}
         title={disabled ? disabledReason : undefined}
+        data-testid={`provider-tab-${provider}`}
         className={cn(
           // Base styles - min 44px touch target
           'group relative flex items-center gap-2 px-4 py-3 rounded-lg',

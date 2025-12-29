@@ -38,6 +38,7 @@ export function ConversationPanel({ messages, className }: ConversationPanelProp
 
   return (
     <div
+      data-testid="conversation-panel"
       className={cn(
         'flex flex-col h-full rounded-2xl',
         'bg-white/5 backdrop-blur-lg',
@@ -60,7 +61,10 @@ export function ConversationPanel({ messages, className }: ConversationPanelProp
       <ScrollArea className="flex-1 px-4" onScrollCapture={handleScroll} ref={scrollRef}>
         <div className="py-4 space-y-3">
           {messages.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-white/40 text-sm">
+            <div
+              data-testid="conversation-empty"
+              className="flex items-center justify-center h-32 text-white/40 text-sm"
+            >
               <p>Start speaking to begin the conversation...</p>
             </div>
           ) : (

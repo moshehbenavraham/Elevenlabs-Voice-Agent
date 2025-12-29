@@ -39,6 +39,7 @@ export function MessageBubble({ message, className }: MessageBubbleProps) {
   if (isFunction && message.functionCall) {
     return (
       <motion.div
+        data-testid="message-bubble-function"
         className={cn('group flex w-full justify-center', className)}
         initial={shouldReduceMotion ? 'visible' : 'hidden'}
         animate="visible"
@@ -94,6 +95,7 @@ export function MessageBubble({ message, className }: MessageBubbleProps) {
   // Regular user/assistant message styling
   return (
     <motion.div
+      data-testid={`message-bubble-${message.role}`}
       className={cn('group flex w-full', isUser ? 'justify-end' : 'justify-start', className)}
       initial={shouldReduceMotion ? 'visible' : 'hidden'}
       animate="visible"

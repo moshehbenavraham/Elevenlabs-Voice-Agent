@@ -43,7 +43,8 @@
     "phase02-session03-reconnection-backoff",
     "phase02-session04-function-calling",
     "phase02-session05-polish",
-    "phase03-session01-e2e-infrastructure"
+    "phase03-session01-e2e-infrastructure",
+    "phase03-session02-voice-e2e-tests"
   ],
   "next_session_history": [
     {
@@ -114,6 +115,11 @@
     {
       "date": "2025-12-30",
       "session": "phase03-session01-e2e-infrastructure",
+      "status": "completed"
+    },
+    {
+      "date": "2025-12-30",
+      "session": "phase03-session02-voice-e2e-tests",
       "status": "completed"
     }
   ]

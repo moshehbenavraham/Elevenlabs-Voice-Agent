@@ -49,6 +49,8 @@ export function FunctionCallIndicator({ functionCall, className }: FunctionCallI
 
   return (
     <motion.div
+      data-testid="function-call-indicator"
+      data-status={functionCall.status}
       className={cn(
         'inline-flex items-center gap-2 px-3 py-1.5 rounded-full',
         'bg-white/10 backdrop-blur-sm',

@@ -33,6 +33,8 @@ export function ReconnectionStatus({
   return (
     <AnimatePresence>
       <motion.div
+        data-testid="reconnection-status"
+        data-status={status}
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
@@ -93,6 +95,7 @@ export function ReconnectionStatus({
             </div>
             <button
               onClick={onManualReconnect}
+              data-testid="reconnection-retry-button"
               className={cn(
                 'w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg',
                 'bg-red-500/10 hover:bg-red-500/20 border border-red-500/30',

@@ -130,3 +130,92 @@ export async function clearMockServer(page: Page): Promise<void> {
   await page.unroute(apiRoutes.xai);
   await page.unroute(apiRoutes.elevenlabs);
 }
+
+/**
+ * Mock function call responses for testing tool execution
+ */
+export const mockFunctionCallResponses = {
+  get_weather: {
+    name: 'get_weather',
+    arguments: { location: 'San Francisco', unit: 'fahrenheit' },
+    result: {
+      temperature: 68,
+      unit: 'fahrenheit',
+      conditions: 'Partly cloudy',
+      humidity: 65,
+      location: 'San Francisco, CA',
+    },
+  },
+  get_time: {
+    name: 'get_time',
+    arguments: { timezone: 'America/Los_Angeles' },
+    result: {
+      time: '2:30 PM',
+      timezone: 'America/Los_Angeles',
+      date: 'December 30, 2025',
+    },
+  },
+  calculate: {
+    name: 'calculate',
+    arguments: { expression: '25 * 4 + 10' },
+    result: {
+      expression: '25 * 4 + 10',
+      result: 110,
+    },
+  },
+};
+
+/**
+ * Set up mock server with function calling support
+ */
+export async function setupMockServerWithFunctionCalling(
+  page: Page,
+  options: {
+    latency?: number;
+    enableFunctionCalling?: boolean;
+    functionCallDelay?: number;
+  } = {}
+): Promise<void> {
+  const { latency = 100, enableFunctionCalling = true, functionCallDelay = 500 } = options;
+
+  // Set up base mock routes
+  await setupMockServer(page, { latency });
+
+  if (enableFunctionCalling) {
+    // Expose function call mock data to the page
+    await page.evaluate(
+      ({ responses, delay }) => {
+        window.__E2E_FUNCTION_MOCKS__ = {
+          responses,
+          delay,
+          triggerFunctionCall: (functionName: string) => {
+            const mock = window.__E2E_WEBSOCKET_MOCK__;
+            const fnData = responses[functionName as keyof typeof responses];
+            if (mock && fnData) {
+              const connections = mock.getConnections();
+              if (connections.length > 0) {
+                mock.simulateFunctionCall(0, fnData.name, fnData.arguments, fnData.result);
+              }
+            }
+          },
+        };
+      },
+      { responses: mockFunctionCallResponses, delay: functionCallDelay }
+    );
+  }
+}
+
+/**
+ * Type definitions for function mock utilities
+ */
+export interface E2EFunctionMocks {
+  responses: typeof mockFunctionCallResponses;
+  delay: number;
+  triggerFunctionCall: (functionName: string) => void;
+}
+
+declare global {
+  interface Window {
+    __E2E_FUNCTION_MOCKS__?: E2EFunctionMocks;
+  }
+}
