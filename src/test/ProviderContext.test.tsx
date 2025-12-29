@@ -44,13 +44,16 @@ describe('ProviderContext', () => {
     it('returns list of all providers', () => {
       const { result } = renderHook(() => useProvider(), { wrapper });
 
-      expect(result.current.providers).toEqual(['elevenlabs', 'xai', 'openai']);
+      expect(result.current.providers).toEqual(['elevenlabs', 'elevenlabs-sdk', 'xai', 'openai']);
     });
 
     it('correctly identifies available providers', () => {
       const { result } = renderHook(() => useProvider(), { wrapper });
 
+      // ElevenLabs Widget availability depends on VITE_ELEVENLABS_ENABLED env var (true in test env)
       expect(result.current.isProviderAvailable('elevenlabs')).toBe(true);
+      // ElevenLabs SDK availability depends on VITE_ELEVENLABS_SDK_ENABLED env var (true in test env)
+      expect(result.current.isProviderAvailable('elevenlabs-sdk')).toBe(true);
       // xAI availability depends on VITE_XAI_ENABLED env var (true in test env)
       expect(result.current.isProviderAvailable('xai')).toBe(true);
       // OpenAI availability depends on VITE_OPENAI_ENABLED env var (true in test env)

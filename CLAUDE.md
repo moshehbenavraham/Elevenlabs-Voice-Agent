@@ -92,10 +92,11 @@ src/
 - **Required**: `.env` file with credentials (not tracked by git)
 - **Template**: `.env.example` shows required format
 - **Frontend Variables** (VITE\_ prefix):
-  - `VITE_ELEVENLABS_AGENT_ID` - ElevenLabs Agent ID
-  - `VITE_ELEVENLABS_ENABLED` - Enable ElevenLabs provider (true/false)
-  - `VITE_XAI_ENABLED` - Enable xAI provider (true/false)
-  - `VITE_OPENAI_ENABLED` - Enable OpenAI provider (true/false)
+  - `VITE_ELEVENLABS_AGENT_ID` - ElevenLabs Agent ID (used by both Widget and SDK)
+  - `VITE_ELEVENLABS_ENABLED` - Enable ElevenLabs Widget tab (true/false)
+  - `VITE_ELEVENLABS_SDK_ENABLED` - Enable ElevenLabs SDK tab (true/false)
+  - `VITE_XAI_ENABLED` - Enable xAI provider tab (true/false)
+  - `VITE_OPENAI_ENABLED` - Enable OpenAI provider tab (true/false)
   - `VITE_API_BASE_URL` - Backend API URL (default: http://localhost:3001)
   - `VITE_OPENAI_VOICE` / `VITE_XAI_VOICE` - Default voice selection
 - **Backend Variables** (server-side only):
@@ -106,9 +107,16 @@ src/
 
 ### Key Integration Points
 
-1. **ElevenLabs Voice Agent**:
-   - Agent ID is configured via environment variable `VITE_ELEVENLABS_AGENT_ID`
-   - Uses ElevenLabs React SDK Conversation component
+1. **ElevenLabs Voice Agent** (Two Modes Available as Separate Tabs):
+   - **Widget Mode** (`elevenlabs` tab): Pre-built embed from ElevenLabs CDN
+     - Uses `VoiceWidget.tsx` component with `<elevenlabs-convai>` web component
+     - Customizable via VITE_WIDGET_* environment variables (colors, text, avatar)
+     - Self-contained UI - no custom components needed
+   - **SDK Mode** (`elevenlabs-sdk` tab): Custom React UI with @elevenlabs/react SDK
+     - Uses `VoiceContext.tsx` with `useConversation()` hook
+     - Full control over UI with VoiceButton, VoiceVisualizer, VoiceStatus components
+     - Access to MediaStream for custom audio processing
+   - Agent ID shared via `VITE_ELEVENLABS_AGENT_ID`
    - Requires HTTPS in production for microphone access
 
 2. **OpenAI Realtime API** (Phase 02):

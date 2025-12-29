@@ -26,7 +26,6 @@ import {
 } from '@/components/providers';
 import { useVoice } from '@/contexts/VoiceContext';
 import { useProvider } from '@/contexts/ProviderContext';
-import { useConnectionMode } from '@/hooks/useConnectionMode';
 import { toast } from '@/hooks/use-toast';
 import { trackError } from '@/lib/errorTracking';
 import type { ProviderType } from '@/types';
@@ -40,7 +39,6 @@ function debugLog(context: string, message: string, data?: unknown) {
 }
 
 export const Index = () => {
-  const connectionMode = useConnectionMode();
   const { error, clearError, isLoading, connect, disconnect, isConnected } = useVoice();
   const { activeProvider } = useProvider();
   const [showConfig, setShowConfig] = useState(false);
@@ -56,9 +54,9 @@ export const Index = () => {
         to: newProvider,
       });
 
-      // Disconnect ElevenLabs if active
-      if (isConnected && activeProvider === 'elevenlabs') {
-        debugLog('handleProviderChange', 'Disconnecting ElevenLabs before switch');
+      // Disconnect ElevenLabs SDK if active
+      if (isConnected && activeProvider === 'elevenlabs-sdk') {
+        debugLog('handleProviderChange', 'Disconnecting ElevenLabs SDK before switch');
         await disconnect();
         setHasStarted(false);
       }
@@ -204,371 +202,7 @@ export const Index = () => {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
   const isConfigured = agentId && agentId !== 'your_agent_id_here';
 
-  // Widget mode - simplified UI with ElevenLabs widget
-  if (connectionMode === 'widget') {
-    return (
-      <div className="min-h-screen bg-[#09090b] relative overflow-hidden film-grain">
-        <BackgroundEffects />
-
-        {/* Header - same as SDK mode */}
-        <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
-          <div className="max-w-7xl mx-auto flex justify-between items-center">
-            {/* Logo / Brand */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-3"
-            >
-              {/* Logo mark */}
-              <div className="relative w-8 h-8 flex items-center justify-center">
-                <div className="absolute inset-0 rounded-lg bg-amber-500/10 border border-amber-500/20" />
-                <motion.div
-                  className="w-2 h-2 rounded-full bg-amber-400"
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.8, 1, 0.8],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                />
-              </div>
-              <span className="font-display text-lg text-zinc-200 tracking-tight">
-                Voice<span className="text-amber-400">AI</span>
-              </span>
-            </motion.div>
-
-            {/* Right side - Settings */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-4"
-            >
-              {!isConfigured && (
-                <div className="flex items-center gap-2 text-amber-400/70 text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  <span className="hidden sm:inline">Setup required</span>
-                </div>
-              )}
-              <button
-                onClick={() => setShowConfig(true)}
-                className="p-2 rounded-lg bg-zinc-900/50 border border-zinc-800/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-all duration-200"
-                aria-label="Open settings"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
-            </motion.div>
-          </div>
-        </header>
-
-        {/* Provider Tabs - Below header */}
-        <div className="fixed top-20 left-0 right-0 z-40 px-6">
-          <div className="max-w-md mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.4 }}
-            >
-              <ProviderTabs onProviderChange={handleProviderChange} />
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Main Content - Widget Mode */}
-        <main className="relative z-10 min-h-screen pt-12">
-          <AnimatePresence mode="wait">
-            {/* ElevenLabs Provider - Widget Mode */}
-            {activeProvider === 'elevenlabs' && (
-              <motion.div
-                key="widget-elevenlabs"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.5 }}
-                className="min-h-screen flex flex-col items-center justify-center px-6"
-              >
-                <div className="text-center mb-12">
-                  <h1 className="font-display text-5xl sm:text-6xl text-zinc-100 mb-4">
-                    Voice<span className="text-gradient">AI</span>
-                  </h1>
-                  <p className="text-zinc-400 text-lg max-w-md mx-auto">
-                    Click the orb below to start a conversation
-                  </p>
-                </div>
-
-                {/* ElevenLabs Widget - positioned center */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-                >
-                  <VoiceWidget className="relative z-20" />
-                </motion.div>
-              </motion.div>
-            )}
-
-            {/* xAI Provider - Widget Mode */}
-            {activeProvider === 'xai' && (
-              <XAIProvider onDisconnect={handleXAIDisconnect}>
-                {!xaiHasStarted ? (
-                  <motion.div
-                    key="widget-hero-xai"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.5 }}
-                    className="min-h-screen flex flex-col items-center justify-center px-6"
-                  >
-                    <div className="text-center space-y-8">
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                      >
-                        <h1 className="font-display text-5xl sm:text-6xl text-zinc-100 mb-4">
-                          Talk to <span className="text-sky-400">Grok</span>
-                        </h1>
-                        <p className="text-zinc-400 text-lg max-w-md mx-auto">
-                          Experience voice conversations powered by xAI
-                        </p>
-                      </motion.div>
-
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
-                        className="py-8"
-                      >
-                        <XAIVoiceButton size="lg" onConnect={handleXAIConnect} />
-                      </motion.div>
-
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.6 }}
-                        className="text-zinc-500 text-sm"
-                      >
-                        Click to start your conversation with Grok
-                      </motion.p>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="widget-interface-xai"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="min-h-screen flex flex-col"
-                  >
-                    <div className="flex-1 flex flex-col items-center justify-center px-6 py-24">
-                      <div className="w-full max-w-lg space-y-12">
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.2 }}
-                          className="text-center"
-                        >
-                          <h2 className="font-display text-3xl sm:text-4xl text-zinc-100 mb-2">
-                            Grok is Listening
-                          </h2>
-                          <p className="text-zinc-500 text-sm">
-                            Speak naturally - xAI is processing
-                          </p>
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-                          className="flex justify-center py-8"
-                        >
-                          <XAIVoiceButton size="lg" onDisconnect={handleXAIDisconnect} />
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.4 }}
-                        >
-                          <XAIVoiceVisualizer className="w-full" />
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.5 }}
-                        >
-                          <XAIVoiceStatus />
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.55 }}
-                        >
-                          <XAIConversationPanel className="w-full h-64" />
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.6 }}
-                          className="flex justify-center pt-4"
-                        >
-                          <button
-                            onClick={handleXAIDisconnect}
-                            className="flex items-center gap-2 px-6 py-3 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all duration-200"
-                          >
-                            <X className="w-4 h-4" />
-                            <span className="text-sm">End conversation</span>
-                          </button>
-                        </motion.div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </XAIProvider>
-            )}
-
-            {/* OpenAI Provider - Widget Mode */}
-            {activeProvider === 'openai' && (
-              <OpenAIProvider onDisconnect={handleOpenAIDisconnect}>
-                {!openaiHasStarted ? (
-                  <motion.div
-                    key="widget-hero-openai"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.5 }}
-                    className="min-h-screen flex flex-col items-center justify-center px-6"
-                  >
-                    <div className="text-center space-y-8">
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                      >
-                        <h1 className="font-display text-5xl sm:text-6xl text-zinc-100 mb-4">
-                          Talk to <span className="text-violet-400">GPT-4o</span>
-                        </h1>
-                        <p className="text-zinc-400 text-lg max-w-md mx-auto">
-                          Experience voice conversations powered by OpenAI
-                        </p>
-                      </motion.div>
-
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
-                        className="py-8"
-                      >
-                        <OpenAIVoiceButton size="lg" onConnect={handleOpenAIConnect} />
-                      </motion.div>
-
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.6 }}
-                        className="text-zinc-500 text-sm"
-                      >
-                        Click to start your conversation with GPT-4o
-                      </motion.p>
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="widget-interface-openai"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="min-h-screen flex flex-col"
-                  >
-                    <div className="flex-1 flex flex-col items-center justify-center px-6 py-24">
-                      <div className="w-full max-w-lg space-y-12">
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.2 }}
-                          className="text-center"
-                        >
-                          <h2 className="font-display text-3xl sm:text-4xl text-zinc-100 mb-2">
-                            GPT-4o is Listening
-                          </h2>
-                          <p className="text-zinc-500 text-sm">
-                            Speak naturally - OpenAI is processing
-                          </p>
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.9 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-                          className="flex justify-center py-8"
-                        >
-                          <OpenAIVoiceButton size="lg" onDisconnect={handleOpenAIDisconnect} />
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.4 }}
-                        >
-                          <OpenAIVoiceVisualizer className="w-full" />
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.5 }}
-                        >
-                          <OpenAIVoiceStatus />
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.55 }}
-                        >
-                          <OpenAIConversationPanel className="w-full h-64" />
-                        </motion.div>
-
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ delay: 0.6 }}
-                          className="flex justify-center pt-4"
-                        >
-                          <button
-                            onClick={handleOpenAIDisconnect}
-                            className="flex items-center gap-2 px-6 py-3 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all duration-200"
-                          >
-                            <X className="w-4 h-4" />
-                            <span className="text-sm">End conversation</span>
-                          </button>
-                        </motion.div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </OpenAIProvider>
-            )}
-          </AnimatePresence>
-        </main>
-
-        {/* Configuration Modal */}
-        <ConfigurationModal isOpen={showConfig} onClose={() => setShowConfig(false)} />
-
-        {/* Footer accent */}
-        <div className="fixed bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-zinc-800/50 to-transparent" />
-      </div>
-    );
-  }
-
-  // SDK mode - existing implementation
+  // Main render
   return (
     <div className="min-h-screen bg-[#09090b] relative overflow-hidden film-grain">
       {/* Background Effects */}
@@ -646,19 +280,49 @@ export const Index = () => {
       {/* Main Content */}
       <main className="relative z-10 min-h-screen pt-12">
         <AnimatePresence mode="wait">
-          {/* ElevenLabs Provider */}
-          {activeProvider === 'elevenlabs' && !hasStarted && (
+          {/* ElevenLabs Widget Provider */}
+          {activeProvider === 'elevenlabs' && (
+            <motion.div
+              key="widget-elevenlabs"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+              className="min-h-screen flex flex-col items-center justify-center px-6"
+            >
+              <div className="text-center mb-12">
+                <h1 className="font-display text-5xl sm:text-6xl text-zinc-100 mb-4">
+                  Voice<span className="text-gradient">AI</span>
+                </h1>
+                <p className="text-zinc-400 text-lg max-w-md mx-auto">
+                  Click the orb below to start a conversation
+                </p>
+              </div>
+
+              {/* ElevenLabs Widget - positioned center */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+              >
+                <VoiceWidget className="relative z-20" />
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* ElevenLabs SDK Provider */}
+          {activeProvider === 'elevenlabs-sdk' && !hasStarted && (
             <HeroSection
-              key="hero-elevenlabs"
+              key="hero-elevenlabs-sdk"
               onStartConversation={handleStartConversation}
               isLoading={isLoading}
               error={error}
             />
           )}
 
-          {activeProvider === 'elevenlabs' && hasStarted && (
+          {activeProvider === 'elevenlabs-sdk' && hasStarted && (
             <motion.div
-              key="interface-elevenlabs"
+              key="interface-elevenlabs-sdk"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}

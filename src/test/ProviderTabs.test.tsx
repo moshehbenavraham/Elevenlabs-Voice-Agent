@@ -45,7 +45,8 @@ describe('ProviderTabs', () => {
         </TestWrapper>
       );
 
-      expect(screen.getByRole('tab', { name: /elevenlabs/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /elevenlabs widget/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /elevenlabs sdk/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /xai/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /openai/i })).toBeInTheDocument();
     });
@@ -62,14 +63,14 @@ describe('ProviderTabs', () => {
       ).toBeInTheDocument();
     });
 
-    it('shows ElevenLabs as selected by default', () => {
+    it('shows ElevenLabs Widget as selected by default', () => {
       render(
         <TestWrapper>
           <ProviderTabs />
         </TestWrapper>
       );
 
-      const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs/i });
+      const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs widget/i });
       expect(elevenlabsTab).toHaveAttribute('data-state', 'active');
     });
   });
@@ -167,15 +168,15 @@ describe('ProviderTabs', () => {
       );
 
       // Focus the first tab
-      const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs/i });
+      const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs widget/i });
       elevenlabsTab.focus();
 
-      // Press arrow right to move to xAI (skipping disabled OpenAI happens via Radix)
+      // Press arrow right to move to ElevenLabs SDK
       await user.keyboard('{ArrowRight}');
 
-      // xAI tab should now be focused (it's enabled)
-      const xaiTab = screen.getByRole('tab', { name: /xai/i });
-      expect(xaiTab).toHaveFocus();
+      // ElevenLabs SDK tab should now be focused
+      const sdkTab = screen.getByRole('tab', { name: /elevenlabs sdk/i });
+      expect(sdkTab).toHaveFocus();
     });
 
     it('arrow left moves to previous tab', async () => {
@@ -187,15 +188,15 @@ describe('ProviderTabs', () => {
         </TestWrapper>
       );
 
-      // Focus xAI tab first
-      const xaiTab = screen.getByRole('tab', { name: /xai/i });
-      xaiTab.focus();
+      // Focus ElevenLabs SDK tab first
+      const sdkTab = screen.getByRole('tab', { name: /elevenlabs sdk/i });
+      sdkTab.focus();
 
-      // Press arrow left to move to ElevenLabs
+      // Press arrow left to move to ElevenLabs Widget
       await user.keyboard('{ArrowLeft}');
 
-      // ElevenLabs should be focused
-      const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs/i });
+      // ElevenLabs Widget should be focused
+      const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs widget/i });
       expect(elevenlabsTab).toHaveFocus();
     });
 
@@ -251,7 +252,7 @@ describe('ProviderTabs', () => {
       );
 
       // Focus a tab
-      const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs/i });
+      const elevenlabsTab = screen.getByRole('tab', { name: /elevenlabs widget/i });
       elevenlabsTab.focus();
 
       // Press Tab to move focus out

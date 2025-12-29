@@ -1,6 +1,6 @@
 import * as Tabs from '@radix-ui/react-tabs';
 import { motion, type Variants } from 'framer-motion';
-import { AudioLines, Bot, Sparkles } from 'lucide-react';
+import { AudioLines, Bot, Mic, Sparkles } from 'lucide-react';
 import type { ProviderType } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -47,6 +47,7 @@ export const indicatorVariants: Variants = {
  */
 const PROVIDER_ICONS: Record<ProviderType, React.ComponentType<{ className?: string }>> = {
   elevenlabs: AudioLines,
+  'elevenlabs-sdk': Mic,
   xai: Bot,
   openai: Sparkles,
 };

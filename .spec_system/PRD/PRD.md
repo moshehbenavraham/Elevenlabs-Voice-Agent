@@ -195,6 +195,7 @@ Based on `EXAMPLE/xai/backend-nodejs/`:
 | 01    | OpenAI Voice Agent      | 4        | Complete    | 2025-12-28 |
 | 02    | Advanced Features       | 5        | Complete    | 2025-12-28 |
 | 03    | Testing & Configuration | 5        | Not Started | -          |
+| 04    | Ultravox Voice Agent    | 5        | Not Started | -          |
 
 ---
 
@@ -278,6 +279,486 @@ Based on `EXAMPLE/xai/backend-nodejs/`:
 - [ ] Document environment variables for each provider
 - [ ] Add troubleshooting guide
 
+### Phase 4: Ultravox Voice Agent Integration
+
+Ultravox is a voice AI platform that uses the `ultravox-client` SDK with a unique session-based architecture. Unlike xAI/OpenAI which use raw WebSocket connections, Ultravox provides a higher-level SDK that handles audio streaming, session management, and tool execution internally.
+
+#### Architecture Overview
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Frontend      │     │   Backend       │     │   Ultravox API  │
+│   (React)       │     │   (Express)     │     │                 │
+├─────────────────┤     ├─────────────────┤     ├─────────────────┤
+│                 │     │                 │     │                 │
+│  1. Request     │────▶│  2. Create      │────▶│  POST /api/calls│
+│     Call        │     │     Call via    │     │  with config    │
+│                 │◀────│     API Key     │◀────│                 │
+│  3. Receive     │     │                 │     │  Returns joinUrl│
+│     joinUrl     │     │                 │     │                 │
+│                 │     │                 │     │                 │
+│  4. SDK joins   │────────────────────────────▶│  WebSocket      │
+│     via joinUrl │◀───────────────────────────│  (Audio Stream) │
+│                 │     │                 │     │                 │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+```
+
+**Key Differences from xAI/OpenAI:**
+- Uses `ultravox-client` SDK (not raw WebSocket)
+- Session-based with `UltravoxSession` class
+- Audio handled internally by SDK (no manual PCM encoding)
+- Event-driven: `status`, `transcript`, `experimental_message`
+- Client-side tool registration via `registerToolImplementation()`
+
+#### Session 4.1: Backend Setup & Dependencies
+
+**Objectives:**
+- Add Ultravox backend route for call creation
+- Install `ultravox-client` package
+- Configure environment variables
+
+**Tasks:**
+
+- [ ] Install `ultravox-client` package: `npm install ultravox-client`
+- [ ] Add `ULTRAVOX_API_KEY` to `.env.example`
+- [ ] Add `VITE_ULTRAVOX_ENABLED` environment variable
+- [ ] Create `server/routes/ultravox.ts` with call creation endpoint
+- [ ] Register route in `server/index.js`
+
+**Backend Route Implementation:**
+
+```typescript
+// server/routes/ultravox.ts
+import express from 'express';
+
+const router = express.Router();
+
+interface UltravoxCallConfig {
+  systemPrompt: string;
+  model?: string;           // e.g., "fixie-ai/ultravox-70B"
+  voice?: string;           // e.g., "terrence"
+  languageHint?: string;    // e.g., "en"
+  temperature?: number;     // 0-1
+  maxDuration?: string;     // e.g., "300s"
+  selectedTools?: object[];
+}
+
+router.post('/call', async (req, res) => {
+  try {
+    const config: UltravoxCallConfig = req.body;
+
+    const response = await fetch('https://api.ultravox.ai/api/calls', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': process.env.ULTRAVOX_API_KEY!,
+      },
+      body: JSON.stringify(config),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ultravox API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(data); // Returns { joinUrl, callId, ... }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+export default router;
+```
+
+**Acceptance Criteria:**
+- [ ] `POST /api/ultravox/call` returns `joinUrl` and `callId`
+- [ ] API key validation works (returns 401 without key)
+- [ ] Environment variables documented
+
+#### Session 4.2: Ultravox Voice Context
+
+**Objectives:**
+- Create `UltravoxVoiceContext` with session management
+- Implement event listeners for status, transcripts
+- Map Ultravox states to unified `VoiceProviderState`
+
+**Tasks:**
+
+- [ ] Create `src/contexts/UltravoxVoiceContext.tsx`
+- [ ] Implement `UltravoxSession` lifecycle management
+- [ ] Handle session events: `status`, `transcript`, `experimental_message`
+- [ ] Map Ultravox status to unified state: `idle`, `connecting`, `connected`, `error`
+- [ ] Implement mic mute/unmute via SDK
+- [ ] Store and update transcript messages
+
+**Type Definitions:**
+
+```typescript
+// src/types/ultravox.ts
+
+export type UltravoxStatus =
+  | 'disconnected'
+  | 'disconnecting'
+  | 'connecting'
+  | 'idle'
+  | 'listening'
+  | 'thinking'
+  | 'speaking';
+
+export interface UltravoxTranscript {
+  speaker: 'user' | 'agent';
+  text: string;
+}
+
+export interface UltravoxCallConfig {
+  systemPrompt: string;
+  model?: string;
+  voice?: string;
+  languageHint?: string;
+  temperature?: number;
+  maxDuration?: string;
+  selectedTools?: UltravoxToolDefinition[];
+}
+
+export interface UltravoxToolDefinition {
+  temporaryTool?: {
+    modelToolName: string;
+    description: string;
+    dynamicParameters?: Array<{
+      name: string;
+      location: 'PARAMETER_LOCATION_BODY';
+      schema: object;
+      required: boolean;
+    }>;
+    client?: {};
+  };
+}
+```
+
+**Context Implementation Pattern:**
+
+```typescript
+// src/contexts/UltravoxVoiceContext.tsx
+
+import { UltravoxSession } from 'ultravox-client';
+
+interface UltravoxVoiceState {
+  status: 'idle' | 'connecting' | 'connected' | 'error';
+  ultravoxStatus: UltravoxStatus; // Native SDK status
+  isSpeaking: boolean;
+  isMicMuted: boolean;
+  error: string | null;
+  transcripts: UltravoxTranscript[];
+  callId: string | null;
+}
+
+// Status mapping
+const mapUltravoxStatus = (status: UltravoxStatus): VoiceProviderState['status'] => {
+  switch (status) {
+    case 'disconnected':
+    case 'disconnecting':
+      return 'idle';
+    case 'connecting':
+      return 'connecting';
+    case 'idle':
+    case 'listening':
+    case 'thinking':
+    case 'speaking':
+      return 'connected';
+    default:
+      return 'error';
+  }
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Context provides connect/disconnect functions
+- [ ] Status changes trigger UI updates
+- [ ] Transcripts are captured and stored
+- [ ] Mic mute toggle works via SDK
+- [ ] Error states are properly handled
+
+#### Session 4.3: Provider Component & Tab Integration
+
+**Objectives:**
+- Create `UltravoxProvider` component
+- Integrate with existing tab system
+- Wire up shared voice UI components
+
+**Tasks:**
+
+- [ ] Create `src/components/providers/UltravoxProvider.tsx`
+- [ ] Add Ultravox to `ProviderType` enum in `voice-provider.ts`
+- [ ] Register Ultravox tab in `ProviderContext.tsx`
+- [ ] Create Ultravox configuration (system prompt, voice, model)
+- [ ] Connect to `VoiceButton`, `VoiceStatus`, `VoiceVisualizer`
+- [ ] Add Ultravox branding/logo to tab
+
+**Provider Component Structure:**
+
+```typescript
+// src/components/providers/UltravoxProvider.tsx
+
+export const UltravoxProvider: React.FC = () => {
+  const {
+    status,
+    ultravoxStatus,
+    transcripts,
+    isMicMuted,
+    connect,
+    disconnect,
+    toggleMic
+  } = useUltravoxVoice();
+
+  return (
+    <div className="flex flex-col items-center gap-6">
+      {/* Status indicator with Ultravox-specific states */}
+      <VoiceStatus
+        status={status}
+        customStatus={ultravoxStatus} // "listening", "thinking", "speaking"
+      />
+
+      {/* Connection button */}
+      <VoiceButton
+        isConnected={status === 'connected'}
+        isConnecting={status === 'connecting'}
+        onClick={status === 'connected' ? disconnect : connect}
+      />
+
+      {/* Mic mute control */}
+      {status === 'connected' && (
+        <MicToggleButton
+          isMuted={isMicMuted}
+          onToggle={toggleMic}
+        />
+      )}
+
+      {/* Real-time transcript display */}
+      <ConversationPanel transcripts={transcripts} />
+    </div>
+  );
+};
+```
+
+**Tab Configuration:**
+
+```typescript
+// Add to ProviderContext.tsx
+
+const ULTRAVOX_PROVIDER: ProviderConfig = {
+  id: 'ultravox',
+  name: 'Ultravox',
+  displayName: 'Ultravox AI',
+  description: 'Fixie.ai voice agent with 70B model',
+  icon: UltravoxIcon,
+  isEnabled: import.meta.env.VITE_ULTRAVOX_ENABLED === 'true',
+  defaultConfig: {
+    systemPrompt: 'You are a helpful voice assistant.',
+    model: 'fixie-ai/ultravox-70B',
+    voice: 'terrence',
+    temperature: 0.7,
+  },
+};
+```
+
+**Acceptance Criteria:**
+- [ ] Ultravox tab appears when `VITE_ULTRAVOX_ENABLED=true`
+- [ ] Tab shows proper branding and icon
+- [ ] Connect/disconnect works via button
+- [ ] Status shows Ultravox-specific states (listening, thinking, speaking)
+- [ ] Mic mute toggle visible when connected
+
+#### Session 4.4: Function Calling & Tools
+
+**Objectives:**
+- Implement client-side tool registration
+- Create demo tools matching existing pattern
+- Display function call results in UI
+
+**Tasks:**
+
+- [ ] Create `src/lib/tools/ultravoxTools.ts` with tool definitions
+- [ ] Implement `registerToolImplementation()` integration
+- [ ] Add weather, time, calculator tools (matching existing pattern)
+- [ ] Create `UltravoxFunctionCallIndicator` component
+- [ ] Wire tool results to conversation display
+
+**Tool Registration Pattern:**
+
+```typescript
+// src/lib/tools/ultravoxTools.ts
+
+import { ClientToolImplementation } from 'ultravox-client';
+
+export const weatherTool: ClientToolImplementation = (parameters) => {
+  const { location } = parameters as { location: string };
+  // Simulate weather lookup
+  return JSON.stringify({
+    location,
+    temperature: 72,
+    condition: 'Sunny',
+    humidity: 45,
+  });
+};
+
+export const timeTool: ClientToolImplementation = (parameters) => {
+  const { timezone } = parameters as { timezone?: string };
+  const now = new Date();
+  return JSON.stringify({
+    time: now.toLocaleTimeString('en-US', { timeZone: timezone }),
+    date: now.toLocaleDateString('en-US', { timeZone: timezone }),
+  });
+};
+
+export const calculatorTool: ClientToolImplementation = (parameters) => {
+  const { expression } = parameters as { expression: string };
+  try {
+    // Safe evaluation (in production, use a proper math parser)
+    const result = Function(`"use strict"; return (${expression})`)();
+    return JSON.stringify({ expression, result });
+  } catch {
+    return JSON.stringify({ error: 'Invalid expression' });
+  }
+};
+
+// Tool definitions for Ultravox API
+export const ultravoxToolDefinitions = [
+  {
+    temporaryTool: {
+      modelToolName: 'getWeather',
+      description: 'Get current weather for a location',
+      dynamicParameters: [{
+        name: 'location',
+        location: 'PARAMETER_LOCATION_BODY',
+        schema: { type: 'string', description: 'City name' },
+        required: true,
+      }],
+      client: {},
+    },
+  },
+  {
+    temporaryTool: {
+      modelToolName: 'getTime',
+      description: 'Get current time, optionally in a specific timezone',
+      dynamicParameters: [{
+        name: 'timezone',
+        location: 'PARAMETER_LOCATION_BODY',
+        schema: { type: 'string', description: 'Timezone (e.g., America/New_York)' },
+        required: false,
+      }],
+      client: {},
+    },
+  },
+  {
+    temporaryTool: {
+      modelToolName: 'calculate',
+      description: 'Evaluate a mathematical expression',
+      dynamicParameters: [{
+        name: 'expression',
+        location: 'PARAMETER_LOCATION_BODY',
+        schema: { type: 'string', description: 'Math expression (e.g., 2 + 2)' },
+        required: true,
+      }],
+      client: {},
+    },
+  },
+];
+```
+
+**Tool Registration in Context:**
+
+```typescript
+// In UltravoxVoiceContext.tsx connect function
+
+const session = new UltravoxSession();
+
+// Register client-side tools
+session.registerToolImplementation('getWeather', weatherTool);
+session.registerToolImplementation('getTime', timeTool);
+session.registerToolImplementation('calculate', calculatorTool);
+
+// Join with tool definitions
+const response = await fetch('/api/ultravox/call', {
+  method: 'POST',
+  body: JSON.stringify({
+    ...config,
+    selectedTools: ultravoxToolDefinitions,
+  }),
+});
+```
+
+**Acceptance Criteria:**
+- [ ] Tools are registered before session starts
+- [ ] Tool calls are executed client-side
+- [ ] Tool results are returned to Ultravox
+- [ ] Function call indicator shows execution status
+- [ ] Tool results appear in conversation
+
+#### Session 4.5: Polish, Testing & Voice Selection
+
+**Objectives:**
+- Add voice selection dropdown
+- Implement reconnection with backoff
+- Add comprehensive tests
+- Final UI polish
+
+**Tasks:**
+
+- [ ] Create `UltravoxVoiceSelector` with available voices
+- [ ] Integrate `useReconnection` hook for auto-reconnect
+- [ ] Add unit tests for `UltravoxVoiceContext`
+- [ ] Add integration tests for tab switching with Ultravox
+- [ ] Add debug message viewer (optional, via flag)
+- [ ] Mobile responsive testing
+- [ ] Error handling polish
+
+**Available Ultravox Voices:**
+- `terrence` (default)
+- Additional voices as supported by API
+
+**Voice Selector Implementation:**
+
+```typescript
+// Add voice selection to UltravoxProvider
+
+const ULTRAVOX_VOICES = [
+  { id: 'terrence', name: 'Terrence', description: 'Default male voice' },
+  // Add more voices as Ultravox API supports them
+];
+
+<VoiceSelector
+  voices={ULTRAVOX_VOICES}
+  selectedVoice={config.voice}
+  onVoiceChange={(voice) => updateConfig({ voice })}
+  disabled={status !== 'idle'}
+/>
+```
+
+**Test Cases:**
+
+```typescript
+// src/test/UltravoxVoiceContext.test.tsx
+
+describe('UltravoxVoiceContext', () => {
+  it('should start in idle state', () => {});
+  it('should transition to connecting on connect()', () => {});
+  it('should handle successful connection', () => {});
+  it('should handle connection errors', () => {});
+  it('should update transcripts on transcript event', () => {});
+  it('should toggle mic mute state', () => {});
+  it('should clean up session on disconnect', () => {});
+  it('should register tools before joining', () => {});
+});
+```
+
+**Acceptance Criteria:**
+- [ ] Voice selection works before connection
+- [ ] Reconnection triggers on unexpected disconnect
+- [ ] All tests pass (unit + integration)
+- [ ] Debug view toggleable via query param
+- [ ] Mobile UI works correctly
+- [ ] Error messages are user-friendly
+
 ---
 
 ## 7. Environment Variables
@@ -306,6 +787,16 @@ VITE_OPENAI_ENABLED=true
 OPENAI_API_KEY=sk-... # Server-side only
 ```
 
+### New (Ultravox)
+
+```env
+VITE_ULTRAVOX_ENABLED=true
+VITE_ULTRAVOX_VOICE=terrence
+VITE_ULTRAVOX_MODEL=fixie-ai/ultravox-70B
+VITE_ULTRAVOX_SYSTEM_PROMPT="You are a helpful voice assistant..."
+ULTRAVOX_API_KEY=uvx-... # Server-side only
+```
+
 ---
 
 ## 8. API Endpoints
@@ -323,6 +814,36 @@ OPENAI_API_KEY=sk-... # Server-side only
 | POST   | `/api/xai/session`     | Create ephemeral session token |
 | GET    | `/api/xai/session/:id` | Get session status             |
 | DELETE | `/api/xai/session/:id` | Terminate session              |
+
+### New for Ultravox
+
+| Method | Endpoint             | Description                              |
+| ------ | -------------------- | ---------------------------------------- |
+| POST   | `/api/ultravox/call` | Create call and get joinUrl for SDK      |
+
+**Request Body:**
+```json
+{
+  "systemPrompt": "You are a helpful assistant...",
+  "model": "fixie-ai/ultravox-70B",
+  "voice": "terrence",
+  "languageHint": "en",
+  "temperature": 0.7,
+  "maxDuration": "300s",
+  "selectedTools": [...]
+}
+```
+
+**Response:**
+```json
+{
+  "joinUrl": "wss://...",
+  "callId": "call_abc123",
+  "model": "fixie-ai/ultravox-70B",
+  "systemPrompt": "...",
+  "temperature": 0.7
+}
+```
 
 ---
 
@@ -408,13 +929,14 @@ OPENAI_API_KEY=sk-... # Server-side only
 
 ### Planned Providers
 
-| Provider        | Status   |
-| --------------- | -------- |
-| ElevenLabs      | Complete |
-| xAI (Grok)      | Complete |
-| OpenAI          | Complete |
-| Google (Gemini) | Planned  |
-| Anthropic       | Planned  |
+| Provider        | Status      |
+| --------------- | ----------- |
+| ElevenLabs      | Complete    |
+| xAI (Grok)      | Complete    |
+| OpenAI          | Complete    |
+| Ultravox        | Phase 04    |
+| Google (Gemini) | Planned     |
+| Anthropic       | Planned     |
 
 ---
 
@@ -521,6 +1043,9 @@ npm run dev:all  # Runs both Vite (8082) and Express server (3001) concurrently
 - [EXAMPLE/xai/backend-nodejs/](../EXAMPLE/xai/backend-nodejs/) - Reference implementation
 - [EXAMPLE/client/](../EXAMPLE/client/) - Universal client reference
 - [ElevenLabs React SDK](https://github.com/elevenlabs/elevenlabs-js)
+- [Ultravox API Documentation](https://docs.ultravox.ai/) - Ultravox voice AI platform
+- [Ultravox Client SDK](https://www.npmjs.com/package/ultravox-client) - NPM package
+- [EXAMPLE/](../EXAMPLE/) - Ultravox reference implementation (Dr. Donut demo)
 
 ---
 
@@ -566,3 +1091,137 @@ From `EXAMPLE/xai/backend-nodejs/`:
 | `src/contexts/VoiceContext.tsx`            | MODIFY | Minor refactor for abstraction |
 | `server/routes/xai.ts`                     | CREATE | xAI backend routes             |
 | `.env.example`                             | MODIFY | Add xAI environment variables  |
+
+### Phase 4: Ultravox File Changes
+
+| File                                           | Action | Description                      |
+| ---------------------------------------------- | ------ | -------------------------------- |
+| `src/types/ultravox.ts`                        | CREATE | Ultravox type definitions        |
+| `src/contexts/UltravoxVoiceContext.tsx`        | CREATE | Ultravox session management      |
+| `src/components/providers/UltravoxProvider.tsx`| CREATE | Ultravox provider wrapper        |
+| `src/lib/tools/ultravoxTools.ts`               | CREATE | Client-side tool implementations |
+| `server/routes/ultravox.ts`                    | CREATE | Ultravox backend route           |
+| `src/contexts/ProviderContext.tsx`             | MODIFY | Add Ultravox provider config     |
+| `src/types/voice-provider.ts`                  | MODIFY | Add 'ultravox' to ProviderType   |
+| `.env.example`                                 | MODIFY | Add Ultravox environment vars    |
+| `package.json`                                 | MODIFY | Add ultravox-client dependency   |
+
+---
+
+## Appendix C: Ultravox SDK Reference
+
+### Session Lifecycle
+
+```typescript
+import { UltravoxSession } from 'ultravox-client';
+
+// Create session with optional debug messages
+const debugMessages = new Set(['debug']);
+const session = new UltravoxSession({ experimentalMessages: debugMessages });
+
+// Join call using joinUrl from backend
+session.joinCall(joinUrl);
+
+// Leave call
+session.leaveCall();
+```
+
+### Event Listeners
+
+```typescript
+// Status changes
+session.addEventListener('status', (event) => {
+  // event.status: 'disconnected' | 'connecting' | 'idle' |
+  //               'listening' | 'thinking' | 'speaking'
+});
+
+// Real-time transcripts
+session.addEventListener('transcript', (event) => {
+  // event.transcripts: Array<{ speaker: 'user' | 'agent', text: string }>
+});
+
+// Debug messages (requires experimentalMessages in constructor)
+session.addEventListener('experimental_message', (event) => {
+  // event.message.message: string
+});
+```
+
+### Audio Controls
+
+```typescript
+// Microphone mute toggle
+if (session.isMicMuted) {
+  session.unmuteMic();
+} else {
+  session.muteMic();
+}
+
+// Speaker mute toggle
+if (session.isSpeakerMuted) {
+  session.unmuteSpeaker();
+} else {
+  session.muteSpeaker();
+}
+```
+
+### Tool Registration
+
+```typescript
+import { ClientToolImplementation } from 'ultravox-client';
+
+// Define client-side tool
+const myTool: ClientToolImplementation = (parameters) => {
+  const { param1 } = parameters as { param1: string };
+  // Process and return result as string
+  return JSON.stringify({ result: 'success' });
+};
+
+// Register before joining call
+session.registerToolImplementation('myToolName', myTool);
+```
+
+### Tool Definition for API
+
+```typescript
+const toolDefinition = {
+  temporaryTool: {
+    modelToolName: 'myToolName',
+    description: 'Description of what the tool does',
+    dynamicParameters: [
+      {
+        name: 'param1',
+        location: 'PARAMETER_LOCATION_BODY',
+        schema: { type: 'string', description: 'Parameter description' },
+        required: true,
+      },
+    ],
+    client: {}, // Marks this as a client-side tool
+  },
+};
+```
+
+### Ultravox Status States
+
+| Status        | Description                              | Maps To      |
+| ------------- | ---------------------------------------- | ------------ |
+| disconnected  | Not connected to any call                | idle         |
+| disconnecting | Leaving a call in progress               | idle         |
+| connecting    | Establishing WebSocket connection        | connecting   |
+| idle          | Connected but not actively processing    | connected    |
+| listening     | Actively listening to user audio         | connected    |
+| thinking      | Processing user input                    | connected    |
+| speaking      | Agent is speaking response               | connected    |
+
+### Call Configuration Options
+
+| Option             | Type     | Description                              |
+| ------------------ | -------- | ---------------------------------------- |
+| systemPrompt       | string   | Agent instructions and personality       |
+| model              | string   | Model ID (e.g., "fixie-ai/ultravox-70B") |
+| voice              | string   | Voice ID (e.g., "terrence")              |
+| languageHint       | string   | Language code (e.g., "en")               |
+| temperature        | number   | Response creativity (0-1)                |
+| maxDuration        | string   | Call timeout (e.g., "300s")              |
+| timeExceededMessage| string   | Message when timeout reached             |
+| selectedTools      | array    | Tool definitions for function calling    |
+| initialMessages    | array    | Pre-seed conversation with messages      |

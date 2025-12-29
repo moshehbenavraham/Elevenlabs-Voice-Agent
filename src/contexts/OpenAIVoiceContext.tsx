@@ -558,28 +558,41 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
           case 'session.created':
             debugLog('session', 'Session created, sending config...');
             // Send session update with voice, instructions, and tools
-            // Note: OpenAI GA requires 'type' field ('realtime' for speech-to-speech, 'transcription' for transcription-only)
             if (wsRef.current?.readyState === WebSocket.OPEN) {
+              // OpenAI GA Realtime API uses nested audio configuration structure
               wsRef.current.send(
                 JSON.stringify({
                   type: 'session.update',
                   session: {
-                    type: 'realtime', // Required for OpenAI GA Realtime API
-                    modalities: ['audio', 'text'],
-                    voice: selectedVoiceRef.current,
+                    type: 'realtime',
+                    output_modalities: ['audio'],
                     instructions: OPENAI_INSTRUCTIONS,
-                    input_audio_format: 'pcm16',
-                    output_audio_format: 'pcm16',
-                    input_audio_transcription: {
-                      model: 'whisper-1',
-                    },
-                    turn_detection: {
-                      type: 'server_vad',
-                      threshold: 0.5,
-                      prefix_padding_ms: 300,
-                      silence_duration_ms: 500,
+                    audio: {
+                      input: {
+                        format: {
+                          type: 'audio/pcm',
+                          rate: 24000,
+                        },
+                        transcription: {
+                          model: 'whisper-1',
+                        },
+                        turn_detection: {
+                          type: 'server_vad',
+                          threshold: 0.5,
+                          prefix_padding_ms: 300,
+                          silence_duration_ms: 500,
+                        },
+                      },
+                      output: {
+                        format: {
+                          type: 'audio/pcm',
+                          rate: 24000,
+                        },
+                        voice: selectedVoiceRef.current,
+                      },
                     },
                     tools: getOpenAITools(),
+                    tool_choice: 'auto',
                   },
                 })
               );
@@ -617,7 +630,7 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
             }
             break;
 
-          case 'response.audio_transcript.delta':
+          case 'response.output_audio_transcript.delta':
             // Streaming assistant transcript - append to current message
             if (data.delta) {
               debugLog('transcript', 'Assistant transcript delta', data.delta);
@@ -639,7 +652,7 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
             });
             break;
 
-          case 'response.audio.delta':
+          case 'response.output_audio.delta':
             // Handle incoming audio
             if (data.delta && audioContextRef.current) {
               const float32Data = decodeAudioFromXAI(data.delta);
@@ -656,7 +669,7 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
             }
             break;
 
-          case 'response.audio.done':
+          case 'response.output_audio.done':
             debugLog('audio', 'Audio response complete');
             break;
 

@@ -9,7 +9,7 @@
 /**
  * Union type of all supported voice providers
  */
-export type ProviderType = 'elevenlabs' | 'xai' | 'openai';
+export type ProviderType = 'elevenlabs' | 'elevenlabs-sdk' | 'xai' | 'openai';
 
 /**
  * Message role type for conversation messages
@@ -106,6 +106,22 @@ export interface ProviderConfig {
 }
 
 /**
+ * Check if ElevenLabs Widget is enabled via environment variable
+ */
+const isElevenLabsWidgetEnabled = (): boolean => {
+  const envValue = import.meta.env.VITE_ELEVENLABS_ENABLED;
+  return envValue === 'true' || envValue === true;
+};
+
+/**
+ * Check if ElevenLabs SDK is enabled via environment variable
+ */
+const isElevenLabsSDKEnabled = (): boolean => {
+  const envValue = import.meta.env.VITE_ELEVENLABS_SDK_ENABLED;
+  return envValue === 'true' || envValue === true;
+};
+
+/**
  * Check if xAI provider is enabled via environment variable
  */
 const isXAIEnabled = (): boolean => {
@@ -127,11 +143,19 @@ const isOpenAIEnabled = (): boolean => {
 export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
   elevenlabs: {
     id: 'elevenlabs',
-    name: 'ElevenLabs',
-    description: 'High-quality conversational AI voice',
-    isAvailable: true,
+    name: 'ElevenLabs Widget',
+    description: 'Pre-built voice widget from ElevenLabs',
+    isAvailable: isElevenLabsWidgetEnabled(),
     requiresApiKey: true,
     icon: 'AudioLines',
+  },
+  'elevenlabs-sdk': {
+    id: 'elevenlabs-sdk',
+    name: 'ElevenLabs SDK',
+    description: 'Custom voice UI with ElevenLabs React SDK',
+    isAvailable: isElevenLabsSDKEnabled(),
+    requiresApiKey: true,
+    icon: 'Mic',
   },
   xai: {
     id: 'xai',
