@@ -558,11 +558,13 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
           case 'session.created':
             debugLog('session', 'Session created, sending config...');
             // Send session update with voice, instructions, and tools
+            // Note: OpenAI GA requires 'type' field ('realtime' for speech-to-speech, 'transcription' for transcription-only)
             if (wsRef.current?.readyState === WebSocket.OPEN) {
               wsRef.current.send(
                 JSON.stringify({
                   type: 'session.update',
                   session: {
+                    type: 'realtime', // Required for OpenAI GA Realtime API
                     modalities: ['audio', 'text'],
                     voice: selectedVoiceRef.current,
                     instructions: OPENAI_INSTRUCTIONS,

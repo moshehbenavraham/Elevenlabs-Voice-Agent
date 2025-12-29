@@ -5,18 +5,21 @@ This guide covers deploying the ElevenLabs Voice Agent to various environments a
 ## 🚀 Quick Deploy
 
 ### Vercel (Recommended)
+
 ```bash
 npm install -g vercel
 vercel --prod
 ```
 
 ### Netlify
+
 ```bash
 npm run build
 # Upload dist/ folder to Netlify
 ```
 
 ### Traditional Hosting
+
 ```bash
 npm run build
 # Upload dist/ folder to your web server
@@ -38,17 +41,20 @@ npm run build
 ## 🔧 Prerequisites
 
 ### System Requirements
+
 - **Node.js**: 16.x or higher
 - **npm**: 7.x or higher
 - **Git**: Latest version
 - **SSL Certificate**: Required for voice features (microphone access)
 
 ### ElevenLabs Account
+
 - **API Key**: Valid ElevenLabs API key
 - **Voice Agent**: Configured voice agent
 - **Quota**: Sufficient API quota for expected usage
 
 ### Domain & SSL
+
 - **Domain**: Registered domain name
 - **SSL Certificate**: Valid SSL certificate (required for microphone access)
 - **DNS**: Properly configured DNS records
@@ -90,20 +96,22 @@ VITE_ENABLE_OFFLINE_MODE=false
 ### Security Configuration
 
 #### Content Security Policy (CSP)
+
 Add CSP headers to your web server:
 
 ```
-Content-Security-Policy: default-src 'self'; 
-  script-src 'self' 'unsafe-inline' 'unsafe-eval'; 
-  style-src 'self' 'unsafe-inline'; 
-  img-src 'self' data: https:; 
-  font-src 'self' data:; 
-  connect-src 'self' https://api.elevenlabs.io wss://api.elevenlabs.io; 
-  media-src 'self' blob:; 
+Content-Security-Policy: default-src 'self';
+  script-src 'self' 'unsafe-inline' 'unsafe-eval';
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: https:;
+  font-src 'self' data:;
+  connect-src 'self' https://api.elevenlabs.io wss://api.elevenlabs.io https://api.x.ai wss://api.x.ai https://api.openai.com wss://api.openai.com;
+  media-src 'self' blob:;
   worker-src 'self' blob:;
 ```
 
 #### HTTPS Headers
+
 ```
 Strict-Transport-Security: max-age=31536000; includeSubDomains
 X-Content-Type-Options: nosniff
@@ -115,6 +123,7 @@ Referrer-Policy: strict-origin-when-cross-origin
 ## 🏗️ Build Process
 
 ### Production Build
+
 ```bash
 # Install dependencies
 npm ci --production=false
@@ -136,6 +145,7 @@ npm run preview
 ```
 
 ### Build Optimization
+
 ```bash
 # Analyze bundle size
 npm run build:analyze
@@ -147,9 +157,10 @@ npm run build:report
 ### Build Configuration
 
 #### Vite Configuration (`vite.config.ts`)
+
 ```typescript
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
@@ -161,15 +172,15 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          elevenlabs: ['elevenlabs-js-sdk']
-        }
-      }
-    }
+          elevenlabs: ['elevenlabs-js-sdk'],
+        },
+      },
+    },
   },
   define: {
-    'process.env.NODE_ENV': JSON.stringify('production')
-  }
-})
+    'process.env.NODE_ENV': JSON.stringify('production'),
+  },
+});
 ```
 
 ## 🌐 Deployment Platforms
@@ -177,6 +188,7 @@ export default defineConfig({
 ### Vercel (Recommended)
 
 #### Setup
+
 ```bash
 # Install Vercel CLI
 npm install -g vercel
@@ -189,6 +201,7 @@ vercel
 ```
 
 #### `vercel.json` Configuration
+
 ```json
 {
   "version": 2,
@@ -236,6 +249,7 @@ vercel
 ### Netlify
 
 #### Setup
+
 ```bash
 # Install Netlify CLI
 npm install -g netlify-cli
@@ -248,6 +262,7 @@ netlify deploy --prod
 ```
 
 #### `netlify.toml` Configuration
+
 ```toml
 [build]
   command = "npm run build"
@@ -272,6 +287,7 @@ netlify deploy --prod
 ### AWS S3 + CloudFront
 
 #### S3 Configuration
+
 ```bash
 # Create S3 bucket
 aws s3 mb s3://your-bucket-name
@@ -284,6 +300,7 @@ aws s3 sync ./dist s3://your-bucket-name --delete
 ```
 
 #### CloudFront Configuration
+
 ```json
 {
   "DistributionConfig": {
@@ -293,7 +310,7 @@ aws s3 sync ./dist s3://your-bucket-name --delete
       "Compress": true,
       "ForwardedValues": {
         "QueryString": false,
-        "Cookies": {"Forward": "none"}
+        "Cookies": { "Forward": "none" }
       }
     },
     "CustomErrorResponses": [
@@ -310,6 +327,7 @@ aws s3 sync ./dist s3://your-bucket-name --delete
 ### Firebase Hosting
 
 #### Setup
+
 ```bash
 # Install Firebase CLI
 npm install -g firebase-tools
@@ -325,15 +343,12 @@ firebase deploy
 ```
 
 #### `firebase.json` Configuration
+
 ```json
 {
   "hosting": {
     "public": "dist",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {
         "source": "**",
@@ -360,6 +375,7 @@ firebase deploy
 ### Performance Optimizations
 
 #### Bundle Optimization
+
 ```bash
 # Analyze bundle size
 npm run build:analyze
@@ -372,27 +388,21 @@ npm run build:optimize-images
 ```
 
 #### Caching Strategy
+
 ```javascript
 // Service Worker caching
 const CACHE_NAME = 'elevenlabs-voice-agent-v1';
-const urlsToCache = [
-  '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
-  '/manifest.json'
-];
+const urlsToCache = ['/', '/static/js/bundle.js', '/static/css/main.css', '/manifest.json'];
 
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
-  );
+self.addEventListener('install', (event) => {
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache)));
 });
 ```
 
 ### Security Hardening
 
 #### Environment Variables
+
 ```bash
 # Never commit these to version control
 VITE_ELEVENLABS_API_KEY=sk-...
@@ -404,6 +414,7 @@ netlify env:set VITE_ELEVENLABS_API_KEY sk-...
 ```
 
 #### API Key Rotation
+
 ```bash
 # Regular API key rotation
 # 1. Generate new API key in ElevenLabs dashboard
@@ -416,6 +427,7 @@ netlify env:set VITE_ELEVENLABS_API_KEY sk-...
 ## 🔒 SSL/HTTPS Setup
 
 ### Why HTTPS is Required
+
 - **Microphone Access**: Browsers require HTTPS for microphone access
 - **Security**: Protects API keys and user data
 - **SEO**: Search engines prefer HTTPS sites
@@ -424,6 +436,7 @@ netlify env:set VITE_ELEVENLABS_API_KEY sk-...
 ### SSL Certificate Options
 
 #### Let's Encrypt (Free)
+
 ```bash
 # Install certbot
 sudo apt-get install certbot
@@ -437,12 +450,14 @@ sudo crontab -e
 ```
 
 #### Cloudflare (Free)
+
 1. Sign up for Cloudflare
 2. Add your domain
 3. Update nameservers
 4. Enable "Always Use HTTPS"
 
 #### Platform SSL
+
 - **Vercel**: Automatic SSL for custom domains
 - **Netlify**: Automatic SSL with Let's Encrypt
 - **AWS**: Use AWS Certificate Manager
@@ -452,6 +467,7 @@ sudo crontab -e
 ### Monitoring Setup
 
 #### Error Tracking
+
 ```bash
 # Install Sentry
 npm install @sentry/react @sentry/tracing
@@ -462,6 +478,7 @@ export SENTRY_ENVIRONMENT=production
 ```
 
 #### Performance Monitoring
+
 ```javascript
 // Web Vitals monitoring
 import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals';
@@ -474,17 +491,19 @@ getTTFB(console.log);
 ```
 
 #### Analytics
+
 ```javascript
 // Google Analytics 4
 gtag('config', 'GA_MEASUREMENT_ID', {
   page_title: 'ElevenLabs Voice Agent',
-  page_location: window.location.href
+  page_location: window.location.href,
 });
 ```
 
 ### Performance Metrics
 
 #### Key Metrics to Monitor
+
 - **First Contentful Paint (FCP)**: < 1.5s
 - **Largest Contentful Paint (LCP)**: < 2.5s
 - **First Input Delay (FID)**: < 100ms
@@ -492,6 +511,7 @@ gtag('config', 'GA_MEASUREMENT_ID', {
 - **Time to Interactive (TTI)**: < 3.5s
 
 #### Voice-Specific Metrics
+
 - **Microphone Access Time**: < 2s
 - **Voice Response Time**: < 3s
 - **Audio Quality**: No dropped audio
@@ -502,6 +522,7 @@ gtag('config', 'GA_MEASUREMENT_ID', {
 ### GitHub Actions
 
 #### `.github/workflows/deploy.yml`
+
 ```yaml
 name: Deploy to Production
 
@@ -514,25 +535,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '16'
           cache: 'npm'
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Run tests
         run: npm test
-      
+
       - name: Build
         run: npm run build
         env:
           VITE_ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           VITE_ELEVENLABS_AGENT_ID: ${{ secrets.ELEVENLABS_AGENT_ID }}
-      
+
       - name: Deploy to Vercel
         uses: amondnet/vercel-action@v20
         with:
@@ -545,6 +566,7 @@ jobs:
 ### Deployment Stages
 
 #### Staging Environment
+
 ```bash
 # Deploy to staging
 vercel --target staging
@@ -557,6 +579,7 @@ npm run test:performance
 ```
 
 #### Production Deployment
+
 ```bash
 # Deploy to production
 vercel --prod
@@ -571,6 +594,7 @@ npm run test:smoke
 ## 🔙 Rollback Procedures
 
 ### Automated Rollback
+
 ```bash
 # Vercel rollback
 vercel rollback
@@ -583,6 +607,7 @@ npm run rollback:production
 ```
 
 ### Manual Rollback
+
 1. **Identify Issue**: Monitor logs and metrics
 2. **Assess Impact**: Determine severity and user impact
 3. **Execute Rollback**: Use platform-specific rollback
@@ -591,6 +616,7 @@ npm run rollback:production
 6. **Post-Mortem**: Analyze and prevent future issues
 
 ### Rollback Checklist
+
 - [ ] Backup current deployment
 - [ ] Test rollback in staging
 - [ ] Execute rollback
@@ -604,6 +630,7 @@ npm run rollback:production
 ### Common Deployment Issues
 
 #### Build Failures
+
 ```bash
 # Clear cache
 npm run clean
@@ -619,6 +646,7 @@ npm run build:debug
 ```
 
 #### Environment Variable Issues
+
 ```bash
 # Verify environment variables
 printenv | grep VITE_
@@ -629,6 +657,7 @@ curl -H "Authorization: Bearer $VITE_ELEVENLABS_API_KEY" \
 ```
 
 #### SSL Certificate Issues
+
 ```bash
 # Check certificate
 openssl s_client -connect yourdomain.com:443 -servername yourdomain.com
@@ -638,6 +667,7 @@ ssl-cert-check -c yourdomain.com
 ```
 
 #### Performance Issues
+
 ```bash
 # Analyze bundle
 npm run build:analyze
@@ -652,6 +682,7 @@ curl -I https://yourdomain.com
 ### Health Checks
 
 #### Application Health
+
 ```javascript
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -659,20 +690,21 @@ app.get('/health', (req, res) => {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     version: process.env.VITE_APP_VERSION,
-    environment: process.env.VITE_APP_ENVIRONMENT
+    environment: process.env.VITE_APP_ENVIRONMENT,
   });
 });
 ```
 
 #### Voice Features Health
+
 ```javascript
 // Voice API health check
 const checkVoiceAPI = async () => {
   try {
     const response = await fetch(`${ELEVENLABS_API_URL}/user`, {
       headers: {
-        'Authorization': `Bearer ${API_KEY}`
-      }
+        Authorization: `Bearer ${API_KEY}`,
+      },
     });
     return response.ok;
   } catch (error) {
@@ -684,6 +716,7 @@ const checkVoiceAPI = async () => {
 ## 📋 Deployment Checklist
 
 ### Pre-Deployment
+
 - [ ] Code review completed
 - [ ] Tests passing
 - [ ] Environment variables configured
@@ -693,6 +726,7 @@ const checkVoiceAPI = async () => {
 - [ ] Security scan completed
 
 ### Deployment
+
 - [ ] Backup current version
 - [ ] Deploy to staging
 - [ ] Integration tests passed
@@ -701,6 +735,7 @@ const checkVoiceAPI = async () => {
 - [ ] Smoke tests completed
 
 ### Post-Deployment
+
 - [ ] Monitor error rates
 - [ ] Check performance metrics
 - [ ] Verify voice features
@@ -713,6 +748,7 @@ const checkVoiceAPI = async () => {
 ## 📞 Support
 
 For deployment issues:
+
 - **Documentation**: Check this deployment guide
 - **GitHub Issues**: Create an issue with deployment details
 - **Community**: Join our Discord for real-time help

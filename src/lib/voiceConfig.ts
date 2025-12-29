@@ -24,21 +24,19 @@ export const OPENAI_VOICES: VoiceOption[] = [
   { id: 'verse', name: 'Verse', description: 'Articulate and precise' },
 ];
 
-// xAI voice options (compatible with OpenAI format)
+// xAI voice options (official xAI Grok voices)
+// See: https://docs.x.ai/docs/guides/voice/agent
 export const XAI_VOICES: VoiceOption[] = [
-  { id: 'alloy', name: 'Alloy', description: 'Neutral and balanced' },
-  { id: 'ash', name: 'Ash', description: 'Warm and engaging' },
-  { id: 'ballad', name: 'Ballad', description: 'Expressive and melodic' },
-  { id: 'coral', name: 'Coral', description: 'Clear and professional' },
-  { id: 'echo', name: 'Echo', description: 'Soft and reflective' },
-  { id: 'sage', name: 'Sage', description: 'Calm and thoughtful' },
-  { id: 'shimmer', name: 'Shimmer', description: 'Bright and energetic' },
-  { id: 'verse', name: 'Verse', description: 'Articulate and precise' },
+  { id: 'Ara', name: 'Ara', description: 'Expressive and natural' },
+  { id: 'Eve', name: 'Eve', description: 'Professional and clear' },
+  { id: 'Leo', name: 'Leo', description: 'Conversational' },
+  { id: 'Rex', name: 'Rex', description: 'Dynamic character voice' },
+  { id: 'Sal', name: 'Sal', description: 'Friendly character voice' },
 ];
 
 // Default voices per provider
 export const DEFAULT_OPENAI_VOICE = 'alloy';
-export const DEFAULT_XAI_VOICE = 'verse';
+export const DEFAULT_XAI_VOICE = 'Ara';
 
 // localStorage keys
 const OPENAI_VOICE_KEY = 'openai-voice';

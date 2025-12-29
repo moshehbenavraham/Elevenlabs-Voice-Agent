@@ -208,6 +208,12 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
   // Track if disconnect was intentional to prevent auto-reconnect
   const intentionalDisconnectRef = useRef(false);
 
+  // Track status for use in callbacks (avoids stale closure issues)
+  const statusRef = useRef(state.status);
+  useEffect(() => {
+    statusRef.current = state.status;
+  }, [state.status]);
+
   // Voice selection state with localStorage persistence
   const [selectedVoice, setSelectedVoiceState] = useState(() => getSavedVoice('xai'));
   const selectedVoiceRef = useRef(selectedVoice);
@@ -234,6 +240,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
   const isPlayingRef = useRef(false);
   const playNextInQueueRef = useRef<(() => void) | null>(null);
   const handleWSMessageRef = useRef<((event: MessageEvent) => void) | null>(null);
+  const sessionConfigSentRef = useRef(false);
 
   /**
    * Reconnect function - fetches fresh token and re-establishes connection
@@ -247,6 +254,9 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
       debugLog('reconnect', 'Skipping - intentional disconnect');
       return;
     }
+
+    // Reset session config flag for new connection
+    sessionConfigSentRef.current = false;
 
     // Get fresh ephemeral token
     const token = await getEphemeralToken();
@@ -551,7 +561,15 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
 
         switch (data.type) {
           case 'session.created':
-            debugLog('session', 'Session created, sending config...');
+          case 'conversation.created':
+            // xAI sends 'conversation.created' instead of 'session.created'
+            // Handle both for compatibility, but only send config once
+            if (sessionConfigSentRef.current) {
+              debugLog('session', `${data.type} received, config already sent - skipping`);
+              break;
+            }
+            debugLog('session', `${data.type} received, sending config...`);
+            sessionConfigSentRef.current = true;
             // Send session update with voice, instructions, and tools
             if (wsRef.current?.readyState === WebSocket.OPEN) {
               wsRef.current.send(
@@ -587,6 +605,12 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
 
           case 'input_audio_buffer.speech_started':
             debugLog('audio', 'User started speaking');
+            // If we're still in connecting state but speech detection is working,
+            // xAI may not send session.updated - set connected status as fallback
+            if (statusRef.current === 'connecting') {
+              debugLog('session', 'Fallback: marking connected on speech detection');
+              dispatch({ type: 'SET_STATUS', payload: 'connected' });
+            }
             dispatch({ type: 'SET_LISTENING', payload: true });
             break;
 
@@ -611,7 +635,9 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
             break;
 
           case 'response.audio_transcript.delta':
+          case 'response.output_audio_transcript.delta':
             // Streaming assistant transcript - append to current message
+            // xAI uses 'response.output_audio_transcript.delta', OpenAI uses 'response.audio_transcript.delta'
             if (data.delta) {
               debugLog('transcript', 'Assistant transcript delta', data.delta);
               dispatch({ type: 'UPDATE_LAST_MESSAGE', payload: data.delta });
@@ -633,7 +659,9 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
             break;
 
           case 'response.audio.delta':
+          case 'response.output_audio.delta':
             // Handle incoming audio
+            // xAI uses 'response.output_audio.delta', OpenAI uses 'response.audio.delta'
             if (data.delta && audioContextRef.current) {
               const float32Data = decodeAudioFromXAI(data.delta);
               const audioBuffer = createAudioBuffer(
@@ -650,6 +678,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
             break;
 
           case 'response.audio.done':
+          case 'response.output_audio.done':
             debugLog('audio', 'Audio response complete');
             break;
 
@@ -747,6 +776,8 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
 
     // Reset intentional disconnect flag for new connection
     intentionalDisconnectRef.current = false;
+    // Reset session config flag for new connection
+    sessionConfigSentRef.current = false;
 
     try {
       dispatch({ type: 'SET_STATUS', payload: 'connecting' });
@@ -879,6 +910,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
     // Clear refs
     analyserRef.current = null;
     gainNodeRef.current = null;
+    sessionConfigSentRef.current = false;
 
     dispatch({ type: 'RESET' });
     onDisconnect?.();

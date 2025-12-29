@@ -61,12 +61,21 @@ describe('voiceConfig', () => {
   });
 
   describe('XAI_VOICES', () => {
-    it('contains 8 voice options', () => {
-      expect(XAI_VOICES).toHaveLength(8);
+    it('contains 5 voice options', () => {
+      expect(XAI_VOICES).toHaveLength(5);
     });
 
-    it('includes verse as the default voice', () => {
-      expect(XAI_VOICES.find((v) => v.id === 'verse')).toBeDefined();
+    it('includes Ara as the default voice', () => {
+      expect(XAI_VOICES.find((v) => v.id === 'Ara')).toBeDefined();
+    });
+
+    it('has all official xAI voices', () => {
+      const voiceIds = XAI_VOICES.map((v) => v.id);
+      expect(voiceIds).toContain('Ara');
+      expect(voiceIds).toContain('Eve');
+      expect(voiceIds).toContain('Leo');
+      expect(voiceIds).toContain('Rex');
+      expect(voiceIds).toContain('Sal');
     });
   });
 
@@ -76,9 +85,9 @@ describe('voiceConfig', () => {
       expect(getDefaultVoice('openai')).toBe('alloy');
     });
 
-    it('returns verse for xai provider', () => {
+    it('returns Ara for xai provider', () => {
       expect(getDefaultVoice('xai')).toBe(DEFAULT_XAI_VOICE);
-      expect(getDefaultVoice('xai')).toBe('verse');
+      expect(getDefaultVoice('xai')).toBe('Ara');
     });
   });
 
@@ -95,7 +104,7 @@ describe('voiceConfig', () => {
   describe('getSavedVoice', () => {
     it('returns default voice when localStorage is empty', () => {
       expect(getSavedVoice('openai')).toBe('alloy');
-      expect(getSavedVoice('xai')).toBe('verse');
+      expect(getSavedVoice('xai')).toBe('Ara');
     });
 
     it('returns saved voice from localStorage', () => {
@@ -116,8 +125,8 @@ describe('voiceConfig', () => {
     });
 
     it('saves voice to localStorage for xai', () => {
-      saveVoice('xai', 'alloy');
-      expect(localStorageMock.setItem).toHaveBeenCalledWith('xai-voice', 'alloy');
+      saveVoice('xai', 'Leo');
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('xai-voice', 'Leo');
     });
   });
 
@@ -129,8 +138,9 @@ describe('voiceConfig', () => {
     });
 
     it('returns true for valid xai voices', () => {
-      expect(isValidVoice('xai', 'verse')).toBe(true);
-      expect(isValidVoice('xai', 'alloy')).toBe(true);
+      expect(isValidVoice('xai', 'Ara')).toBe(true);
+      expect(isValidVoice('xai', 'Leo')).toBe(true);
+      expect(isValidVoice('xai', 'Eve')).toBe(true);
     });
 
     it('returns false for invalid voices', () => {
