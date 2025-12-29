@@ -25,6 +25,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001
 const XAI_REALTIME_URL = 'wss://api.x.ai/v1/realtime';
 
 // xAI configuration from environment
+const XAI_MODEL = import.meta.env.VITE_XAI_MODEL || 'grok-2-public';
 const XAI_INSTRUCTIONS =
   import.meta.env.VITE_XAI_INSTRUCTIONS ||
   'You are a helpful voice assistant. Keep responses conversational and concise.';
@@ -303,7 +304,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
     source.connect(workletNode);
 
     // Connect to xAI WebSocket
-    const wsUrl = `${XAI_REALTIME_URL}?model=grok-2-public`;
+    const wsUrl = `${XAI_REALTIME_URL}?model=${XAI_MODEL}`;
     debugLog('ws', `Reconnecting to ${wsUrl}`);
 
     return new Promise<void>((resolve, reject) => {
@@ -786,7 +787,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
       await initializeAudioCapture(audioContext);
 
       // Connect to xAI WebSocket
-      const wsUrl = `${XAI_REALTIME_URL}?model=grok-2-public`;
+      const wsUrl = `${XAI_REALTIME_URL}?model=${XAI_MODEL}`;
       debugLog('ws', `Connecting to ${wsUrl}`);
 
       const ws = new WebSocket(wsUrl, ['realtime', `openai-insecure-api-key.${token}`]);

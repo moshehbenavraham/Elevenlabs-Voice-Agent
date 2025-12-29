@@ -4,7 +4,6 @@ const router = Router();
 
 // OpenAI Realtime API configuration constants
 const OPENAI_API_URL = 'https://api.openai.com/v1/realtime/client_secrets';
-const DEFAULT_MODEL = 'gpt-4o-realtime-preview-2024-12-17';
 const REQUEST_TIMEOUT_MS = 30000;
 
 /**
@@ -30,26 +29,26 @@ function validateApiKey() {
  * Creates an ephemeral client secret token from OpenAI Realtime API.
  * The token provides scoped access for WebSocket connections.
  * Voice and instructions are configured during WebSocket session.update.
+ * Note: Model is specified in the WebSocket URL, not in the token request.
  * @param {string} apiKey - The OpenAI API key
- * @param {string} model - The model to use for the session
  * @returns {Promise<{ success: boolean, token?: string, expiresAt?: number, error?: { error: string, message: string }, status?: number }>}
  */
-async function createEphemeralToken(apiKey, model = DEFAULT_MODEL) {
+async function createEphemeralToken(apiKey) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    console.log(`[Server] Requesting OpenAI ephemeral token (model: ${model})`);
+    console.log('[Server] Requesting OpenAI ephemeral token');
 
+    // OpenAI GA client_secrets endpoint doesn't accept model parameter
+    // Model is specified in WebSocket URL: wss://api.openai.com/v1/realtime?model=...
     const response = await fetch(OPENAI_API_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        model: model
-      }),
+      body: JSON.stringify({}),
       signal: controller.signal
     });
 
@@ -79,11 +78,13 @@ async function createEphemeralToken(apiKey, model = DEFAULT_MODEL) {
     const data = await response.json();
 
     // Extract token and expiration from OpenAI response structure
-    const token = data?.client_secret?.value;
-    const expiresAt = data?.client_secret?.expires_at;
+    // OpenAI GA format: { value: "...", expires_at: ... }
+    // OpenAI beta format: { client_secret: { value: "...", expires_at: ... } }
+    const token = data?.value || data?.client_secret?.value;
+    const expiresAt = data?.expires_at || data?.client_secret?.expires_at;
 
     if (!token) {
-      console.error('[Server] OpenAI response missing client_secret.value');
+      console.error('[Server] OpenAI response missing token. Response keys:', Object.keys(data || {}));
       return {
         success: false,
         status: 500,
@@ -127,10 +128,8 @@ async function createEphemeralToken(apiKey, model = DEFAULT_MODEL) {
 /**
  * POST /api/openai/session
  * Creates an ephemeral client secret token for OpenAI WebSocket connection.
- * Voice and instructions are configured during WebSocket session.update, not here.
- *
- * Request body (optional):
- *   - model (optional): Model to use. Default: gpt-4o-realtime-preview-2024-12-17
+ * Voice and instructions are configured during WebSocket session.update.
+ * Model is specified in the WebSocket URL by the frontend.
  *
  * Response:
  *   - Success: { token: string, expiresAt: string }
@@ -161,11 +160,8 @@ router.post('/session', async (req, res) => {
     return res.status(500).json(validation.error);
   }
 
-  // Parse request body with defaults
-  const { model = DEFAULT_MODEL } = req.body || {};
-
-  // Create ephemeral token
-  const result = await createEphemeralToken(validation.apiKey, model);
+  // Create ephemeral token (model is specified in WebSocket URL by frontend)
+  const result = await createEphemeralToken(validation.apiKey);
 
   if (!result.success) {
     return res.status(result.status || 500).json(result.error);

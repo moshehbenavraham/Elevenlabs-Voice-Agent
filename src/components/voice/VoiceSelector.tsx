@@ -87,19 +87,13 @@ export function VoiceSelector({
           >
             <SelectPrimitive.Viewport className="p-1">
               {voices.map((voice) => (
-                <VoiceItem
-                  key={voice.id}
-                  voice={voice}
-                  accentColor={accentColor}
-                />
+                <VoiceItem key={voice.id} voice={voice} accentColor={accentColor} />
               ))}
             </SelectPrimitive.Viewport>
           </SelectPrimitive.Content>
         </SelectPrimitive.Portal>
       </SelectPrimitive.Root>
-      {disabled && (
-        <p className="mt-1 text-xs text-zinc-500">Disconnect to change voice</p>
-      )}
+      {disabled && <p className="mt-1 text-xs text-zinc-500">Disconnect to change voice</p>}
     </div>
   );
 }
@@ -133,10 +127,7 @@ function VoiceItem({ voice, accentColor }: VoiceItemProps) {
       </div>
       <SelectPrimitive.ItemIndicator className="absolute right-2 flex items-center justify-center">
         <Check
-          className={cn(
-            'h-4 w-4',
-            accentColor === 'violet' ? 'text-violet-400' : 'text-sky-400'
-          )}
+          className={cn('h-4 w-4', accentColor === 'violet' ? 'text-violet-400' : 'text-sky-400')}
         />
       </SelectPrimitive.ItemIndicator>
     </SelectPrimitive.Item>

@@ -25,12 +25,12 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001
 
 // OpenAI Realtime API configuration
 const OPENAI_REALTIME_URL = 'wss://api.openai.com/v1/realtime';
-const OPENAI_MODEL = 'gpt-4o-realtime-preview-2024-12-17';
 
 // OpenAI uses same audio format as xAI: 24kHz PCM16 mono
 const OPENAI_SAMPLE_RATE = XAI_SAMPLE_RATE;
 
 // OpenAI configuration from environment
+const OPENAI_MODEL = import.meta.env.VITE_OPENAI_MODEL || 'gpt-realtime';
 const OPENAI_INSTRUCTIONS =
   import.meta.env.VITE_OPENAI_INSTRUCTIONS ||
   'You are a helpful voice assistant. Keep responses conversational and concise.';

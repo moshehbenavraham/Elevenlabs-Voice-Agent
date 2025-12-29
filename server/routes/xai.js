@@ -79,9 +79,11 @@ async function createEphemeralToken(apiKey, expirySeconds = DEFAULT_EXPIRY_SECON
     const data = await response.json();
 
     // Extract token from response structure
-    const token = data?.client_secret?.value;
+    // xAI returns token at top level: { value: "...", expires_at: ... }
+    // (differs from OpenAI beta format which uses client_secret.value)
+    const token = data?.value || data?.client_secret?.value;
     if (!token) {
-      console.error('[Server] xAI response missing client_secret.value');
+      console.error('[Server] xAI response missing token. Response keys:', Object.keys(data || {}));
       return {
         success: false,
         status: 500,

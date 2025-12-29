@@ -32,3 +32,9 @@ dist-ssr
 
 # Example code
 EXAMPLE/
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
