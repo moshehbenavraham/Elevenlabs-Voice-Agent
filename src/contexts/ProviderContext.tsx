@@ -55,7 +55,9 @@ function getInitialProvider(): ProviderType {
  * Check if a value is a valid provider type
  */
 function isValidProvider(value: string): value is ProviderType {
-  return value === 'elevenlabs' || value === 'elevenlabs-sdk' || value === 'xai' || value === 'openai';
+  return (
+    value === 'elevenlabs' || value === 'elevenlabs-sdk' || value === 'xai' || value === 'openai'
+  );
 }
 
 interface ProviderProviderProps {
