@@ -70,7 +70,7 @@
 
 ## Comments
 
-- Explain *why*, not *what*
+- Explain _why_, not _what_
 - TODOs include context: `// TODO(name): reason`
 - Update or remove comments when code changes
 - Delete commented-out code--that's what git is for
@@ -94,6 +94,28 @@
 - Lazy loading for heavy components
 - Mobile optimizations via `use-mobile` hook
 - Monitor bundle size when adding dependencies
+
+## Local Dev Tools
+
+| Category     | Tool                | Config                                     |
+| ------------ | ------------------- | ------------------------------------------ |
+| Formatter    | Prettier            | `.prettierrc`                              |
+| Linter       | ESLint              | `eslint.config.js`                         |
+| Type Checker | TypeScript (strict) | `tsconfig.json`                            |
+| Testing      | Vitest + Playwright | `vitest.config.ts`, `playwright.config.ts` |
+| Git Hooks    | Husky + lint-staged | `.husky/pre-commit`                        |
+
+## CI/CD
+
+Platform: GitHub Actions
+
+| Bundle       | Status         | Workflow                        |
+| ------------ | -------------- | ------------------------------- |
+| Code Quality | configured     | `.github/workflows/quality.yml` |
+| Build & Test | not configured | -                               |
+| Security     | not configured | -                               |
+| Integration  | configured     | `.github/workflows/e2e.yml`     |
+| Operations   | not configured | -                               |
 
 ## When In Doubt
 
