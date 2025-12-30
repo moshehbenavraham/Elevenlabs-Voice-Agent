@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import xaiRoutes from './routes/xai.js';
 import openaiRoutes from './routes/openai.js';
+import ultravoxRoutes from './routes/ultravox.js';
 import functionsRoutes from './routes/functions.js';
 
 // ES module __dirname equivalent
@@ -73,10 +74,12 @@ app.use('/api', apiLimiter);
 app.use('/api/xai/token', tokenLimiter);
 app.use('/api/openai/token', tokenLimiter);
 app.use('/api/elevenlabs/signed-url', tokenLimiter);
+app.use('/api/ultravox/call', tokenLimiter);
 
 // API Routes
 app.use('/api/xai', xaiRoutes);
 app.use('/api/openai', openaiRoutes);
+app.use('/api/ultravox', ultravoxRoutes);
 app.use('/api/functions', functionsRoutes);
 
 // Health check endpoint
@@ -94,6 +97,9 @@ app.get('/api/health', (req, res) => {
     },
     xai: {
       configured: !!process.env.XAI_API_KEY,
+    },
+    ultravox: {
+      configured: !!process.env.ULTRAVOX_API_KEY,
     },
   };
 
@@ -211,4 +217,5 @@ app.listen(PORT, () => {
   console.log(`[Server] ElevenLabs Agent ID: ${process.env.VITE_ELEVENLABS_AGENT_ID ? 'Yes' : 'No'}`);
   console.log(`[Server] xAI API key: ${process.env.XAI_API_KEY ? 'Yes' : 'No'}`);
   console.log(`[Server] OpenAI API key: ${process.env.OPENAI_API_KEY ? 'Yes' : 'No'}`);
+  console.log(`[Server] Ultravox API key: ${process.env.ULTRAVOX_API_KEY ? 'Yes' : 'No'}`);
 });

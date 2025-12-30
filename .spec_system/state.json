@@ -54,7 +54,8 @@
     "phase03-session03-elevenlabs-reconnection",
     "phase03-session04-configuration-modal",
     "phase03-session05-validation-polish",
-    "phase04-session01-coolify-deployment"
+    "phase04-session01-coolify-deployment",
+    "phase04-session02-ultravox-backend"
   ],
   "next_session_history": [
     {
@@ -150,6 +151,11 @@
     {
       "date": "2025-12-30",
       "session": "phase04-session01-coolify-deployment",
+      "status": "completed"
+    },
+    {
+      "date": "2025-12-30",
+      "session": "phase04-session02-ultravox-backend",
       "status": "completed"
     }
   ]

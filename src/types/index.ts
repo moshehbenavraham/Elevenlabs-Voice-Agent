@@ -15,3 +15,13 @@ export type {
 } from './voice-provider';
 
 export { PROVIDERS, DEFAULT_PROVIDER } from './voice-provider';
+
+export type {
+  UltravoxCallRequest,
+  UltravoxCallResponse,
+  UltravoxErrorResponse,
+  UltravoxHealthResponse,
+  UltravoxVoice,
+  UltravoxConnectionStatus,
+  UltravoxVoiceState,
+} from './ultravox';
