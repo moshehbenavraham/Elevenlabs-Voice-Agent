@@ -2,7 +2,7 @@
   "version": "2.0",
   "project_name": "Conversational Voice AI Agents",
   "description": "Multi-provider voice AI agent application with tabbed interface supporting ElevenLabs, xAI, and OpenAI",
-  "current_phase": 3,
+  "current_phase": 4,
   "current_session": null,
   "phases": {
     "0": {
@@ -27,6 +27,12 @@
       "description": "E2E test automation, ElevenLabs resilience, provider configuration modal",
       "status": "complete",
       "session_count": 5
+    },
+    "4": {
+      "name": "Deployment & New Providers",
+      "description": "Coolify Docker deployment and Ultravox voice provider integration",
+      "status": "in_progress",
+      "session_count": 4
     }
   },
   "completed_sessions": [
@@ -47,7 +53,8 @@
     "phase03-session02-voice-e2e-tests",
     "phase03-session03-elevenlabs-reconnection",
     "phase03-session04-configuration-modal",
-    "phase03-session05-validation-polish"
+    "phase03-session05-validation-polish",
+    "phase04-session01-coolify-deployment"
   ],
   "next_session_history": [
     {
@@ -138,6 +145,11 @@
     {
       "date": "2025-12-30",
       "session": "phase03-session05-validation-polish",
+      "status": "completed"
+    },
+    {
+      "date": "2025-12-30",
+      "session": "phase04-session01-coolify-deployment",
       "status": "completed"
     }
   ]

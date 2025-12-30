@@ -1,0 +1,32 @@
+services:
+  voice-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Frontend build-time variables
+        VITE_ELEVENLABS_AGENT_ID: ${VITE_ELEVENLABS_AGENT_ID}
+        VITE_ELEVENLABS_ENABLED: ${VITE_ELEVENLABS_ENABLED:-true}
+        VITE_ELEVENLABS_SDK_ENABLED: ${VITE_ELEVENLABS_SDK_ENABLED:-true}
+        VITE_XAI_ENABLED: ${VITE_XAI_ENABLED:-true}
+        VITE_OPENAI_ENABLED: ${VITE_OPENAI_ENABLED:-true}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    ports:
+      - "3001:3001"
+    environment:
+      # Server runtime variables
+      NODE_ENV: production
+      SERVER_PORT: 3001
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
+      # API keys (loaded from .env)
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY}
+      VITE_ELEVENLABS_AGENT_ID: ${VITE_ELEVENLABS_AGENT_ID}
+      XAI_API_KEY: ${XAI_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

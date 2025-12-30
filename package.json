@@ -1,7 +1,7 @@
 {
   "name": "elevenlabs-voice-agent",
   "private": true,
-  "version": "1.0.18",
+  "version": "1.0.19",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -20,7 +20,10 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
-    "prepare": "husky"
+    "prepare": "husky",
+    "docker:build": "docker build -t voice-agent .",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -46,6 +49,7 @@
     "@tanstack/react-query": "^5.90.12",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "compression": "^1.8.1",
     "framer-motion": "^12.23.25",
     "lucide-react": "^0.556.0",
     "next-themes": "^0.4.6",
@@ -59,7 +63,8 @@
     "concurrently": "^9.2.1",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

@@ -117,6 +117,62 @@ Platform: GitHub Actions
 | Integration  | configured | `.github/workflows/e2e.yml`                               |
 | Operations   | configured | `.github/workflows/release.yml`, `.github/dependabot.yml` |
 
+## Development Environment
+
+**Primary Use Case**: Local Development & Self-Hosted Deployment
+
+This project is designed to run locally during development and deploy to self-hosted infrastructure via Coolify. It is NOT optimized for serverless platforms (Vercel, Netlify) without modification.
+
+### Local Development
+
+| Component  | Port | Command           | Notes                         |
+| ---------- | ---- | ----------------- | ----------------------------- |
+| Frontend   | 8082 | `npm run dev`     | Vite dev server with HMR      |
+| Backend    | 3001 | `node server/`    | Express API server            |
+| Full Stack | both | `npm run dev:all` | Concurrent frontend + backend |
+
+### Required for Local Development
+
+- Node.js 18+ / Bun
+- `.env` file with API keys (see `.env.example`)
+- Modern browser with microphone access
+
+## Infrastructure
+
+Platform: Express.js (Node.js) + Self-Hosted (Coolify)
+
+| Bundle   | Status     | Details                                                                            |
+| -------- | ---------- | ---------------------------------------------------------------------------------- |
+| Health   | configured | `/api/health` - uptime, memory, service status, security info                      |
+| Security | configured | CORS + rate limiting (100 req/15min API, 10 req/min tokens) via express-rate-limit |
+| Backup   | N/A        | No database in project                                                             |
+| Deploy   | configured | Coolify self-hosted deployment (Docker-based)                                      |
+
+### Coolify Deployment
+
+**Platform**: [Coolify](https://coolify.io) - Self-hosted PaaS alternative to Heroku/Vercel
+
+| Component   | Type         | Details                                          |
+| ----------- | ------------ | ------------------------------------------------ |
+| Frontend    | Static Build | Vite production build served via Nginx/Caddy     |
+| Backend API | Docker       | Node.js Express server with env vars             |
+| SSL/HTTPS   | Auto         | Coolify handles Let's Encrypt certificates       |
+| Networking  | Internal     | Frontend/Backend communicate via Coolify network |
+
+### Deployment Requirements
+
+1. **Coolify Instance**: Self-hosted or managed Coolify installation
+2. **Docker Support**: Coolify uses Docker for container orchestration
+3. **Environment Variables**: Configure via Coolify UI (secrets managed securely)
+4. **Domain**: Custom domain with DNS pointed to Coolify server
+5. **SSL**: Automatic via Coolify (HTTPS required for microphone access)
+
+### NOT Recommended Platforms (without modification)
+
+- **Vercel**: Frontend-only focus, requires separate backend hosting
+- **Netlify**: Same issues as Vercel for full-stack apps
+- **AWS Lambda/Serverless**: WebSocket connections need persistent servers
+
 ## When In Doubt
 
 - Ask

@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+
+# Build output (we build inside Docker)
+dist
+
+# Environment files with secrets
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# IDE and editor files
+.idea
+.vscode
+*.swp
+*.swo
+*~
+
+# Test files
+tests
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+coverage
+.nyc_output
+
+# Documentation
+*.md
+!README.md
+
+# Development tools
+.husky
+.eslintcache
+.prettier*
+
+# Spec system
+.spec_system
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

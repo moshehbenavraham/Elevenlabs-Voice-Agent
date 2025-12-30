@@ -189,13 +189,13 @@ Based on `EXAMPLE/xai/backend-nodejs/`:
 
 ## 5. Phases
 
-| Phase | Name                    | Sessions | Status      | Completed  |
-| ----- | ----------------------- | -------- | ----------- | ---------- |
-| 00    | Multi-Provider Voice    | 4        | Complete    | 2025-12-28 |
-| 01    | OpenAI Voice Agent      | 4        | Complete    | 2025-12-28 |
-| 02    | Advanced Features       | 5        | Complete    | 2025-12-28 |
-| 03    | Testing & Configuration | 5        | Not Started | -          |
-| 04    | Ultravox Voice Agent    | 5        | Not Started | -          |
+| Phase | Name                       | Sessions | Status      | Completed  |
+| ----- | -------------------------- | -------- | ----------- | ---------- |
+| 00    | Multi-Provider Voice       | 4        | Complete    | 2025-12-28 |
+| 01    | OpenAI Voice Agent         | 4        | Complete    | 2025-12-28 |
+| 02    | Advanced Features          | 5        | Complete    | 2025-12-28 |
+| 03    | Testing & Configuration    | 5        | Complete    | 2025-12-30 |
+| 04    | Deployment & New Providers | 4        | Not Started | -          |
 
 ---
 
@@ -304,6 +304,7 @@ Ultravox is a voice AI platform that uses the `ultravox-client` SDK with a uniqu
 ```
 
 **Key Differences from xAI/OpenAI:**
+
 - Uses `ultravox-client` SDK (not raw WebSocket)
 - Session-based with `UltravoxSession` class
 - Audio handled internally by SDK (no manual PCM encoding)
@@ -313,6 +314,7 @@ Ultravox is a voice AI platform that uses the `ultravox-client` SDK with a uniqu
 #### Session 4.1: Backend Setup & Dependencies
 
 **Objectives:**
+
 - Add Ultravox backend route for call creation
 - Install `ultravox-client` package
 - Configure environment variables
@@ -335,11 +337,11 @@ const router = express.Router();
 
 interface UltravoxCallConfig {
   systemPrompt: string;
-  model?: string;           // e.g., "fixie-ai/ultravox-70B"
-  voice?: string;           // e.g., "terrence"
-  languageHint?: string;    // e.g., "en"
-  temperature?: number;     // 0-1
-  maxDuration?: string;     // e.g., "300s"
+  model?: string; // e.g., "fixie-ai/ultravox-70B"
+  voice?: string; // e.g., "terrence"
+  languageHint?: string; // e.g., "en"
+  temperature?: number; // 0-1
+  maxDuration?: string; // e.g., "300s"
   selectedTools?: object[];
 }
 
@@ -371,6 +373,7 @@ export default router;
 ```
 
 **Acceptance Criteria:**
+
 - [ ] `POST /api/ultravox/call` returns `joinUrl` and `callId`
 - [ ] API key validation works (returns 401 without key)
 - [ ] Environment variables documented
@@ -378,6 +381,7 @@ export default router;
 #### Session 4.2: Ultravox Voice Context
 
 **Objectives:**
+
 - Create `UltravoxVoiceContext` with session management
 - Implement event listeners for status, transcripts
 - Map Ultravox states to unified `VoiceProviderState`
@@ -472,6 +476,7 @@ const mapUltravoxStatus = (status: UltravoxStatus): VoiceProviderState['status']
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Context provides connect/disconnect functions
 - [ ] Status changes trigger UI updates
 - [ ] Transcripts are captured and stored
@@ -481,6 +486,7 @@ const mapUltravoxStatus = (status: UltravoxStatus): VoiceProviderState['status']
 #### Session 4.3: Provider Component & Tab Integration
 
 **Objectives:**
+
 - Create `UltravoxProvider` component
 - Integrate with existing tab system
 - Wire up shared voice UI components
@@ -562,6 +568,7 @@ const ULTRAVOX_PROVIDER: ProviderConfig = {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Ultravox tab appears when `VITE_ULTRAVOX_ENABLED=true`
 - [ ] Tab shows proper branding and icon
 - [ ] Connect/disconnect works via button
@@ -571,6 +578,7 @@ const ULTRAVOX_PROVIDER: ProviderConfig = {
 #### Session 4.4: Function Calling & Tools
 
 **Objectives:**
+
 - Implement client-side tool registration
 - Create demo tools matching existing pattern
 - Display function call results in UI
@@ -627,12 +635,14 @@ export const ultravoxToolDefinitions = [
     temporaryTool: {
       modelToolName: 'getWeather',
       description: 'Get current weather for a location',
-      dynamicParameters: [{
-        name: 'location',
-        location: 'PARAMETER_LOCATION_BODY',
-        schema: { type: 'string', description: 'City name' },
-        required: true,
-      }],
+      dynamicParameters: [
+        {
+          name: 'location',
+          location: 'PARAMETER_LOCATION_BODY',
+          schema: { type: 'string', description: 'City name' },
+          required: true,
+        },
+      ],
       client: {},
     },
   },
@@ -640,12 +650,14 @@ export const ultravoxToolDefinitions = [
     temporaryTool: {
       modelToolName: 'getTime',
       description: 'Get current time, optionally in a specific timezone',
-      dynamicParameters: [{
-        name: 'timezone',
-        location: 'PARAMETER_LOCATION_BODY',
-        schema: { type: 'string', description: 'Timezone (e.g., America/New_York)' },
-        required: false,
-      }],
+      dynamicParameters: [
+        {
+          name: 'timezone',
+          location: 'PARAMETER_LOCATION_BODY',
+          schema: { type: 'string', description: 'Timezone (e.g., America/New_York)' },
+          required: false,
+        },
+      ],
       client: {},
     },
   },
@@ -653,12 +665,14 @@ export const ultravoxToolDefinitions = [
     temporaryTool: {
       modelToolName: 'calculate',
       description: 'Evaluate a mathematical expression',
-      dynamicParameters: [{
-        name: 'expression',
-        location: 'PARAMETER_LOCATION_BODY',
-        schema: { type: 'string', description: 'Math expression (e.g., 2 + 2)' },
-        required: true,
-      }],
+      dynamicParameters: [
+        {
+          name: 'expression',
+          location: 'PARAMETER_LOCATION_BODY',
+          schema: { type: 'string', description: 'Math expression (e.g., 2 + 2)' },
+          required: true,
+        },
+      ],
       client: {},
     },
   },
@@ -688,6 +702,7 @@ const response = await fetch('/api/ultravox/call', {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Tools are registered before session starts
 - [ ] Tool calls are executed client-side
 - [ ] Tool results are returned to Ultravox
@@ -697,6 +712,7 @@ const response = await fetch('/api/ultravox/call', {
 #### Session 4.5: Polish, Testing & Voice Selection
 
 **Objectives:**
+
 - Add voice selection dropdown
 - Implement reconnection with backoff
 - Add comprehensive tests
@@ -713,6 +729,7 @@ const response = await fetch('/api/ultravox/call', {
 - [ ] Error handling polish
 
 **Available Ultravox Voices:**
+
 - `terrence` (default)
 - Additional voices as supported by API
 
@@ -752,6 +769,7 @@ describe('UltravoxVoiceContext', () => {
 ```
 
 **Acceptance Criteria:**
+
 - [ ] Voice selection works before connection
 - [ ] Reconnection triggers on unexpected disconnect
 - [ ] All tests pass (unit + integration)
@@ -817,11 +835,12 @@ ULTRAVOX_API_KEY=uvx-... # Server-side only
 
 ### New for Ultravox
 
-| Method | Endpoint             | Description                              |
-| ------ | -------------------- | ---------------------------------------- |
-| POST   | `/api/ultravox/call` | Create call and get joinUrl for SDK      |
+| Method | Endpoint             | Description                         |
+| ------ | -------------------- | ----------------------------------- |
+| POST   | `/api/ultravox/call` | Create call and get joinUrl for SDK |
 
 **Request Body:**
+
 ```json
 {
   "systemPrompt": "You are a helpful assistant...",
@@ -835,6 +854,7 @@ ULTRAVOX_API_KEY=uvx-... # Server-side only
 ```
 
 **Response:**
+
 ```json
 {
   "joinUrl": "wss://...",
@@ -929,14 +949,14 @@ ULTRAVOX_API_KEY=uvx-... # Server-side only
 
 ### Planned Providers
 
-| Provider        | Status      |
-| --------------- | ----------- |
-| ElevenLabs      | Complete    |
-| xAI (Grok)      | Complete    |
-| OpenAI          | Complete    |
-| Ultravox        | Phase 04    |
-| Google (Gemini) | Planned     |
-| Anthropic       | Planned     |
+| Provider        | Status   |
+| --------------- | -------- |
+| ElevenLabs      | Complete |
+| xAI (Grok)      | Complete |
+| OpenAI          | Complete |
+| Ultravox        | Phase 04 |
+| Google (Gemini) | Planned  |
+| Anthropic       | Planned  |
 
 ---
 
@@ -1094,17 +1114,17 @@ From `EXAMPLE/xai/backend-nodejs/`:
 
 ### Phase 4: Ultravox File Changes
 
-| File                                           | Action | Description                      |
-| ---------------------------------------------- | ------ | -------------------------------- |
-| `src/types/ultravox.ts`                        | CREATE | Ultravox type definitions        |
-| `src/contexts/UltravoxVoiceContext.tsx`        | CREATE | Ultravox session management      |
-| `src/components/providers/UltravoxProvider.tsx`| CREATE | Ultravox provider wrapper        |
-| `src/lib/tools/ultravoxTools.ts`               | CREATE | Client-side tool implementations |
-| `server/routes/ultravox.ts`                    | CREATE | Ultravox backend route           |
-| `src/contexts/ProviderContext.tsx`             | MODIFY | Add Ultravox provider config     |
-| `src/types/voice-provider.ts`                  | MODIFY | Add 'ultravox' to ProviderType   |
-| `.env.example`                                 | MODIFY | Add Ultravox environment vars    |
-| `package.json`                                 | MODIFY | Add ultravox-client dependency   |
+| File                                            | Action | Description                      |
+| ----------------------------------------------- | ------ | -------------------------------- |
+| `src/types/ultravox.ts`                         | CREATE | Ultravox type definitions        |
+| `src/contexts/UltravoxVoiceContext.tsx`         | CREATE | Ultravox session management      |
+| `src/components/providers/UltravoxProvider.tsx` | CREATE | Ultravox provider wrapper        |
+| `src/lib/tools/ultravoxTools.ts`                | CREATE | Client-side tool implementations |
+| `server/routes/ultravox.ts`                     | CREATE | Ultravox backend route           |
+| `src/contexts/ProviderContext.tsx`              | MODIFY | Add Ultravox provider config     |
+| `src/types/voice-provider.ts`                   | MODIFY | Add 'ultravox' to ProviderType   |
+| `.env.example`                                  | MODIFY | Add Ultravox environment vars    |
+| `package.json`                                  | MODIFY | Add ultravox-client dependency   |
 
 ---
 
@@ -1202,26 +1222,26 @@ const toolDefinition = {
 
 ### Ultravox Status States
 
-| Status        | Description                              | Maps To      |
-| ------------- | ---------------------------------------- | ------------ |
-| disconnected  | Not connected to any call                | idle         |
-| disconnecting | Leaving a call in progress               | idle         |
-| connecting    | Establishing WebSocket connection        | connecting   |
-| idle          | Connected but not actively processing    | connected    |
-| listening     | Actively listening to user audio         | connected    |
-| thinking      | Processing user input                    | connected    |
-| speaking      | Agent is speaking response               | connected    |
+| Status        | Description                           | Maps To    |
+| ------------- | ------------------------------------- | ---------- |
+| disconnected  | Not connected to any call             | idle       |
+| disconnecting | Leaving a call in progress            | idle       |
+| connecting    | Establishing WebSocket connection     | connecting |
+| idle          | Connected but not actively processing | connected  |
+| listening     | Actively listening to user audio      | connected  |
+| thinking      | Processing user input                 | connected  |
+| speaking      | Agent is speaking response            | connected  |
 
 ### Call Configuration Options
 
-| Option             | Type     | Description                              |
-| ------------------ | -------- | ---------------------------------------- |
-| systemPrompt       | string   | Agent instructions and personality       |
-| model              | string   | Model ID (e.g., "fixie-ai/ultravox-70B") |
-| voice              | string   | Voice ID (e.g., "terrence")              |
-| languageHint       | string   | Language code (e.g., "en")               |
-| temperature        | number   | Response creativity (0-1)                |
-| maxDuration        | string   | Call timeout (e.g., "300s")              |
-| timeExceededMessage| string   | Message when timeout reached             |
-| selectedTools      | array    | Tool definitions for function calling    |
-| initialMessages    | array    | Pre-seed conversation with messages      |
+| Option              | Type   | Description                              |
+| ------------------- | ------ | ---------------------------------------- |
+| systemPrompt        | string | Agent instructions and personality       |
+| model               | string | Model ID (e.g., "fixie-ai/ultravox-70B") |
+| voice               | string | Voice ID (e.g., "terrence")              |
+| languageHint        | string | Language code (e.g., "en")               |
+| temperature         | number | Response creativity (0-1)                |
+| maxDuration         | string | Call timeout (e.g., "300s")              |
+| timeExceededMessage | string | Message when timeout reached             |
+| selectedTools       | array  | Tool definitions for function calling    |
+| initialMessages     | array  | Pre-seed conversation with messages      |

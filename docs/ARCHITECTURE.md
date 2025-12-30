@@ -63,7 +63,7 @@ The application uses a unified provider interface allowing seamless switching be
 
 ```typescript
 // src/types/voice-provider.ts
-export type ProviderType = 'elevenlabs' | 'xai' | 'openai';
+export type ProviderType = 'elevenlabs' | 'elevenlabs-sdk' | 'xai' | 'openai';
 
 export interface VoiceProvider {
   id: ProviderType;
@@ -78,11 +78,13 @@ export interface VoiceProvider {
 
 ```
 ProviderContext (active provider selection)
-    ├── ElevenLabs VoiceContext (existing SDK integration)
-    └── XAIVoiceContext (WebSocket + ephemeral token)
+    ├── ElevenLabs VoiceContext (SDK with reconnection)
+    ├── XAIVoiceContext (WebSocket + ephemeral token)
+    └── OpenAIVoiceContext (WebSocket + ephemeral token)
 ```
 
 **Key Benefits**:
+
 - Provider-specific logic stays isolated
 - Each context manages its own connection lifecycle
 - Provider switching changes which context is "active"
@@ -91,6 +93,7 @@ ProviderContext (active provider selection)
 ## Component Hierarchy
 
 ### Application Structure
+
 ```
 App
 ├── ThemeProvider
@@ -111,10 +114,18 @@ App
 │   │   │   ├── XAIVoiceVisualizer
 │   │   │   └── XAIEmptyState
 │   │   ├── BackgroundEffects
-│   │   └── ConfigurationModal
+│   │   └── ConfigurationDialog   # Settings modal (Phase 03)
 │   └── NotFound
+├── Settings Components           # NEW: Phase 03
+│   ├── ConfigurationDialog       # Main settings dialog
+│   ├── ProviderSettingsPanel     # Tabbed provider settings
+│   ├── OpenAISettingsTab         # OpenAI voice/prompt config
+│   ├── XAISettingsTab            # xAI voice/prompt config
+│   ├── ElevenLabsSettingsTab     # ElevenLabs info display
+│   ├── ConnectionDiagnostics     # Provider connection status
+│   └── SettingsFooter            # Reset/save actions
 ├── UI Components
-│   ├── EmptyState                # NEW: Generic empty state component
+│   ├── EmptyState                # Generic empty state component
 │   ├── Button, Card, Dialog
 │   └── ... (50+ shadcn/ui components)
 └── Global Components
@@ -125,26 +136,31 @@ App
 ### Component Responsibilities
 
 #### **App Component**
+
 - Application bootstrap and routing
 - Global providers and context setup
 - Error boundary implementation
 
 #### **VoiceEnvironment**
+
 - Voice interaction orchestration
 - State management for voice features
 - Integration with ElevenLabs SDK
 
 #### **VoiceOrb**
+
 - Visual representation of voice state
 - User interaction interface
 - Animation and visual feedback
 
 #### **AudioVisualizer**
+
 - Real-time audio visualization
 - Frequency analysis and display
 - Performance-optimized rendering
 
 #### **ThemeProvider**
+
 - Theme management and switching
 - CSS variable management
 - User preference persistence
@@ -152,28 +168,32 @@ App
 ## 📊 Data Flow
 
 ### Voice Interaction Flow
+
 ```
-User Input → Microphone → getUserMedia → MediaRecorder → 
-Audio Processing → ElevenLabs API → Voice Response → 
+User Input → Microphone → getUserMedia → MediaRecorder →
+Audio Processing → ElevenLabs API → Voice Response →
 Audio Playback → Visual Feedback → User Interface Update
 ```
 
 ### State Flow
+
 ```
-User Action → Event Handler → State Update → 
+User Action → Event Handler → State Update →
 Component Re-render → UI Update → Side Effects
 ```
 
 ### API Communication Flow
+
 ```
-Component → Custom Hook → API Service → 
-HTTP/WebSocket → ElevenLabs API → Response → 
+Component → Custom Hook → API Service →
+HTTP/WebSocket → ElevenLabs API → Response →
 State Update → UI Update
 ```
 
 ## 🎤 Voice Processing Pipeline
 
 ### Audio Input Pipeline
+
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │  Microphone     │───▶│  getUserMedia   │───▶│  MediaRecorder  │
@@ -194,6 +214,7 @@ State Update → UI Update
 ```
 
 ### Audio Output Pipeline
+
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │  ElevenLabs     │───▶│  Audio Response │───▶│  Audio Element  │
@@ -216,6 +237,7 @@ State Update → UI Update
 ## State Management
 
 ### Global State Architecture
+
 ```typescript
 // Provider Context - Active provider selection
 interface ProviderContextType {
@@ -253,22 +275,38 @@ interface XAIVoiceState {
 ### State Management Patterns
 
 #### **Context API**
+
 Used for global state that needs to be accessed across many components:
+
 - `ProviderContext` - Active provider selection with localStorage persistence
 - `ThemeContext` - Theme state
 - `VoiceContext` - ElevenLabs voice state
 - `XAIVoiceContext` - xAI voice state
 
 #### **Custom Hooks**
+
 Used for feature-specific state management:
+
 - `useProvider` - Provider selection hook
 - `useVoice` - ElevenLabs voice hook
 - `useXAIVoice` - xAI voice hook
+- `useOpenAIVoice` - OpenAI voice hook
+- `useReconnection` - WebSocket reconnection with backoff
 - `useReducedMotion` - Accessibility preference detection
 - `useAccessibility` - Accessibility features
 
+#### **Settings Storage**
+
+Persistent settings via localStorage:
+
+- `settingsStorage.ts` - Schema-versioned settings persistence
+- Provider-specific voice/prompt configuration
+- Merge strategy ensures all fields exist
+
 #### **Local State**
+
 Used for component-specific state:
+
 - Form inputs
 - UI interaction state
 - Tab animations
@@ -276,26 +314,27 @@ Used for component-specific state:
 ## API Integration
 
 ### ElevenLabs SDK Integration
+
 ```typescript
 // SDK Configuration
 const elevenLabsClient = new ElevenLabsClient({
   apiKey: process.env.VITE_ELEVENLABS_API_KEY,
-  baseURL: 'https://api.elevenlabs.io/v1'
+  baseURL: 'https://api.elevenlabs.io/v1',
 });
 
 // Conversation Management
 class ConversationManager {
   private client: ElevenLabsClient;
   private conversationId: string | null = null;
-  
+
   async startConversation(agentId: string): Promise<Conversation> {
     // Initialize conversation
   }
-  
+
   async sendMessage(message: string): Promise<Response> {
     // Send message to agent
   }
-  
+
   async endConversation(): Promise<void> {
     // Clean up conversation
   }
@@ -303,6 +342,7 @@ class ConversationManager {
 ```
 
 ### API Layer Architecture
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Component Layer                          │
@@ -342,11 +382,11 @@ server/
 
 ### API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/health` | Server health check |
-| GET | `/api/elevenlabs/signed-url` | ElevenLabs signed URL for SDK |
-| POST | `/api/xai/session` | Create xAI ephemeral token |
+| Method | Endpoint                     | Description                   |
+| ------ | ---------------------------- | ----------------------------- |
+| GET    | `/api/health`                | Server health check           |
+| GET    | `/api/elevenlabs/signed-url` | ElevenLabs signed URL for SDK |
+| POST   | `/api/xai/session`           | Create xAI ephemeral token    |
 
 ### xAI Token Flow
 
@@ -383,6 +423,7 @@ resampleAudio(audioData, fromRate, toRate) -> Float32Array
 ## Performance Considerations
 
 ### Bundle Optimization
+
 ```typescript
 // Code splitting
 const LazyVoiceOrb = lazy(() => import('./components/VoiceOrb'));
@@ -393,11 +434,12 @@ const loadElevenLabsSDK = () => import('elevenlabs-js-sdk');
 ```
 
 ### Memory Management
+
 ```typescript
 // Cleanup patterns
 useEffect(() => {
   const audioContext = new AudioContext();
-  
+
   return () => {
     audioContext.close();
   };
@@ -406,11 +448,12 @@ useEffect(() => {
 // Resource cleanup
 const cleanup = useCallback(() => {
   mediaRecorder?.stop();
-  audioStream?.getTracks().forEach(track => track.stop());
+  audioStream?.getTracks().forEach((track) => track.stop());
 }, [mediaRecorder, audioStream]);
 ```
 
 ### Performance Monitoring
+
 ```typescript
 // Performance metrics
 const measurePerformance = (name: string, fn: () => void) => {
@@ -431,6 +474,7 @@ getLCP(console.log);
 ## 🔐 Security Architecture
 
 ### API Security
+
 ```typescript
 // API key management
 const apiKey = process.env.VITE_ELEVENLABS_API_KEY;
@@ -444,20 +488,21 @@ const authenticatedRequest = async (url: string, options: RequestInit) => {
     ...options,
     headers: {
       ...options.headers,
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    }
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
   });
 };
 ```
 
 ### Input Validation
+
 ```typescript
 // Audio input validation
 const validateAudioInput = (audioData: Blob): boolean => {
   const maxSize = 10 * 1024 * 1024; // 10MB
   const allowedTypes = ['audio/wav', 'audio/mp3', 'audio/webm'];
-  
+
   return audioData.size <= maxSize && allowedTypes.includes(audioData.type);
 };
 
@@ -468,6 +513,7 @@ const sanitizeInput = (input: string): string => {
 ```
 
 ### Privacy Protection
+
 ```typescript
 // Audio data handling
 const handleAudioData = (audioBlob: Blob) => {
@@ -486,6 +532,7 @@ const getUserConsent = async (): Promise<boolean> => {
 ## 📱 Mobile Architecture
 
 ### Responsive Design Strategy
+
 ```typescript
 // Mobile-first approach
 const breakpoints = {
@@ -504,6 +551,7 @@ const MobileVoiceOrb = () => {
 ```
 
 ### Touch Optimization
+
 ```typescript
 // Touch event handling
 const handleTouchStart = (e: TouchEvent) => {
@@ -520,27 +568,28 @@ const handleTouchEnd = (e: TouchEvent) => {
 const touchTargetStyle = {
   minHeight: '44px',
   minWidth: '44px',
-  padding: '12px'
+  padding: '12px',
 };
 ```
 
 ### Mobile Performance
+
 ```typescript
 // Mobile-specific optimizations
 const MobileOptimizedComponent = () => {
   const [isVisible, setIsVisible] = useState(false);
-  
+
   // Intersection Observer for performance
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => setIsVisible(entry.isIntersecting),
       { threshold: 0.1 }
     );
-    
+
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
   }, []);
-  
+
   return isVisible ? <ExpensiveComponent /> : <PlaceholderComponent />;
 };
 ```
@@ -548,6 +597,7 @@ const MobileOptimizedComponent = () => {
 ## 🌐 Browser Compatibility
 
 ### Feature Detection
+
 ```typescript
 // Browser capability detection
 const checkBrowserSupport = () => {
@@ -557,23 +607,24 @@ const checkBrowserSupport = () => {
     mediaRecorder: !!(window.MediaRecorder),
     webSocket: !!(window.WebSocket)
   };
-  
+
   return support;
 };
 
 // Progressive enhancement
 const VoiceComponent = () => {
   const support = checkBrowserSupport();
-  
+
   if (!support.webAudio) {
     return <FallbackComponent />;
   }
-  
+
   return <FullVoiceComponent />;
 };
 ```
 
 ### Polyfills and Fallbacks
+
 ```typescript
 // Audio context polyfill
 window.AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -584,13 +635,13 @@ if (!navigator.mediaDevices) {
 }
 
 if (!navigator.mediaDevices.getUserMedia) {
-  navigator.mediaDevices.getUserMedia = function(constraints) {
+  navigator.mediaDevices.getUserMedia = function (constraints) {
     const getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-    
+
     if (!getUserMedia) {
       return Promise.reject(new Error('getUserMedia is not supported'));
     }
-    
+
     return new Promise((resolve, reject) => {
       getUserMedia.call(navigator, constraints, resolve, reject);
     });
@@ -601,6 +652,7 @@ if (!navigator.mediaDevices.getUserMedia) {
 ## 🔧 Build Architecture
 
 ### Development Environment
+
 ```typescript
 // Vite configuration
 export default defineConfig({
@@ -611,15 +663,16 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
-    https: true // Required for microphone access
+    https: true, // Required for microphone access
   },
   define: {
-    'process.env': process.env
-  }
+    'process.env': process.env,
+  },
 });
 ```
 
 ### Production Build
+
 ```typescript
 // Production optimizations
 export default defineConfig({
@@ -629,20 +682,21 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           elevenlabs: ['elevenlabs-js-sdk'],
-          audio: ['audio-processing-utilities']
-        }
-      }
+          audio: ['audio-processing-utilities'],
+        },
+      },
     },
     minify: 'terser',
     sourcemap: false,
-    chunkSizeWarningLimit: 1000
-  }
+    chunkSizeWarningLimit: 1000,
+  },
 });
 ```
 
 ## 📊 Monitoring and Analytics
 
 ### Performance Monitoring
+
 ```typescript
 // Performance observer
 const observer = new PerformanceObserver((list) => {
@@ -655,6 +709,7 @@ observer.observe({ entryTypes: ['measure', 'navigation'] });
 ```
 
 ### Error Tracking
+
 ```typescript
 // Error boundary
 class ErrorBoundary extends React.Component {
@@ -665,20 +720,84 @@ class ErrorBoundary extends React.Component {
 }
 ```
 
+## Testing Architecture
+
+### Unit Tests (Vitest)
+
+```
+src/test/
+├── setup.ts                    # Test configuration and mocks
+├── ProviderContext.test.tsx    # Provider context tests
+├── ProviderTabs.test.tsx       # Tab component tests
+├── settingsStorage.test.ts     # Settings persistence tests
+├── ConfigurationDialog.test.tsx # Modal accessibility tests
+└── ... (215+ tests total)
+```
+
+### E2E Tests (Playwright)
+
+```
+tests/e2e/
+├── fixtures/                   # Test fixtures and helpers
+│   ├── audio-mock.fixture.ts   # Audio API mocking
+│   └── index.ts
+├── page-objects/
+│   └── VoicePage.ts            # Page object model
+├── providers/                  # Provider-specific tests
+│   ├── elevenlabs.spec.ts
+│   ├── openai.spec.ts
+│   └── xai.spec.ts
+├── voice-ui/                   # Voice UI component tests
+│   ├── voice-button.spec.ts
+│   ├── voice-selector.spec.ts
+│   ├── conversation-panel.spec.ts
+│   └── function-calling.spec.ts
+├── error-handling/             # Error and reconnection tests
+│   ├── api-errors.spec.ts
+│   ├── reconnection.spec.ts
+│   └── elevenlabs-reconnection.spec.ts
+├── smoke/                      # Smoke tests
+│   ├── app-load.spec.ts
+│   ├── tab-navigation.spec.ts
+│   └── provider-render.spec.ts
+└── utils/                      # Mock utilities
+    ├── audio-mock.ts
+    ├── websocket-mock.ts
+    └── mock-server.ts
+```
+
+### Reconnection Pattern
+
+All providers use `useReconnection` hook for connection recovery:
+
+```typescript
+// Exponential backoff: 1s, 2s, 4s, 8s, up to 30s max
+// Maximum 10 retry attempts
+const { reconnect, cancelReconnect, reconnectionState } = useReconnection({
+  maxRetries: 10,
+  baseDelay: 1000,
+  maxDelay: 30000,
+  onReconnect: performReconnect,
+});
+```
+
 ## 🔮 Future Architecture Considerations
 
 ### Scalability
+
 - Microservices architecture for API layer
 - Edge computing for reduced latency
 - CDN optimization for global reach
 
 ### Enhanced Features
+
 - Offline voice processing capabilities
 - Multi-language support
 - Voice authentication integration
 - Real-time collaboration features
 
 ### Performance Improvements
+
 - WebAssembly for audio processing
 - Service worker for offline functionality
 - HTTP/3 for improved network performance
@@ -694,6 +813,6 @@ class ErrorBoundary extends React.Component {
 
 ---
 
-**Last Updated**: December 28, 2025
+**Last Updated**: December 30, 2025
 
 This architecture is designed to be maintainable, scalable, and performant while providing excellent user experience for multi-provider voice AI interactions.

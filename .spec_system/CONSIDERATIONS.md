@@ -114,27 +114,51 @@ Recently closed items (buffer - rotates out after 2 phases).
 
 ---
 
-## Phase 03 Roadmap
+## Deployment Strategy
+
+### Target Platform: Coolify (Self-Hosted)
+
+This project is designed for local development and self-hosted deployment via Coolify. The full-stack architecture (React + Express) requires persistent server connections for WebSocket-based voice APIs.
+
+### Key Decisions
+
+- [P03] **Coolify over Vercel/Netlify**: Full-stack app with WebSocket needs; serverless doesn't fit
+- [P03] **Docker-based deployment**: Coolify uses Docker; creates consistent dev/prod parity
+- [P03] **Single repo, dual services**: Frontend (static) and Backend (Node) deployed together
+- [P03] **Internal networking**: Frontend/Backend communicate via Coolify's internal network
+
+### Deployment Artifacts Required
+
+| Artifact       | Status  | Location                              |
+| -------------- | ------- | ------------------------------------- |
+| Dockerfile     | pending | `/Dockerfile` (multi-stage build)     |
+| docker-compose | pending | `/docker-compose.yml` (local testing) |
+| Coolify config | pending | Coolify UI configuration              |
+| Nginx config   | pending | Frontend static file serving          |
+
+---
+
+## Phase 04 Roadmap
 
 Consolidated items for next phase planning:
 
 ### High Priority
 
-1. **E2E Test Automation** - Playwright tests for voice flows (comprehensive regression prevention)
-2. **ElevenLabs Reconnection** - SDK may handle internally; investigate or implement manual recovery
+1. **Coolify Deployment Bundle** - Dockerfile, docker-compose, and deployment documentation
+2. **Ultravox Voice Agent Integration** - Fourth voice provider (Ultravox.ai realtime API)
+   - **API key already configured** in project `.env` file - ready for immediate development
 
 ### Medium Priority
 
-3. **Google Gemini Integration** - Fourth voice provider (when Realtime API available)
-4. **Provider Configuration Modal** - API key management UI, voice settings consolidation
-5. **ElevenLabs Function Calling** - Research architecture, implement tool integration
+3. **Google Gemini Integration** - Fifth voice provider (when Realtime API available)
+4. **ElevenLabs Function Calling** - Research architecture, implement tool integration
+5. **Token Caching with TTL** - Reduce ephemeral token fetches for better performance
 
 ### Lower Priority (Stretch Goals)
 
-6. **Token Caching with TTL** - Reduce ephemeral token fetches for better performance
-7. **Swipe Gestures for Mobile Tabs** - Enhanced touch interactions for mobile users
-8. **Session State Restoration** - Preserve conversation context across reconnections
-9. **Voice Activity Visualization** - Show when user vs AI is speaking
+6. **Swipe Gestures for Mobile Tabs** - Enhanced touch interactions for mobile users
+7. **Session State Restoration** - Preserve conversation context across reconnections
+8. **Voice Activity Visualization** - Show when user vs AI is speaking
 
 ---
 
