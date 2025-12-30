@@ -2,6 +2,7 @@ import { createContext, useContext, useReducer, useCallback, useEffect, useRef }
 import type { ReactNode } from 'react';
 import { useConversation } from '@elevenlabs/react';
 import { trackError, trackWarning } from '@/lib/errorTracking';
+import { useReconnection, type ReconnectionState } from '@/hooks/useReconnection';
 
 const DEBUG = import.meta.env.DEV;
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
@@ -48,6 +49,8 @@ interface VoiceContextType extends VoiceState {
   disconnect: () => Promise<void>;
   setVolume: (volume: number) => void;
   clearError: () => void;
+  reconnection: ReconnectionState;
+  manualReconnect: () => void;
 }
 
 const initialState: VoiceState = {
@@ -181,9 +184,72 @@ function parseElevenLabsError(error: unknown): string {
 
 export const VoiceContext = createContext<VoiceContextType | null>(null);
 
-export function VoiceProvider({ children }: { children: ReactNode }) {
+interface VoiceProviderProps {
+  children: ReactNode;
+  onDisconnect?: () => void;
+}
+
+export function VoiceProvider({
+  children,
+  onDisconnect: onDisconnectCallback,
+}: VoiceProviderProps) {
   const [state, dispatch] = useReducer(voiceReducer, initialState);
   const lastMessageCount = useRef(0);
+
+  // Track if disconnect was intentional to prevent auto-reconnect
+  const intentionalDisconnectRef = useRef(false);
+  // Store the last agent ID used for reconnection
+  const lastAgentIdRef = useRef<string | null>(null);
+
+  // Ref to track previous connection state for detecting disconnect
+  const wasConnectedRef = useRef(false);
+  // Ref to store conversation object for use in callbacks
+  const conversationRef = useRef<ReturnType<typeof useConversation> | null>(null);
+  // Ref to store reconnection hook methods for use in callbacks
+  const reconnectionHookRef = useRef<ReturnType<typeof useReconnection> | null>(null);
+
+  /**
+   * Reconnect function - fetches fresh signed URL and re-establishes connection
+   * Used by useReconnection hook on auto-reconnect attempts
+   */
+  const performReconnect = useCallback(async () => {
+    debugLog('reconnect', 'Attempting to reconnect with fresh signed URL...');
+
+    // Skip if intentional disconnect
+    if (intentionalDisconnectRef.current) {
+      debugLog('reconnect', 'Skipping - intentional disconnect');
+      return;
+    }
+
+    // Need a stored agent ID to reconnect
+    if (!lastAgentIdRef.current) {
+      throw new Error('No agent ID available for reconnection');
+    }
+
+    // Get fresh signed URL
+    const signedUrl = await getSignedUrl();
+
+    // Start new session using ref
+    await conversationRef.current?.startSession({
+      signedUrl,
+      connectionType: 'websocket',
+    });
+
+    debugLog('reconnect', 'Reconnection successful');
+  }, []);
+
+  // Reconnection hook
+  const reconnectionHook = useReconnection(performReconnect, {
+    maxRetries: 5,
+    baseDelay: 1000,
+    maxDelay: 30000,
+    jitterFactor: 0.3,
+  });
+
+  // Keep reconnection hook ref in sync
+  useEffect(() => {
+    reconnectionHookRef.current = reconnectionHook;
+  }, [reconnectionHook]);
 
   // Initialize conversation with event handlers for better error tracking
   const conversation = useConversation({
@@ -191,15 +257,34 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
       debugLog('onConnect', 'Successfully connected to ElevenLabs');
       dispatch({ type: 'SET_CONNECTED', payload: true });
       dispatch({ type: 'SET_LOADING', payload: false });
+      wasConnectedRef.current = true;
+      // Notify reconnection hook of successful connection (use ref for latest)
+      reconnectionHookRef.current?.onConnected();
     },
     onDisconnect: () => {
       debugLog('onDisconnect', 'Disconnected from ElevenLabs');
       dispatch({ type: 'SET_CONNECTED', payload: false });
+
+      // Determine if this was an abnormal disconnect
+      const wasConnected = wasConnectedRef.current;
+      wasConnectedRef.current = false;
+
+      if (wasConnected && !intentionalDisconnectRef.current) {
+        // Abnormal disconnect - trigger reconnection
+        // Use 1006 (abnormal closure) since SDK doesn't expose close codes
+        debugLog('onDisconnect', 'Abnormal disconnect detected, triggering reconnection');
+        reconnectionHookRef.current?.onDisconnected(1006);
+      } else if (intentionalDisconnectRef.current) {
+        // Intentional disconnect - reset reconnection state
+        debugLog('onDisconnect', 'Intentional disconnect, resetting state');
+        reconnectionHookRef.current?.resetReconnection();
+        onDisconnectCallback?.();
+      }
     },
     onError: (error) => {
       const errorMessage = parseElevenLabsError(error);
       trackError('VoiceContext', 'ElevenLabs conversation error', error, {
-        status: conversation?.status,
+        status: conversationRef.current?.status,
       });
       debugLog('onError', 'Conversation error', { error, parsed: errorMessage });
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
@@ -209,6 +294,11 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
       debugLog('onMessage', 'Received message', message);
     },
   });
+
+  // Keep conversation ref in sync
+  useEffect(() => {
+    conversationRef.current = conversation;
+  }, [conversation]);
 
   // Real audio stream handling
   useEffect(() => {
@@ -276,6 +366,11 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      // Reset intentional disconnect flag for new connection
+      intentionalDisconnectRef.current = false;
+      // Store agent ID for reconnection
+      lastAgentIdRef.current = agentId;
+
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
         dispatch({ type: 'SET_ERROR', payload: null });
@@ -331,17 +426,26 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
 
   const disconnect = useCallback(async () => {
     debugLog('disconnect', 'Ending session...');
+
+    // Mark as intentional disconnect to prevent auto-reconnect
+    intentionalDisconnectRef.current = true;
+
+    // Cancel any pending reconnection attempts
+    reconnectionHook.cancelReconnect();
+    reconnectionHook.resetReconnection();
+
     try {
       await conversation?.endSession();
       debugLog('disconnect', 'Session ended successfully');
       dispatch({ type: 'RESET' });
       lastMessageCount.current = 0;
+      wasConnectedRef.current = false;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to disconnect';
       trackError('VoiceContext', 'Disconnect failed', error);
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
     }
-  }, [conversation]);
+  }, [conversation, reconnectionHook]);
 
   const setVolume = useCallback(
     (volume: number) => {
@@ -369,6 +473,13 @@ export function VoiceProvider({ children }: { children: ReactNode }) {
     disconnect,
     setVolume,
     clearError,
+    reconnection: {
+      status: reconnectionHook.status,
+      attempt: reconnectionHook.attempt,
+      countdown: reconnectionHook.countdown,
+      isOnline: reconnectionHook.isOnline,
+    },
+    manualReconnect: reconnectionHook.manualReconnect,
   };
 
   return <VoiceContext.Provider value={value}>{children}</VoiceContext.Provider>;
