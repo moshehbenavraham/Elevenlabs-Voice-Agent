@@ -40,6 +40,15 @@ A sophisticated voice AI web application built with React, TypeScript, and the E
 - **Connection Status**: Visual indicators for connecting, connected, reconnecting states
 - **Voice Persistence**: Selected voice saved to localStorage across sessions
 
+### Phase 03 Features (Testing & Configuration)
+
+- **E2E Testing Infrastructure**: Playwright-based end-to-end testing with multi-browser support
+- **Voice Flow E2E Tests**: Comprehensive voice connection, transcript, and function calling tests
+- **ElevenLabs Reconnection**: Enhanced reconnection resilience for ElevenLabs SDK provider
+- **Provider Configuration Modal**: Settings modal for configuring voice providers (accessible via UI)
+- **Enhanced Accessibility**: ARIA attributes for modals, error alerts, and loading states
+- **215+ Unit Tests**: Comprehensive test coverage including voice, contexts, and accessibility
+
 ## [MIC] Multi-Provider Voice System
 
 This application supports multiple voice AI providers through a tabbed interface:
@@ -259,7 +268,7 @@ npm run test:ui
 
 ### Test Coverage
 
-- **174+ tests** covering components, contexts, hooks, and utilities
+- **215+ tests** covering components, contexts, hooks, and utilities
 - **Voice configuration tests** - Provider voice selection, persistence
 - **Reconnection tests** - Backoff logic, retry limits, connection recovery
 - **Conversation tests** - Message bubbles, transcript panel, auto-scroll

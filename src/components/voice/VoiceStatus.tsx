@@ -128,6 +128,8 @@ export function VoiceStatus({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
+            role="alert"
+            aria-live="assertive"
             className="px-4 py-3 rounded-lg bg-red-500/5 border border-red-500/20 text-sm text-red-300/80"
           >
             {error}

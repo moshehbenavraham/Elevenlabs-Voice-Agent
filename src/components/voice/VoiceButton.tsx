@@ -190,6 +190,7 @@ export function VoiceButton({ className, size = 'lg', onConnect, onDisconnect }:
         whileTap={{ scale: isLoading ? 1 : 0.98 }}
         aria-label={getAriaLabel()}
         aria-pressed={isConnected}
+        aria-busy={isLoading}
         role="button"
       >
         {/* Inner gradient */}

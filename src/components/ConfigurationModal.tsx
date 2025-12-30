@@ -31,6 +31,9 @@ export const ConfigurationModal: FC<ConfigurationModalProps> = ({ isOpen, onClos
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md mx-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="config-modal-title"
           >
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden">
               {/* Header */}
@@ -40,12 +43,15 @@ export const ConfigurationModal: FC<ConfigurationModalProps> = ({ isOpen, onClos
                     <Settings className="w-4 h-4 text-amber-400" />
                   </div>
                   <div>
-                    <h2 className="font-display text-lg text-zinc-100">Configuration</h2>
+                    <h2 id="config-modal-title" className="font-display text-lg text-zinc-100">
+                      Configuration
+                    </h2>
                     <p className="text-xs text-zinc-500">Voice agent settings</p>
                   </div>
                 </div>
                 <button
                   onClick={onClose}
+                  aria-label="Close configuration dialog"
                   className="p-2 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/50 transition-colors"
                 >
                   <X className="w-5 h-5" />

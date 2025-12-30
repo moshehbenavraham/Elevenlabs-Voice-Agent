@@ -67,7 +67,7 @@ src/
 |-- pages/              # Route components
 |   |-- Index.tsx       # Main app page (uses env vars for Agent ID)
 |   `-- NotFound.tsx    # 404 error page
-|-- test/               # Test infrastructure (174+ tests)
+|-- test/               # Test infrastructure (215+ tests)
 |   |-- setup.ts        # Test configuration and mocks
 |   |-- useReconnection.test.ts # Reconnection logic tests
 |   |-- voiceConfig.test.ts # Voice selection tests
@@ -110,7 +110,7 @@ src/
 1. **ElevenLabs Voice Agent** (Two Modes Available as Separate Tabs):
    - **Widget Mode** (`elevenlabs` tab): Pre-built embed from ElevenLabs CDN
      - Uses `VoiceWidget.tsx` component with `<elevenlabs-convai>` web component
-     - Customizable via VITE_WIDGET_* environment variables (colors, text, avatar)
+     - Customizable via VITE*WIDGET*\* environment variables (colors, text, avatar)
      - Self-contained UI - no custom components needed
    - **SDK Mode** (`elevenlabs-sdk` tab): Custom React UI with @elevenlabs/react SDK
      - Uses `VoiceContext.tsx` with `useConversation()` hook
@@ -151,6 +151,18 @@ src/
    - Glassmorphism design with backdrop-filter effects
    - Theme toggle persists to localStorage
    - CSS variables defined in Tailwind config
+
+8. **Configuration Modal** (Phase 03):
+   - Provider settings accessible via ConfigurationModal.tsx
+   - Uses ConfigurationDialog.tsx (Radix UI Dialog) for advanced settings
+   - Proper ARIA attributes (role="dialog", aria-modal, aria-labelledby)
+   - Settings persistence via settingsStorage.ts
+
+9. **E2E Testing Infrastructure** (Phase 03):
+   - Playwright-based end-to-end tests in `tests/e2e/`
+   - Multi-browser support (Chromium, Firefox, WebKit)
+   - Voice flow testing with mocked providers
+   - Test fixtures and utilities in `tests/e2e/fixtures/`
 
 ### Development Guidelines
 
@@ -195,3 +207,10 @@ src/
    - Touch targets minimum 44px
    - Responsive breakpoints: 375px, 768px, 1024px
    - Background tab throttling affects audio visualization
+
+4. **Accessibility** (Phase 03):
+   - All modals have proper ARIA attributes (role="dialog", aria-modal, aria-labelledby)
+   - Error messages use role="alert" for screen reader announcements
+   - Loading states use aria-busy for accessibility
+   - Focus management via useAccessibility.ts hook
+   - Reduced motion support via useReducedMotion hook
