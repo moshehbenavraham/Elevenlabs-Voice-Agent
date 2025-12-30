@@ -109,13 +109,13 @@
 
 Platform: GitHub Actions
 
-| Bundle       | Status         | Workflow                        |
-| ------------ | -------------- | ------------------------------- |
-| Code Quality | configured     | `.github/workflows/quality.yml` |
-| Build & Test | configured     | `.github/workflows/test.yml`    |
-| Security     | not configured | -                               |
-| Integration  | configured     | `.github/workflows/e2e.yml`     |
-| Operations   | not configured | -                               |
+| Bundle       | Status         | Workflow                         |
+| ------------ | -------------- | -------------------------------- |
+| Code Quality | configured     | `.github/workflows/quality.yml`  |
+| Build & Test | configured     | `.github/workflows/test.yml`     |
+| Security     | configured     | `.github/workflows/security.yml` |
+| Integration  | configured     | `.github/workflows/e2e.yml`      |
+| Operations   | not configured | -                                |
 
 ## When In Doubt
 
