@@ -1,0 +1,103 @@
+import { type FC, useEffect, useState } from 'react';
+import { VoiceSelector } from '@/components/voice/VoiceSelector';
+import { useXAIVoice } from '@/hooks/useXAIVoice';
+import type { ProviderSettings } from '@/lib/settingsStorage';
+import { cn } from '@/lib/utils';
+
+interface XAISettingsTabProps {
+  settings: ProviderSettings;
+  onSettingsChange: (updates: Partial<ProviderSettings>) => void;
+}
+
+/**
+ * xAI provider settings tab
+ * Includes voice selection and system prompt editing
+ */
+export const XAISettingsTab: FC<XAISettingsTabProps> = ({ settings, onSettingsChange }) => {
+  // Get context values - may be null if not within provider
+  let contextVoice = settings.voice;
+  let contextSetVoice = (voice: string) => onSettingsChange({ voice });
+  let contextSystemPrompt = settings.systemPrompt;
+  let contextSetSystemPrompt = (prompt: string) => onSettingsChange({ systemPrompt: prompt });
+  let isConnected = false;
+
+  // Try to get context if available
+  try {
+    const context = useXAIVoice();
+    if (context) {
+      contextVoice = context.selectedVoice;
+      contextSetVoice = (voice: string) => {
+        context.setVoice(voice);
+        onSettingsChange({ voice });
+      };
+      contextSystemPrompt = context.systemPrompt;
+      contextSetSystemPrompt = (prompt: string) => {
+        context.setSystemPrompt(prompt);
+        onSettingsChange({ systemPrompt: prompt });
+      };
+      isConnected = context.isConnected;
+    }
+  } catch {
+    // Context not available, use local state
+  }
+
+  // Local state for textarea
+  const [promptValue, setPromptValue] = useState(contextSystemPrompt);
+
+  // Sync prompt value when settings change
+  useEffect(() => {
+    setPromptValue(settings.systemPrompt);
+  }, [settings.systemPrompt]);
+
+  // Handle prompt change with debounce
+  const handlePromptChange = (value: string) => {
+    setPromptValue(value);
+    contextSetSystemPrompt(value);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Voice Selection */}
+      <VoiceSelector
+        provider="xai"
+        value={contextVoice}
+        onValueChange={contextSetVoice}
+        disabled={isConnected}
+      />
+
+      {/* System Prompt */}
+      <div className="space-y-2">
+        <label className="block text-xs font-medium text-zinc-400">System Prompt</label>
+        <textarea
+          value={promptValue}
+          onChange={(e) => handlePromptChange(e.target.value)}
+          disabled={isConnected}
+          rows={4}
+          className={cn(
+            'w-full px-3 py-2 rounded-lg text-sm',
+            'bg-zinc-900/50 backdrop-blur-sm',
+            'border border-zinc-700/50',
+            'text-zinc-100 placeholder:text-zinc-500',
+            'transition-all duration-200',
+            'focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:ring-offset-2 focus:ring-offset-zinc-900',
+            'hover:border-zinc-600',
+            'disabled:cursor-not-allowed disabled:opacity-50',
+            'resize-none'
+          )}
+          placeholder="Enter system prompt for Grok..."
+        />
+        {isConnected && <p className="text-xs text-zinc-500">Disconnect to change system prompt</p>}
+      </div>
+
+      {/* Provider Info */}
+      <div className="p-3 rounded-lg bg-sky-500/5 border border-sky-500/20">
+        <p className="text-xs text-sky-300/80">
+          xAI Grok provides real-time voice conversations with advanced reasoning. 5 voices
+          available. System prompt changes apply on next connection.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default XAISettingsTab;

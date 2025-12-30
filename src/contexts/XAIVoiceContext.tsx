@@ -18,6 +18,11 @@ import {
 import { getSavedVoice, saveVoice } from '@/lib/voiceConfig';
 import { useReconnection, type ReconnectionState } from '@/hooks/useReconnection';
 import { getXAITools } from '@/lib/tools/toolDefinitions';
+import {
+  getProviderSettings,
+  updateProviderSettings,
+  DEFAULT_XAI_PROMPT,
+} from '@/lib/settingsStorage';
 import type { VoiceMessage, FunctionCall } from '@/types';
 
 const DEBUG = import.meta.env.DEV;
@@ -26,9 +31,6 @@ const XAI_REALTIME_URL = 'wss://api.x.ai/v1/realtime';
 
 // xAI configuration from environment
 const XAI_MODEL = import.meta.env.VITE_XAI_MODEL || 'grok-2-public';
-const XAI_INSTRUCTIONS =
-  import.meta.env.VITE_XAI_INSTRUCTIONS ||
-  'You are a helpful voice assistant. Keep responses conversational and concise.';
 
 function debugLog(context: string, message: string, data?: unknown) {
   if (DEBUG) {
@@ -54,6 +56,8 @@ interface XAIVoiceState {
 export interface XAIVoiceContextValue extends XAIVoiceState {
   selectedVoice: string;
   setVoice: (voice: string) => void;
+  systemPrompt: string;
+  setSystemPrompt: (prompt: string) => void;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   setVolume: (volume: number) => void;
@@ -218,15 +222,32 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
   const [selectedVoice, setSelectedVoiceState] = useState(() => getSavedVoice('xai'));
   const selectedVoiceRef = useRef(selectedVoice);
 
-  // Keep ref in sync with state for use in callbacks
+  // System prompt state with localStorage persistence
+  const [systemPrompt, setSystemPromptState] = useState(() => {
+    const settings = getProviderSettings('xai');
+    return settings.systemPrompt || DEFAULT_XAI_PROMPT;
+  });
+  const systemPromptRef = useRef(systemPrompt);
+
+  // Keep refs in sync with state for use in callbacks
   useEffect(() => {
     selectedVoiceRef.current = selectedVoice;
   }, [selectedVoice]);
+
+  useEffect(() => {
+    systemPromptRef.current = systemPrompt;
+  }, [systemPrompt]);
 
   // Set voice with localStorage persistence
   const setVoice = useCallback((voice: string) => {
     setSelectedVoiceState(voice);
     saveVoice('xai', voice);
+  }, []);
+
+  // Set system prompt with localStorage persistence
+  const setSystemPrompt = useCallback((prompt: string) => {
+    setSystemPromptState(prompt);
+    updateProviderSettings('xai', { systemPrompt: prompt });
   }, []);
 
   // Refs for cleanup
@@ -578,7 +599,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
                   session: {
                     modalities: ['audio', 'text'],
                     voice: selectedVoiceRef.current,
-                    instructions: XAI_INSTRUCTIONS,
+                    instructions: systemPromptRef.current,
                     input_audio_format: 'pcm16',
                     output_audio_format: 'pcm16',
                     input_audio_transcription: {
@@ -960,6 +981,8 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
     ...state,
     selectedVoice,
     setVoice,
+    systemPrompt,
+    setSystemPrompt,
     connect,
     disconnect,
     setVolume,

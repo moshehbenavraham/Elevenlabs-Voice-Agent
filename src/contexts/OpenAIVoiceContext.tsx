@@ -18,6 +18,11 @@ import {
 import { getSavedVoice, saveVoice } from '@/lib/voiceConfig';
 import { useReconnection, type ReconnectionState } from '@/hooks/useReconnection';
 import { getOpenAITools } from '@/lib/tools/toolDefinitions';
+import {
+  getProviderSettings,
+  updateProviderSettings,
+  DEFAULT_OPENAI_PROMPT,
+} from '@/lib/settingsStorage';
 import type { VoiceMessage, FunctionCall } from '@/types';
 
 const DEBUG = import.meta.env.DEV;
@@ -31,9 +36,6 @@ const OPENAI_SAMPLE_RATE = XAI_SAMPLE_RATE;
 
 // OpenAI configuration from environment
 const OPENAI_MODEL = import.meta.env.VITE_OPENAI_MODEL || 'gpt-realtime';
-const OPENAI_INSTRUCTIONS =
-  import.meta.env.VITE_OPENAI_INSTRUCTIONS ||
-  'You are a helpful voice assistant. Keep responses conversational and concise.';
 
 function debugLog(context: string, message: string, data?: unknown) {
   if (DEBUG) {
@@ -59,6 +61,8 @@ interface OpenAIVoiceState {
 export interface OpenAIVoiceContextValue extends OpenAIVoiceState {
   selectedVoice: string;
   setVoice: (voice: string) => void;
+  systemPrompt: string;
+  setSystemPrompt: (prompt: string) => void;
   connect: () => Promise<void>;
   disconnect: () => Promise<void>;
   setVolume: (volume: number) => void;
@@ -217,15 +221,32 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
   const [selectedVoice, setSelectedVoiceState] = useState(() => getSavedVoice('openai'));
   const selectedVoiceRef = useRef(selectedVoice);
 
-  // Keep ref in sync with state for use in callbacks
+  // System prompt state with localStorage persistence
+  const [systemPrompt, setSystemPromptState] = useState(() => {
+    const settings = getProviderSettings('openai');
+    return settings.systemPrompt || DEFAULT_OPENAI_PROMPT;
+  });
+  const systemPromptRef = useRef(systemPrompt);
+
+  // Keep refs in sync with state for use in callbacks
   useEffect(() => {
     selectedVoiceRef.current = selectedVoice;
   }, [selectedVoice]);
+
+  useEffect(() => {
+    systemPromptRef.current = systemPrompt;
+  }, [systemPrompt]);
 
   // Set voice with localStorage persistence
   const setVoice = useCallback((voice: string) => {
     setSelectedVoiceState(voice);
     saveVoice('openai', voice);
+  }, []);
+
+  // Set system prompt with localStorage persistence
+  const setSystemPrompt = useCallback((prompt: string) => {
+    setSystemPromptState(prompt);
+    updateProviderSettings('openai', { systemPrompt: prompt });
   }, []);
 
   // Refs for cleanup
@@ -566,7 +587,7 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
                   session: {
                     type: 'realtime',
                     output_modalities: ['audio'],
-                    instructions: OPENAI_INSTRUCTIONS,
+                    instructions: systemPromptRef.current,
                     audio: {
                       input: {
                         format: {
@@ -949,6 +970,8 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
     ...state,
     selectedVoice,
     setVoice,
+    systemPrompt,
+    setSystemPrompt,
     connect,
     disconnect,
     setVolume,

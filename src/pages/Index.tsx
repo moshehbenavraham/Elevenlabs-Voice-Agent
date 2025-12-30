@@ -7,7 +7,7 @@ import { VoiceStatus } from '@/components/voice/VoiceStatus';
 import { VoiceVisualizer } from '@/components/voice/VoiceVisualizer';
 import { VoiceWidget } from '@/components/voice/VoiceWidget';
 import { BackgroundEffects } from '@/components/BackgroundEffects';
-import { ConfigurationModal } from '@/components/ConfigurationModal';
+import { ConfigurationDialog } from '@/components/settings';
 import { ProviderTabs } from '@/components/tabs';
 import {
   ElevenLabsConversationPanel,
@@ -643,8 +643,14 @@ export const Index = () => {
         </AnimatePresence>
       </main>
 
-      {/* Configuration Modal */}
-      <ConfigurationModal isOpen={showConfig} onClose={() => setShowConfig(false)} />
+      {/* Configuration Dialog */}
+      <ConfigurationDialog
+        isOpen={showConfig}
+        onClose={() => setShowConfig(false)}
+        elevenLabsStatus={isConnected ? 'connected' : 'disconnected'}
+        openAIStatus={openaiHasStarted ? 'connected' : 'disconnected'}
+        xaiStatus={xaiHasStarted ? 'connected' : 'disconnected'}
+      />
 
       {/* Error Toast */}
       <AnimatePresence>
