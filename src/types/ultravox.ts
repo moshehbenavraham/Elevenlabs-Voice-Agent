@@ -1,10 +1,65 @@
 /**
- * Ultravox API Type Definitions
+ * Ultravox Voice Provider Type Definitions
  *
- * Types for the Ultravox voice provider API integration.
+ * Types for the Ultravox voice provider API and SDK integration.
  * Ultravox uses a call-based model where the backend creates a call
  * and returns a joinUrl for the frontend SDK to connect.
  */
+
+/**
+ * Ultravox SDK session status values
+ * Maps directly to UltravoxSessionStatus enum from ultravox-client
+ */
+export type UltravoxSessionStatus =
+  | 'disconnected'
+  | 'disconnecting'
+  | 'connecting'
+  | 'idle'
+  | 'listening'
+  | 'thinking'
+  | 'speaking';
+
+/**
+ * Speaker role in transcripts from SDK
+ */
+export type UltravoxRole = 'user' | 'agent';
+
+/**
+ * Medium type for messages from SDK
+ */
+export type UltravoxMedium = 'voice' | 'text';
+
+/**
+ * Transcript from Ultravox session SDK
+ */
+export interface UltravoxTranscript {
+  text: string;
+  isFinal: boolean;
+  speaker: UltravoxRole;
+  medium: UltravoxMedium;
+  ordinal: number;
+}
+
+/**
+ * Map Ultravox SDK status to unified connection status
+ */
+export function mapUltravoxStatus(sdkStatus: UltravoxSessionStatus): UltravoxConnectionStatus {
+  switch (sdkStatus) {
+    case 'disconnected':
+      return 'idle';
+    case 'disconnecting':
+      return 'disconnecting';
+    case 'connecting':
+      return 'connecting';
+    case 'idle':
+    case 'listening':
+    case 'thinking':
+    case 'speaking':
+      return 'connected';
+    default:
+      return 'idle';
+  }
+}
 
 /**
  * Request body for creating an Ultravox call
@@ -71,7 +126,9 @@ export type UltravoxConnectionStatus =
  * Frontend state for Ultravox voice provider
  */
 export interface UltravoxVoiceState {
-  /** Current connection status */
+  /** SDK session status (granular) */
+  sdkStatus: UltravoxSessionStatus;
+  /** Unified connection status for UI */
   status: UltravoxConnectionStatus;
   /** Whether currently connected to Ultravox */
   isConnected: boolean;
@@ -83,8 +140,24 @@ export interface UltravoxVoiceState {
   isSpeaking: boolean;
   /** Whether the agent is currently listening */
   isListening: boolean;
-  /** Current joinUrl (if connected) */
-  joinUrl: string | null;
-  /** Current callId (if connected) */
-  callId: string | null;
+  /** Whether the agent is thinking/processing */
+  isThinking: boolean;
+  /** Whether microphone is muted */
+  isMicMuted: boolean;
+  /** Conversation transcripts from SDK */
+  transcripts: UltravoxTranscript[];
+}
+
+/**
+ * Ultravox voice context value exposed by hook
+ */
+export interface UltravoxVoiceContextValue extends UltravoxVoiceState {
+  /** Connect to Ultravox session */
+  connect: () => Promise<void>;
+  /** Disconnect from Ultravox session */
+  disconnect: () => Promise<void>;
+  /** Toggle microphone mute state */
+  toggleMic: () => void;
+  /** Clear error state */
+  clearError: () => void;
 }

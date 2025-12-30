@@ -44,7 +44,13 @@ describe('ProviderContext', () => {
     it('returns list of all providers', () => {
       const { result } = renderHook(() => useProvider(), { wrapper });
 
-      expect(result.current.providers).toEqual(['elevenlabs', 'elevenlabs-sdk', 'xai', 'openai']);
+      expect(result.current.providers).toEqual([
+        'elevenlabs',
+        'elevenlabs-sdk',
+        'xai',
+        'openai',
+        'ultravox',
+      ]);
     });
 
     it('correctly identifies available providers', () => {

@@ -13,6 +13,7 @@ import {
   ElevenLabsConversationPanel,
   XAIConversationPanel,
   OpenAIConversationPanel,
+  UltravoxConversationPanel,
 } from '@/components/conversation';
 import {
   XAIProvider,
@@ -23,6 +24,9 @@ import {
   OpenAIVoiceButton,
   OpenAIVoiceStatus,
   OpenAIVoiceVisualizer,
+  UltravoxProvider,
+  UltravoxVoiceButton,
+  UltravoxVoiceStatus,
 } from '@/components/providers';
 import { useVoice } from '@/contexts/VoiceContext';
 import { useProvider } from '@/contexts/ProviderContext';
@@ -45,6 +49,7 @@ export const Index = () => {
   const [hasStarted, setHasStarted] = useState(false);
   const [xaiHasStarted, setXaiHasStarted] = useState(false);
   const [openaiHasStarted, setOpenaiHasStarted] = useState(false);
+  const [ultravoxHasStarted, setUltravoxHasStarted] = useState(false);
 
   // Handle provider change - disconnect active connection before switching
   const handleProviderChange = useCallback(
@@ -73,12 +78,18 @@ export const Index = () => {
         setOpenaiHasStarted(false);
       }
 
+      // Disconnect Ultravox if active
+      if (ultravoxHasStarted && activeProvider === 'ultravox') {
+        debugLog('handleProviderChange', 'Disconnecting Ultravox before switch');
+        setUltravoxHasStarted(false);
+      }
+
       toast({
         title: 'Provider Changed',
         description: `Switched to ${newProvider}`,
       });
     },
-    [activeProvider, isConnected, disconnect, xaiHasStarted, openaiHasStarted]
+    [activeProvider, isConnected, disconnect, xaiHasStarted, openaiHasStarted, ultravoxHasStarted]
   );
 
   // Handle xAI disconnect
@@ -114,6 +125,24 @@ export const Index = () => {
     toast({
       title: 'Connected',
       description: 'OpenAI voice conversation is now active',
+    });
+  }, []);
+
+  // Handle Ultravox disconnect
+  const handleUltravoxDisconnect = useCallback(() => {
+    setUltravoxHasStarted(false);
+    toast({
+      title: 'Disconnected',
+      description: 'Ultravox voice conversation ended',
+    });
+  }, []);
+
+  // Handle Ultravox connect
+  const handleUltravoxConnect = useCallback(() => {
+    setUltravoxHasStarted(true);
+    toast({
+      title: 'Connected',
+      description: 'Ultravox voice conversation is now active',
     });
   }, []);
 
@@ -639,6 +668,122 @@ export const Index = () => {
                 </motion.div>
               )}
             </OpenAIProvider>
+          )}
+
+          {/* Ultravox Provider */}
+          {activeProvider === 'ultravox' && (
+            <UltravoxProvider onDisconnect={handleUltravoxDisconnect}>
+              {!ultravoxHasStarted ? (
+                <motion.div
+                  key="hero-ultravox"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
+                  className="min-h-screen flex flex-col items-center justify-center px-6"
+                >
+                  <div className="text-center space-y-8">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <h1 className="font-display text-5xl sm:text-6xl text-zinc-100 mb-4">
+                        Talk to <span className="text-teal-400">Ultravox</span>
+                      </h1>
+                      <p className="text-zinc-400 text-lg max-w-md mx-auto">
+                        Experience voice conversations powered by Ultravox AI
+                      </p>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
+                      className="py-8"
+                    >
+                      <UltravoxVoiceButton size="lg" onConnect={handleUltravoxConnect} />
+                    </motion.div>
+
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6 }}
+                      className="text-zinc-500 text-sm"
+                    >
+                      Click to start your conversation with Ultravox
+                    </motion.p>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="interface-ultravox"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="min-h-screen flex flex-col"
+                >
+                  <div className="flex-1 flex flex-col items-center justify-center px-6 py-24">
+                    <div className="w-full max-w-lg space-y-12">
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-center"
+                      >
+                        <h2 className="font-display text-3xl sm:text-4xl text-zinc-100 mb-2">
+                          Ultravox is Listening
+                        </h2>
+                        <p className="text-zinc-500 text-sm">
+                          Speak naturally - Ultravox is processing
+                        </p>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+                        className="flex justify-center py-8"
+                      >
+                        <UltravoxVoiceButton size="lg" onDisconnect={handleUltravoxDisconnect} />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                      >
+                        <UltravoxVoiceStatus />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.55 }}
+                      >
+                        <UltravoxConversationPanel className="w-full h-64" />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.6 }}
+                        className="flex justify-center pt-4"
+                      >
+                        <button
+                          onClick={handleUltravoxDisconnect}
+                          className="flex items-center gap-2 px-6 py-3 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all duration-200"
+                        >
+                          <X className="w-4 h-4" />
+                          <span className="text-sm">End conversation</span>
+                        </button>
+                      </motion.div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </UltravoxProvider>
           )}
         </AnimatePresence>
       </main>

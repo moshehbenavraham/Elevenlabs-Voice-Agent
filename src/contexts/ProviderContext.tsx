@@ -56,7 +56,11 @@ function getInitialProvider(): ProviderType {
  */
 function isValidProvider(value: string): value is ProviderType {
   return (
-    value === 'elevenlabs' || value === 'elevenlabs-sdk' || value === 'xai' || value === 'openai'
+    value === 'elevenlabs' ||
+    value === 'elevenlabs-sdk' ||
+    value === 'xai' ||
+    value === 'openai' ||
+    value === 'ultravox'
   );
 }
 
@@ -81,7 +85,7 @@ export const ProviderProvider: FC<ProviderProviderProps> = ({ children }) => {
   }, [activeProvider]);
 
   // List of all provider types
-  const providers: ProviderType[] = ['elevenlabs', 'elevenlabs-sdk', 'xai', 'openai'];
+  const providers: ProviderType[] = ['elevenlabs', 'elevenlabs-sdk', 'xai', 'openai', 'ultravox'];
 
   // Check if a provider is available
   const isProviderAvailable = useCallback((provider: ProviderType): boolean => {

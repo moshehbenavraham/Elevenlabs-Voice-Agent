@@ -17,6 +17,10 @@ export type {
 export { PROVIDERS, DEFAULT_PROVIDER } from './voice-provider';
 
 export type {
+  UltravoxSessionStatus,
+  UltravoxRole,
+  UltravoxMedium,
+  UltravoxTranscript,
   UltravoxCallRequest,
   UltravoxCallResponse,
   UltravoxErrorResponse,
@@ -24,4 +28,7 @@ export type {
   UltravoxVoice,
   UltravoxConnectionStatus,
   UltravoxVoiceState,
+  UltravoxVoiceContextValue,
 } from './ultravox';
+
+export { mapUltravoxStatus } from './ultravox';

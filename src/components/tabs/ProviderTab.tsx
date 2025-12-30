@@ -1,6 +1,6 @@
 import * as Tabs from '@radix-ui/react-tabs';
 import { motion, type Variants } from 'framer-motion';
-import { AudioLines, Bot, Mic, Sparkles } from 'lucide-react';
+import { AudioLines, AudioWaveform, Bot, Mic, Sparkles } from 'lucide-react';
 import type { ProviderType } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -50,6 +50,7 @@ const PROVIDER_ICONS: Record<ProviderType, React.ComponentType<{ className?: str
   'elevenlabs-sdk': Mic,
   xai: Bot,
   openai: Sparkles,
+  ultravox: AudioWaveform,
 };
 
 interface ProviderTabProps {

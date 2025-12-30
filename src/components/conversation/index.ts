@@ -7,3 +7,4 @@ export { MessageBubble } from './MessageBubble';
 export { ElevenLabsConversationPanel } from './ElevenLabsConversationPanel';
 export { XAIConversationPanel } from './XAIConversationPanel';
 export { OpenAIConversationPanel } from './OpenAIConversationPanel';
+export { UltravoxConversationPanel } from './UltravoxConversationPanel';

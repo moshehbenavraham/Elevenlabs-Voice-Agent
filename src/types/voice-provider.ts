@@ -9,7 +9,7 @@
 /**
  * Union type of all supported voice providers
  */
-export type ProviderType = 'elevenlabs' | 'elevenlabs-sdk' | 'xai' | 'openai';
+export type ProviderType = 'elevenlabs' | 'elevenlabs-sdk' | 'xai' | 'openai' | 'ultravox';
 
 /**
  * Message role type for conversation messages
@@ -138,6 +138,14 @@ const isOpenAIEnabled = (): boolean => {
 };
 
 /**
+ * Check if Ultravox provider is enabled via environment variable
+ */
+const isUltravoxEnabled = (): boolean => {
+  const envValue = import.meta.env.VITE_ULTRAVOX_ENABLED;
+  return envValue === 'true' || envValue === true;
+};
+
+/**
  * Default provider configurations
  */
 export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
@@ -172,6 +180,14 @@ export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
     isAvailable: isOpenAIEnabled(),
     requiresApiKey: true,
     icon: 'Sparkles',
+  },
+  ultravox: {
+    id: 'ultravox',
+    name: 'Ultravox',
+    description: 'Ultravox AI voice conversations',
+    isAvailable: isUltravoxEnabled(),
+    requiresApiKey: true,
+    icon: 'AudioWaveform',
   },
 };
 

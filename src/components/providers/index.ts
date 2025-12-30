@@ -29,3 +29,12 @@ export {
   useOpenAIConfigured,
   checkOpenAIConfiguration,
 } from './OpenAIProvider';
+
+export {
+  UltravoxProvider,
+  UltravoxVoiceButton,
+  UltravoxVoiceStatus,
+  UltravoxEmptyState,
+  useUltravoxConfigured,
+  checkUltravoxConfiguration,
+} from './UltravoxProvider';
