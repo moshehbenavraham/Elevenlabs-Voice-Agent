@@ -2,49 +2,56 @@
 
 ## Environment Overview
 
-| Environment | URL | Purpose |
-|-------------|-----|---------|
+| Environment | URL                   | Purpose           |
+| ----------- | --------------------- | ----------------- |
 | Development | http://localhost:8082 | Local development |
-| Backend Dev | http://localhost:3001 | Local API server |
-| Production | Your deployed URL | Live system |
+| Backend Dev | http://localhost:3001 | Local API server  |
+| Production  | Your deployed URL     | Live system       |
 
 ## Configuration Differences
 
-| Config | Development | Production |
-|--------|-------------|------------|
-| HTTPS | Optional | Required (for microphone) |
-| API Keys | `.env` file | Environment variables |
-| Debug Logging | Enabled | Disabled |
-| Source Maps | Enabled | Disabled |
-| Bundle | Unminified | Minified + tree-shaken |
+| Config        | Development | Production                |
+| ------------- | ----------- | ------------------------- |
+| HTTPS         | Optional    | Required (for microphone) |
+| API Keys      | `.env` file | Environment variables     |
+| Debug Logging | Enabled     | Disabled                  |
+| Source Maps   | Enabled     | Disabled                  |
+| Bundle        | Unminified  | Minified + tree-shaken    |
 
 ## Environment Variables
 
-### Client-Side Variables (VITE_ prefix)
+### Client-Side Variables (VITE\_ prefix)
 
 These are embedded in the build and visible to users.
 
-| Variable | Dev Default | Description |
-|----------|-------------|-------------|
-| `VITE_ELEVENLABS_ENABLED` | `true` | Show ElevenLabs tab |
-| `VITE_XAI_ENABLED` | `true` | Show xAI tab |
-| `VITE_DEFAULT_PROVIDER` | `elevenlabs` | Default active tab |
-| `VITE_ELEVENLABS_AGENT_ID` | - | ElevenLabs agent ID |
-| `VITE_VOICE_CONNECTION_MODE` | `agent-sdk` | SDK or widget mode |
-| `VITE_XAI_VOICE` | `verse` | xAI voice selection |
-| `VITE_API_BASE_URL` | `http://localhost:3001` | Backend API URL |
-| `VITE_NODE_ENV` | `development` | Environment flag |
+| Variable                      | Dev Default             | Description              |
+| ----------------------------- | ----------------------- | ------------------------ |
+| `VITE_ELEVENLABS_ENABLED`     | `true`                  | Show ElevenLabs tab      |
+| `VITE_ELEVENLABS_SDK_ENABLED` | `true`                  | Show ElevenLabs SDK tab  |
+| `VITE_XAI_ENABLED`            | `true`                  | Show xAI tab             |
+| `VITE_OPENAI_ENABLED`         | `true`                  | Show OpenAI tab          |
+| `VITE_ULTRAVOX_ENABLED`       | `true`                  | Show Ultravox tab        |
+| `VITE_DEFAULT_PROVIDER`       | `elevenlabs`            | Default active tab       |
+| `VITE_ELEVENLABS_AGENT_ID`    | -                       | ElevenLabs agent ID      |
+| `VITE_VOICE_CONNECTION_MODE`  | `agent-sdk`             | SDK or widget mode       |
+| `VITE_XAI_VOICE`              | `verse`                 | xAI voice selection      |
+| `VITE_OPENAI_VOICE`           | `alloy`                 | OpenAI voice selection   |
+| `VITE_ULTRAVOX_VOICE`         | `Mark`                  | Ultravox voice selection |
+| `VITE_API_BASE_URL`           | `http://localhost:3001` | Backend API URL          |
+| `VITE_NODE_ENV`               | `development`           | Environment flag         |
 
 ### Server-Side Variables (No prefix)
 
 These are secure and never sent to the browser.
 
-| Variable | Description |
-|----------|-------------|
-| `ELEVENLABS_API_KEY` | ElevenLabs API key for signed URLs |
-| `XAI_API_KEY` | xAI API key for ephemeral tokens |
-| `SERVER_PORT` | Backend server port (default: 3001) |
-| `CORS_ORIGIN` | Allowed CORS origin |
+| Variable             | Description                                  |
+| -------------------- | -------------------------------------------- |
+| `ELEVENLABS_API_KEY` | ElevenLabs API key for signed URLs           |
+| `XAI_API_KEY`        | xAI API key for ephemeral tokens             |
+| `OPENAI_API_KEY`     | OpenAI API key for Realtime ephemeral tokens |
+| `ULTRAVOX_API_KEY`   | Ultravox API key for call creation           |
+| `SERVER_PORT`        | Backend server port (default: 3001)          |
+| `CORS_ORIGIN`        | Allowed CORS origin                          |
 
 ## Development Setup
 
@@ -64,12 +71,14 @@ npm run dev:all
 ### Vercel
 
 Set environment variables in Vercel dashboard:
+
 1. Go to Project Settings > Environment Variables
 2. Add each variable with appropriate scope (Production/Preview)
 
 ### Netlify
 
 Set in Netlify dashboard:
+
 1. Site Settings > Build & Deploy > Environment
 2. Add environment variables
 
@@ -98,5 +107,6 @@ const isDev = import.meta.env.VITE_NODE_ENV === 'development';
 ```
 
 Behavior differences:
+
 - Development: More verbose logging, relaxed CORS
 - Production: Strict security headers, minified output

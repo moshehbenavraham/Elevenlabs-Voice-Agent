@@ -4,7 +4,7 @@ This document outlines the technical architecture of the Conversational Voice AI
 
 ## Architecture Overview
 
-A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), and future providers. The architecture emphasizes provider abstraction, performance, and accessibility.
+A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), OpenAI, and Ultravox. The architecture emphasizes provider abstraction, performance, and accessibility.
 
 ## Table of Contents
 
@@ -63,7 +63,7 @@ The application uses a unified provider interface allowing seamless switching be
 
 ```typescript
 // src/types/voice-provider.ts
-export type ProviderType = 'elevenlabs' | 'elevenlabs-sdk' | 'xai' | 'openai';
+export type ProviderType = 'elevenlabs' | 'elevenlabs-sdk' | 'xai' | 'openai' | 'ultravox';
 
 export interface VoiceProvider {
   id: ProviderType;
@@ -80,7 +80,8 @@ export interface VoiceProvider {
 ProviderContext (active provider selection)
     ├── ElevenLabs VoiceContext (SDK with reconnection)
     ├── XAIVoiceContext (WebSocket + ephemeral token)
-    └── OpenAIVoiceContext (WebSocket + ephemeral token)
+    ├── OpenAIVoiceContext (WebSocket + ephemeral token)
+    └── UltravoxVoiceContext (SDK with joinUrl)
 ```
 
 **Key Benefits**:
@@ -282,6 +283,8 @@ Used for global state that needs to be accessed across many components:
 - `ThemeContext` - Theme state
 - `VoiceContext` - ElevenLabs voice state
 - `XAIVoiceContext` - xAI voice state
+- `OpenAIVoiceContext` - OpenAI voice state
+- `UltravoxVoiceContext` - Ultravox voice state
 
 #### **Custom Hooks**
 
@@ -291,6 +294,7 @@ Used for feature-specific state management:
 - `useVoice` - ElevenLabs voice hook
 - `useXAIVoice` - xAI voice hook
 - `useOpenAIVoice` - OpenAI voice hook
+- `useUltravoxVoice` - Ultravox voice hook
 - `useReconnection` - WebSocket reconnection with backoff
 - `useReducedMotion` - Accessibility preference detection
 - `useAccessibility` - Accessibility features
@@ -377,16 +381,20 @@ The application uses an Express.js backend (port 3001) for secure API key manage
 server/
 ├── index.js              # Main Express server
 └── routes/
-    └── xai.js            # xAI ephemeral token endpoint
+    ├── xai.js            # xAI ephemeral token endpoint
+    ├── openai.js         # OpenAI ephemeral token endpoint
+    └── ultravox.js       # Ultravox call creation endpoint
 ```
 
 ### API Endpoints
 
-| Method | Endpoint                     | Description                   |
-| ------ | ---------------------------- | ----------------------------- |
-| GET    | `/api/health`                | Server health check           |
-| GET    | `/api/elevenlabs/signed-url` | ElevenLabs signed URL for SDK |
-| POST   | `/api/xai/session`           | Create xAI ephemeral token    |
+| Method | Endpoint                     | Description                    |
+| ------ | ---------------------------- | ------------------------------ |
+| GET    | `/api/health`                | Server health check            |
+| GET    | `/api/elevenlabs/signed-url` | ElevenLabs signed URL for SDK  |
+| POST   | `/api/xai/session`           | Create xAI ephemeral token     |
+| POST   | `/api/openai/session`        | Create OpenAI ephemeral token  |
+| POST   | `/api/ultravox/call`         | Create Ultravox call (joinUrl) |
 
 ### xAI Token Flow
 
@@ -726,12 +734,14 @@ class ErrorBoundary extends React.Component {
 
 ```
 src/test/
-├── setup.ts                    # Test configuration and mocks
-├── ProviderContext.test.tsx    # Provider context tests
-├── ProviderTabs.test.tsx       # Tab component tests
-├── settingsStorage.test.ts     # Settings persistence tests
-├── ConfigurationDialog.test.tsx # Modal accessibility tests
-└── ... (215+ tests total)
+├── setup.ts                        # Test configuration and mocks
+├── ProviderContext.test.tsx        # Provider context tests
+├── ProviderTabs.test.tsx           # Tab component tests
+├── settingsStorage.test.ts         # Settings persistence tests
+├── ConfigurationDialog.test.tsx    # Modal accessibility tests
+├── UltravoxVoiceContext.test.tsx   # Ultravox context tests
+├── UltravoxProvider.test.tsx       # Ultravox provider tests
+└── ... (259 tests total across 18 files)
 ```
 
 ### E2E Tests (Playwright)

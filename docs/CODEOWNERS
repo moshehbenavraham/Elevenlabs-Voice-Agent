@@ -1,0 +1,43 @@
+# CODEOWNERS
+# This file defines the default reviewers for code changes.
+# Each line is a file pattern followed by one or more owners.
+
+# Default owner for all files
+* @your-github-username
+
+# Frontend code
+/src/components/ @your-github-username
+/src/pages/ @your-github-username
+/src/contexts/ @your-github-username
+/src/hooks/ @your-github-username
+
+# Voice provider integrations
+/src/components/providers/ @your-github-username
+/src/contexts/*VoiceContext.tsx @your-github-username
+
+# Backend/API
+/server/ @your-github-username
+
+# Build and deployment
+/Dockerfile @your-github-username
+/docker-compose.yml @your-github-username
+/.github/ @your-github-username
+
+# Documentation
+/docs/ @your-github-username
+/*.md @your-github-username
+
+# Configuration
+/.env.example @your-github-username
+/vite.config.ts @your-github-username
+/tailwind.config.ts @your-github-username
+
+# Tests
+/src/test/ @your-github-username
+/tests/ @your-github-username
+/playwright.config.ts @your-github-username
+
+# NOTE: Replace @your-github-username with actual team members
+# Example:
+# /src/components/ @frontend-team
+# /server/ @backend-team

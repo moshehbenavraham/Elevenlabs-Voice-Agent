@@ -38,6 +38,22 @@ Affected files:
 
 **Status**: Acceptable - HMR limitation, not a bug
 
+## Skipped Workflows
+
+### Security - Dependency Review
+
+Workflow: `.github/workflows/security.yml` (dependency-review job)
+
+The Dependency Review action fails with: "Dependency review is not supported on this repository. Please ensure that Dependency graph is enabled."
+
+**Resolution**: Enable Dependency Graph in repository settings:
+
+1. Go to repository Settings > Security & analysis
+2. Enable "Dependency graph"
+3. Optionally enable "Dependabot alerts" and "Dependabot security updates"
+
+**Status**: Requires manual repository configuration
+
 ---
 
 Last updated: 2025-12-30

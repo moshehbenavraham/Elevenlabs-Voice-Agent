@@ -33,6 +33,9 @@
 | `npm run test:e2e`        | Run Playwright E2E tests              |
 | `npm run test:e2e:ui`     | Playwright visual test UI             |
 | `npm run test:e2e:headed` | Run E2E tests with browser visible    |
+| `npm run docker:build`    | Build Docker production image         |
+| `npm run docker:up`       | Start container via docker-compose    |
+| `npm run docker:down`     | Stop and remove container             |
 
 ## Development Workflow
 
@@ -64,12 +67,15 @@ npm run test
 
 ```
 src/test/
-├── setup.ts                    # Test configuration and mocks
-├── App.test.tsx                # Basic app tests
-├── ProviderContext.test.tsx    # Provider context tests
-├── ProviderTabs.test.tsx       # Tab component tests
-├── providers.test.tsx          # Voice provider tests
-└── Index.test.tsx              # Page tests
+├── setup.ts                        # Test configuration and mocks
+├── App.test.tsx                    # Basic app tests
+├── ProviderContext.test.tsx        # Provider context tests
+├── ProviderTabs.test.tsx           # Tab component tests
+├── providers.test.tsx              # Voice provider tests
+├── Index.test.tsx                  # Page tests
+├── UltravoxVoiceContext.test.tsx   # Ultravox context tests (23 tests)
+├── UltravoxProvider.test.tsx       # Ultravox provider tests (21 tests)
+└── ... (259 tests total across 18 files)
 
 src/lib/audio/__tests__/
 └── audioUtils.test.ts          # Audio utility tests

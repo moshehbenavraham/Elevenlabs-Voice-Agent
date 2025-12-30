@@ -11,6 +11,8 @@ Zero-to-hero checklist for new developers.
 - [ ] Microphone available for voice testing
 - [ ] ElevenLabs account (for ElevenLabs provider)
 - [ ] xAI account (for xAI Grok provider)
+- [ ] OpenAI account (for OpenAI Realtime provider)
+- [ ] Ultravox account (for Ultravox provider)
 
 ## Setup Steps
 
@@ -40,11 +42,13 @@ cp .env.example .env
 
 ### 4. Required Secrets
 
-| Variable | Where to Get | Description |
-|----------|--------------|-------------|
+| Variable                   | Where to Get                                                        | Description                      |
+| -------------------------- | ------------------------------------------------------------------- | -------------------------------- |
 | `VITE_ELEVENLABS_AGENT_ID` | [ElevenLabs Dashboard](https://elevenlabs.io/app/conversational-ai) | Agent ID for voice conversations |
-| `ELEVENLABS_API_KEY` | [ElevenLabs API Keys](https://elevenlabs.io/app/settings/api-keys) | Server-side API key |
-| `XAI_API_KEY` | [xAI Console](https://console.x.ai/) | Server-side API key for Grok |
+| `ELEVENLABS_API_KEY`       | [ElevenLabs API Keys](https://elevenlabs.io/app/settings/api-keys)  | Server-side API key              |
+| `XAI_API_KEY`              | [xAI Console](https://console.x.ai/)                                | Server-side API key for Grok     |
+| `OPENAI_API_KEY`           | [OpenAI API Keys](https://platform.openai.com/api-keys)             | Server-side API key for Realtime |
+| `ULTRAVOX_API_KEY`         | [Ultravox Dashboard](https://ultravox.ai/)                          | Server-side API key for Ultravox |
 
 ### 5. Start Development
 
@@ -63,6 +67,8 @@ npm run dev
 - [ ] Tests pass: `npm run test:run`
 - [ ] ElevenLabs tab shows (if `VITE_ELEVENLABS_ENABLED=true`)
 - [ ] xAI tab shows (if `VITE_XAI_ENABLED=true`)
+- [ ] OpenAI tab shows (if `VITE_OPENAI_ENABLED=true`)
+- [ ] Ultravox tab shows (if `VITE_ULTRAVOX_ENABLED=true`)
 - [ ] Voice connection works when clicking "Start Conversation"
 
 ## Project Structure
@@ -93,6 +99,7 @@ Elevenlabs-Voice-Agent/
 ### Microphone Permission Denied
 
 **Solution**:
+
 - Ensure HTTPS in production (required for microphone)
 - Check browser permissions
 - Try incognito mode to reset permissions
@@ -100,6 +107,7 @@ Elevenlabs-Voice-Agent/
 ### xAI Connection Failed
 
 **Solution**:
+
 - Verify `XAI_API_KEY` is set in `.env`
 - Ensure backend is running on port 3001
 - Check browser console for errors
@@ -107,6 +115,7 @@ Elevenlabs-Voice-Agent/
 ### ElevenLabs Agent Not Found
 
 **Solution**:
+
 - Verify `VITE_ELEVENLABS_AGENT_ID` is correct
 - Check agent is published in ElevenLabs dashboard
 - Ensure API key has access to the agent
@@ -114,6 +123,7 @@ Elevenlabs-Voice-Agent/
 ### Tests Failing
 
 **Solution**:
+
 ```bash
 # Clear node_modules and reinstall
 rm -rf node_modules package-lock.json
