@@ -124,3 +124,67 @@ Object.defineProperty(navigator, 'mediaDevices', {
     }),
   },
 });
+
+// Mock Ultravox SDK (ultravox-client)
+// Follows same pattern as ElevenLabs and xAI/OpenAI mocks
+// Export functions to allow resetting between tests
+export const ultravoxMocks = {
+  joinCall: vi.fn(),
+  leaveCall: vi.fn().mockResolvedValue(undefined),
+  muteMic: vi.fn(),
+  unmuteMic: vi.fn(),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+};
+
+// Mock session object that the constructor returns
+export const mockUltravoxSession = {
+  status: 'disconnected',
+  transcripts: [] as Array<{
+    text: string;
+    isFinal: boolean;
+    speaker: string;
+    medium: string;
+    ordinal: number;
+  }>,
+  get joinCall() {
+    return ultravoxMocks.joinCall;
+  },
+  get leaveCall() {
+    return ultravoxMocks.leaveCall;
+  },
+  get muteMic() {
+    return ultravoxMocks.muteMic;
+  },
+  get unmuteMic() {
+    return ultravoxMocks.unmuteMic;
+  },
+  get addEventListener() {
+    return ultravoxMocks.addEventListener;
+  },
+  get removeEventListener() {
+    return ultravoxMocks.removeEventListener;
+  },
+};
+
+// Use a class mock for proper constructor behavior
+vi.mock('ultravox-client', () => {
+  return {
+    UltravoxSession: class MockUltravoxSession {
+      status = 'disconnected';
+      transcripts: Array<{
+        text: string;
+        isFinal: boolean;
+        speaker: string;
+        medium: string;
+        ordinal: number;
+      }> = [];
+      joinCall = ultravoxMocks.joinCall;
+      leaveCall = ultravoxMocks.leaveCall;
+      muteMic = ultravoxMocks.muteMic;
+      unmuteMic = ultravoxMocks.unmuteMic;
+      addEventListener = ultravoxMocks.addEventListener;
+      removeEventListener = ultravoxMocks.removeEventListener;
+    },
+  };
+});

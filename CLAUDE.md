@@ -30,7 +30,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build Tool**: Vite with SWC for fast compilation
 - **Styling**: Tailwind CSS with custom glassmorphism design system
 - **UI Components**: Radix UI primitives wrapped in shadcn/ui pattern
-- **Voice AI**: @elevenlabs/react SDK v0.12.1, OpenAI Realtime API, xAI Realtime API
+- **Voice AI**: @elevenlabs/react SDK v0.12.1, OpenAI Realtime API, xAI Realtime API, Ultravox SDK
 - **Animations**: Framer Motion for smooth transitions
 - **State**: React Context (theme), Tanstack Query (server state), custom hooks
 
@@ -50,7 +50,8 @@ src/
 |   |-- providers/      # Provider-specific components
 |   |   |-- ElevenLabsProvider.tsx # ElevenLabs voice interface
 |   |   |-- OpenAIProvider.tsx # OpenAI Realtime interface
-|   |   `-- XAIProvider.tsx # xAI Grok interface
+|   |   |-- XAIProvider.tsx # xAI Grok interface
+|   |   `-- UltravoxProvider.tsx # Ultravox voice interface (Phase 04)
 |   |-- tabs/           # Tab navigation
 |   |   |-- ProviderTabs.tsx # Provider tab container
 |   |   `-- ProviderTab.tsx # Individual tab component
@@ -78,6 +79,7 @@ src/
 |   |-- VoiceContext.tsx # ElevenLabs voice state
 |   |-- XAIVoiceContext.tsx # xAI voice state with reconnection (Phase 02)
 |   |-- OpenAIVoiceContext.tsx # OpenAI voice state with reconnection (Phase 02)
+|   |-- UltravoxVoiceContext.tsx # Ultravox voice state (Phase 04)
 |   `-- ProviderContext.tsx # Active provider selection
 `-- lib/                # Utilities
     |-- utils.ts        # Helper functions
@@ -97,12 +99,14 @@ src/
   - `VITE_ELEVENLABS_SDK_ENABLED` - Enable ElevenLabs SDK tab (true/false)
   - `VITE_XAI_ENABLED` - Enable xAI provider tab (true/false)
   - `VITE_OPENAI_ENABLED` - Enable OpenAI provider tab (true/false)
+  - `VITE_ULTRAVOX_ENABLED` - Enable Ultravox provider tab (true/false)
   - `VITE_API_BASE_URL` - Backend API URL (default: http://localhost:3001)
-  - `VITE_OPENAI_VOICE` / `VITE_XAI_VOICE` - Default voice selection
+  - `VITE_OPENAI_VOICE` / `VITE_XAI_VOICE` / `VITE_ULTRAVOX_VOICE` - Default voice selection
 - **Backend Variables** (server-side only):
   - `ELEVENLABS_API_KEY` - ElevenLabs API key
   - `XAI_API_KEY` - xAI API key for Grok
   - `OPENAI_API_KEY` - OpenAI API key for Realtime API
+  - `ULTRAVOX_API_KEY` - Ultravox API key
   - `CORS_ORIGIN` - Allowed frontend origin
 
 ### Key Integration Points
@@ -130,39 +134,48 @@ src/
    - WebSocket connection at `wss://api.x.ai/v1/realtime`
    - 5 voices available: ash, ballad, coral, sage, verse
 
-4. **Reconnection with Backoff** (Phase 02):
+4. **Ultravox Voice API** (Phase 04):
+   - Uses call-based model with backend-generated joinUrl
+   - Backend creates call via Ultravox REST API, returns WebSocket URL
+   - `UltravoxVoiceContext.tsx` manages session state and transcripts
+   - `ultravox-client` SDK handles WebSocket connection and audio
+   - Voice selection via `VITE_ULTRAVOX_VOICE` (default: Mark)
+   - Supports speaking, listening, and thinking states
+
+5. **Reconnection with Backoff** (Phase 02):
    - Automatic reconnection on WebSocket disconnect
    - Exponential backoff: 1s, 2s, 4s, 8s, up to 30s max
    - Maximum 10 retry attempts
    - `useReconnection.ts` hook handles logic
 
-5. **Function Calling** (Phase 02):
+6. **Function Calling** (Phase 02):
    - Tool definitions in `lib/tools/toolDefinitions.ts`
    - Demo tools: weather, time, calculator
    - Results displayed via `FunctionCallIndicator.tsx`
    - AI incorporates function results into responses
 
-6. **Audio Visualization**:
+7. **Audio Visualization**:
    - `VoiceVisualizer.tsx` uses Web Audio API for real-time frequency analysis
    - Canvas-based rendering optimized for 60fps
    - Integrates with voice state from conversation events
 
-7. **Theme System**:
+8. **Theme System**:
    - Glassmorphism design with backdrop-filter effects
    - Theme toggle persists to localStorage
    - CSS variables defined in Tailwind config
 
-8. **Configuration Modal** (Phase 03):
+9. **Configuration Modal** (Phase 03):
    - Provider settings accessible via ConfigurationModal.tsx
    - Uses ConfigurationDialog.tsx (Radix UI Dialog) for advanced settings
    - Proper ARIA attributes (role="dialog", aria-modal, aria-labelledby)
    - Settings persistence via settingsStorage.ts
 
-9. **E2E Testing Infrastructure** (Phase 03):
-   - Playwright-based end-to-end tests in `tests/e2e/`
-   - Multi-browser support (Chromium, Firefox, WebKit)
-   - Voice flow testing with mocked providers
-   - Test fixtures and utilities in `tests/e2e/fixtures/`
+10. **E2E Testing Infrastructure** (Phase 03):
+
+- Playwright-based end-to-end tests in `tests/e2e/`
+- Multi-browser support (Chromium, Firefox, WebKit)
+- Voice flow testing with mocked providers
+- Test fixtures and utilities in `tests/e2e/fixtures/`
 
 ### Development Guidelines
 
@@ -180,7 +193,7 @@ src/
    - Theme: Context API (`ThemeContext`)
    - Server data: Tanstack Query
    - Local state: Custom hooks pattern
-   - Voice state: Provider-specific contexts (`VoiceContext`, `XAIVoiceContext`, `OpenAIVoiceContext`)
+   - Voice state: Provider-specific contexts (`VoiceContext`, `XAIVoiceContext`, `OpenAIVoiceContext`, `UltravoxVoiceContext`)
    - Provider selection: `ProviderContext` with localStorage persistence
    - Reconnection state: `useReconnection` hook (Phase 02)
    - Conversation history: Stored in provider contexts (Phase 02)

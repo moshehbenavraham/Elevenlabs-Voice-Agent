@@ -25,7 +25,7 @@ A sophisticated voice AI web application built with React, TypeScript, and the E
 ### Core Features
 
 - **Real-time Voice Conversation**: Talk naturally with advanced AI using ElevenLabs technology
-- **Multi-Provider Support**: Switch between ElevenLabs, xAI Grok, and OpenAI voice providers with smooth tab animations
+- **Multi-Provider Support**: Switch between ElevenLabs, xAI Grok, OpenAI, and Ultravox voice providers with smooth tab animations
 - **Audio Visualization**: Beautiful 60fps audio visualizer with real-time frequency analysis
 - **Glassmorphism Design**: Modern, premium UI with dark/light theme toggle
 - **Mobile-First**: Responsive design optimized for all devices (375px to 1920px)
@@ -60,6 +60,7 @@ This application supports multiple voice AI providers through a tabbed interface
 | **ElevenLabs** | Available | High-quality conversational AI with natural voice synthesis |
 | **xAI Grok**   | Available | Grok-powered voice assistant with realtime API              |
 | **OpenAI**     | Available | GPT-4o realtime voice conversations with server VAD         |
+| **Ultravox**   | Available | Low-latency voice AI with call-based WebSocket connections  |
 
 ### Configuration
 
@@ -93,6 +94,20 @@ VITE_API_BASE_URL=http://localhost:3001
 ```
 
 OpenAI uses the Realtime API with ephemeral tokens for secure WebSocket connections. The backend generates short-lived tokens (60s expiry) so your API key is never exposed to the client.
+
+#### Ultravox Setup
+
+```bash
+# Server-side environment (Ultravox requires backend for call creation)
+ULTRAVOX_API_KEY=your_ultravox_api_key_here
+
+# Client-side (enable Ultravox in frontend)
+VITE_ULTRAVOX_ENABLED=true
+VITE_ULTRAVOX_VOICE=Mark
+VITE_API_BASE_URL=http://localhost:3001
+```
+
+Ultravox uses a call-based model where the backend creates a call via REST API and returns a WebSocket joinUrl. The frontend connects using the ultravox-client SDK.
 
 ### Provider Features
 
@@ -354,11 +369,13 @@ vercel --prod
    VITE_ELEVENLABS_ENABLED=true
    VITE_XAI_ENABLED=true
    VITE_OPENAI_ENABLED=true
+   VITE_ULTRAVOX_ENABLED=true
 
    # Backend (runtime)
    ELEVENLABS_API_KEY=sk_xxx
    XAI_API_KEY=xai-xxx
    OPENAI_API_KEY=sk-xxx
+   ULTRAVOX_API_KEY=your_ultravox_key
    CORS_ORIGIN=https://your-frontend.com
    ```
 

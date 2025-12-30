@@ -187,8 +187,9 @@ export function UltravoxVoiceProvider({ children, onDisconnect }: UltravoxVoiceP
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Connection failed';
       trackError('UltravoxVoiceContext', 'Connection failed', error);
-      dispatch({ type: 'SET_ERROR', payload: errorMsg });
+      // Dispatch SDK_STATUS first (which clears error), then SET_ERROR to set the error
       dispatch({ type: 'SET_SDK_STATUS', payload: 'disconnected' });
+      dispatch({ type: 'SET_ERROR', payload: errorMsg });
     }
   }, [state.status, handleStatusChange, handleTranscriptsChange]);
 
