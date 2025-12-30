@@ -1,6 +1,7 @@
 import * as Tabs from '@radix-ui/react-tabs';
-import { type ReactNode, useRef } from 'react';
+import { type ReactNode, useRef, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProvider } from '@/contexts/ProviderContext';
 import { PROVIDERS, type ProviderType } from '@/types';
 import { ProviderTab } from './ProviderTab';
@@ -65,6 +66,46 @@ export function ProviderTabs({ children, className, onProviderChange }: Provider
   const { activeProvider, setActiveProvider, providers } = useProvider();
   const prefersReducedMotion = useReducedMotion();
   const tabListRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  // Check scroll state
+  const updateScrollState = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const { scrollLeft, scrollWidth, clientWidth } = container;
+    setCanScrollLeft(scrollLeft > 0);
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+  }, []);
+
+  // Update scroll state on mount and resize
+  useEffect(() => {
+    updateScrollState();
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    container.addEventListener('scroll', updateScrollState);
+    window.addEventListener('resize', updateScrollState);
+
+    return () => {
+      container.removeEventListener('scroll', updateScrollState);
+      window.removeEventListener('resize', updateScrollState);
+    };
+  }, [updateScrollState, providers]);
+
+  // Scroll by amount
+  const scroll = (direction: 'left' | 'right') => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const scrollAmount = 150;
+    container.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    });
+  };
 
   const handleValueChange = (value: string) => {
     const provider = value as ProviderType;
@@ -86,35 +127,84 @@ export function ProviderTabs({ children, className, onProviderChange }: Provider
       onValueChange={handleValueChange}
       className={cn('w-full', className)}
     >
-      {/* Tab List - Glassmorphism container with mobile scroll */}
-      <Tabs.List
-        ref={tabListRef}
-        className={cn(
-          // Layout - horizontal scroll on mobile
-          'flex items-center gap-2 p-2 rounded-xl',
-          'overflow-x-auto scrollbar-hide',
-          '-mx-2 px-4 sm:mx-0 sm:px-2',
-          // Glassmorphism
-          'bg-white/5 backdrop-blur-lg border border-white/10',
-          'shadow-[0_4px_30px_rgba(0,0,0,0.1)]'
-        )}
-        aria-label="Voice provider selection"
-      >
-        {providers.map((providerType) => {
-          const provider = PROVIDERS[providerType];
-          return (
-            <ProviderTab
-              key={providerType}
-              provider={providerType}
-              label={provider.name}
-              disabled={!provider.isAvailable}
-              disabledReason={!provider.isAvailable ? `${provider.name} coming soon` : undefined}
-              isActive={activeProvider === providerType}
-              reduceMotion={prefersReducedMotion}
-            />
-          );
-        })}
-      </Tabs.List>
+      {/* Tab List Container with scroll arrows */}
+      <div className="relative flex items-center gap-1 sm:gap-2">
+        {/* Left scroll button - desktop only */}
+        <button
+          type="button"
+          onClick={() => scroll('left')}
+          className={cn(
+            'hidden sm:flex items-center justify-center',
+            'w-8 h-8 rounded-lg',
+            'bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20',
+            'text-zinc-400 hover:text-zinc-200',
+            'transition-all duration-200',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50',
+            !canScrollLeft && 'opacity-0 pointer-events-none'
+          )}
+          aria-label="Scroll tabs left"
+          tabIndex={canScrollLeft ? 0 : -1}
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+
+        {/* Scrollable tab list */}
+        <Tabs.List
+          ref={(el) => {
+            (tabListRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+            (scrollContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+          }}
+          className={cn(
+            // Layout - flex with wrap on mobile, scrollable row on desktop
+            'flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start',
+            'gap-1.5 sm:gap-2 p-2 sm:p-2.5 rounded-xl sm:rounded-2xl',
+            // Scrollable on larger screens
+            'sm:overflow-x-auto scrollbar-hide',
+            // Full width on mobile, flexible on larger
+            'w-full sm:flex-1',
+            // Glassmorphism with enhanced depth
+            'bg-white/[0.03] backdrop-blur-xl border border-white/10',
+            'shadow-[0_8px_32px_rgba(0,0,0,0.12)]',
+            // Subtle inner glow
+            'ring-1 ring-inset ring-white/[0.05]'
+          )}
+          aria-label="Voice provider selection"
+        >
+          {providers.map((providerType) => {
+            const provider = PROVIDERS[providerType];
+            return (
+              <ProviderTab
+                key={providerType}
+                provider={providerType}
+                label={provider.name}
+                disabled={!provider.isAvailable}
+                disabledReason={!provider.isAvailable ? `${provider.name} coming soon` : undefined}
+                isActive={activeProvider === providerType}
+                reduceMotion={prefersReducedMotion}
+              />
+            );
+          })}
+        </Tabs.List>
+
+        {/* Right scroll button - desktop only */}
+        <button
+          type="button"
+          onClick={() => scroll('right')}
+          className={cn(
+            'hidden sm:flex items-center justify-center',
+            'w-8 h-8 rounded-lg',
+            'bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20',
+            'text-zinc-400 hover:text-zinc-200',
+            'transition-all duration-200',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50',
+            !canScrollRight && 'opacity-0 pointer-events-none'
+          )}
+          aria-label="Scroll tabs right"
+          tabIndex={canScrollRight ? 0 : -1}
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
 
       {/* Tab Content Panels with AnimatePresence */}
       {children && (

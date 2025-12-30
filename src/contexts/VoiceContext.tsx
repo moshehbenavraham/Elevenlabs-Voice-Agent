@@ -233,6 +233,19 @@ export function VoiceProvider({
     await conversationRef.current?.startSession({
       signedUrl,
       connectionType: 'websocket',
+      dynamicVariables: {
+        agent_name: 'Atlas',
+        greeting: 'Hey',
+        user_name: 'there',
+      },
+      overrides: {
+        agent: {
+          prompt: {
+            prompt: `You are Atlas, a friendly and helpful AI voice assistant. You help users with general questions, tasks, and conversation. Be concise, natural, and conversational in your responses since this is a voice interaction. Keep responses brief unless the user asks for more detail.`,
+          },
+          firstMessage: "Hey there! It's Atlas. What can I do for you?",
+        },
+      },
     });
 
     debugLog('reconnect', 'Reconnection successful');
@@ -286,12 +299,21 @@ export function VoiceProvider({
       trackError('VoiceContext', 'ElevenLabs conversation error', error, {
         status: conversationRef.current?.status,
       });
-      debugLog('onError', 'Conversation error', { error, parsed: errorMessage });
+      // Enhanced error logging for debugging
+      debugLog('onError', 'Conversation error', {
+        error,
+        parsed: errorMessage,
+        errorType: error instanceof Error ? error.name : typeof error,
+        errorDetails: error instanceof Error ? error.message : JSON.stringify(error),
+      });
       dispatch({ type: 'SET_ERROR', payload: errorMessage });
       dispatch({ type: 'SET_LOADING', payload: false });
     },
     onMessage: (message) => {
       debugLog('onMessage', 'Received message', message);
+    },
+    onStatusChange: (status) => {
+      debugLog('onStatusChange', 'Status changed', { status });
     },
   });
 
@@ -379,8 +401,11 @@ export function VoiceProvider({
         debugLog('connect', 'Requesting microphone permission...');
 
         // Request microphone permission first for better error messages
+        // Important: We must stop the stream after checking to avoid conflicts with the SDK
         try {
-          await navigator.mediaDevices.getUserMedia({ audio: true });
+          const permissionStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          // Stop all tracks immediately - we only needed to verify permission
+          permissionStream.getTracks().forEach((track) => track.stop());
           debugLog('connect', 'Microphone permission granted');
         } catch (micError) {
           const errorMessage = parseMicrophoneError(micError);
@@ -408,6 +433,19 @@ export function VoiceProvider({
         await conversation.startSession({
           signedUrl,
           connectionType: 'websocket',
+          dynamicVariables: {
+            agent_name: 'Atlas',
+            greeting: 'Hey',
+            user_name: 'there',
+          },
+          overrides: {
+            agent: {
+              prompt: {
+                prompt: `You are Atlas, a friendly and helpful AI voice assistant. You help users with general questions, tasks, and conversation. Be concise, natural, and conversational in your responses since this is a voice interaction. Keep responses brief unless the user asks for more detail.`,
+              },
+              firstMessage: "Hey there! It's Atlas. What can I do for you?",
+            },
+          },
         });
         debugLog('connect', 'Session started successfully');
       } catch (error) {

@@ -53,6 +53,17 @@ const PROVIDER_ICONS: Record<ProviderType, React.ComponentType<{ className?: str
   ultravox: AudioWaveform,
 };
 
+/**
+ * Short labels for mobile view
+ */
+const MOBILE_LABELS: Record<ProviderType, string> = {
+  elevenlabs: 'Widget',
+  'elevenlabs-sdk': 'SDK',
+  xai: 'xAI',
+  openai: 'OpenAI',
+  ultravox: 'Ultravox',
+};
+
 interface ProviderTabProps {
   /** The provider type this tab represents */
   provider: ProviderType;
@@ -90,6 +101,7 @@ export function ProviderTab({
   reduceMotion = false,
 }: ProviderTabInternalProps) {
   const Icon = PROVIDER_ICONS[provider];
+  const mobileLabel = MOBILE_LABELS[provider];
 
   // Motion props - disabled when reduced motion is preferred
   const motionProps =
@@ -102,18 +114,20 @@ export function ProviderTab({
         };
 
   return (
-    <motion.div {...motionProps} className="relative">
+    <motion.div {...motionProps} className="relative flex-shrink-0">
       <Tabs.Trigger
         value={provider}
         disabled={disabled}
-        title={disabled ? disabledReason : undefined}
+        title={disabled ? disabledReason : label}
         data-testid={`provider-tab-${provider}`}
         className={cn(
-          // Base styles - min 44px touch target
-          'group relative flex items-center gap-2 px-4 py-3 rounded-lg',
-          'text-sm font-medium transition-all duration-200',
-          'min-h-[44px]',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900',
+          // Base styles - min 44px touch target, mobile-first compact sizing
+          'group relative flex items-center justify-center gap-1.5 sm:gap-2',
+          'px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg',
+          'text-xs sm:text-sm font-medium transition-all duration-200',
+          'min-h-[44px] min-w-[44px]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50',
+          'focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900',
 
           // Default state - glassmorphism
           'bg-white/5 backdrop-blur-sm border border-white/10',
@@ -123,9 +137,10 @@ export function ProviderTab({
           !disabled && ['hover:bg-white/10 hover:border-white/20', 'hover:text-zinc-200'],
 
           // Active/selected state
-          'data-[state=active]:bg-amber-500/10 data-[state=active]:border-amber-500/30',
+          'data-[state=active]:bg-gradient-to-br data-[state=active]:from-amber-500/15 data-[state=active]:to-orange-500/10',
+          'data-[state=active]:border-amber-500/40',
           'data-[state=active]:text-amber-400',
-          'data-[state=active]:shadow-[0_0_20px_rgba(245,158,11,0.1)]',
+          'data-[state=active]:shadow-[0_0_24px_rgba(245,158,11,0.15)]',
 
           // Disabled state
           disabled && [
@@ -137,13 +152,17 @@ export function ProviderTab({
         {/* Icon */}
         <Icon
           className={cn(
-            'w-4 h-4 transition-colors duration-200',
+            'w-4 h-4 sm:w-[18px] sm:h-[18px] transition-colors duration-200 flex-shrink-0',
             'group-data-[state=active]:text-amber-400'
           )}
+          aria-hidden="true"
         />
 
-        {/* Label */}
-        <span>{label}</span>
+        {/* Label - Short on mobile, full on larger screens */}
+        <span className="whitespace-nowrap">
+          <span className="sm:hidden">{mobileLabel}</span>
+          <span className="hidden sm:inline">{label}</span>
+        </span>
 
         {/* Active indicator - animated with Framer Motion */}
         <motion.span
@@ -151,8 +170,8 @@ export function ProviderTab({
           initial="hidden"
           animate={isActive ? 'visible' : 'hidden'}
           className={cn(
-            'absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full',
-            'bg-amber-500'
+            'absolute bottom-0 left-1/2 -translate-x-1/2 w-6 sm:w-8 h-0.5 rounded-full',
+            'bg-gradient-to-r from-amber-500 to-orange-500'
           )}
         />
       </Tabs.Trigger>
