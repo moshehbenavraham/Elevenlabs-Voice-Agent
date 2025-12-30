@@ -2,7 +2,7 @@
   "version": "2.0",
   "project_name": "Conversational Voice AI Agents",
   "description": "Multi-provider voice AI agent application with tabbed interface supporting ElevenLabs, xAI, OpenAI, and Ultravox",
-  "current_phase": 4,
+  "current_phase": 5,
   "current_session": null,
   "phases": {
     "0": {
@@ -33,6 +33,12 @@
       "description": "Coolify Docker deployment and Ultravox voice provider integration",
       "status": "complete",
       "session_count": 4
+    },
+    "5": {
+      "name": "Vapi Voice Agent",
+      "description": "Integrate Vapi as fifth voice provider with web token auth and Daily.co WebRTC",
+      "status": "in_progress",
+      "session_count": 4
     }
   },
   "completed_sessions": [
@@ -57,7 +63,8 @@
     "phase04-session01-coolify-deployment",
     "phase04-session02-ultravox-backend",
     "phase04-session03-ultravox-frontend",
-    "phase04-session04-validation-polish"
+    "phase04-session04-validation-polish",
+    "phase05-session01-dependencies-csp"
   ],
   "next_session_history": [
     {
@@ -168,6 +175,11 @@
     {
       "date": "2025-12-30",
       "session": "phase04-session04-validation-polish",
+      "status": "completed"
+    },
+    {
+      "date": "2025-12-31",
+      "session": "phase05-session01-dependencies-csp",
       "status": "completed"
     }
   ]

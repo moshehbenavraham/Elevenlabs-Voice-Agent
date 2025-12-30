@@ -1,7 +1,7 @@
 {
   "name": "elevenlabs-voice-agent",
   "private": true,
-  "version": "1.0.22",
+  "version": "1.0.23",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -47,6 +47,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@tailwindcss/postcss": "^4.1.17",
     "@tanstack/react-query": "^5.90.12",
+    "@vapi-ai/web": "1.0.255",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "compression": "^1.8.1",
