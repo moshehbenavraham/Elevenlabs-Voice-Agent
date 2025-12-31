@@ -2,7 +2,7 @@
 
 **Date**: 2025-12-31
 **Project**: Conversational Voice AI Agents
-**Audit Mode**: Phase-Focused (Phase 05 - Vapi Voice Agent just completed)
+**Audit Mode**: Phase-Focused (Phase 06 - Retell Voice Agent just completed)
 
 ## Summary
 
@@ -16,59 +16,64 @@
 
 ## Phase Focus
 
-**Completed Phase**: Phase 05 - Vapi Voice Agent
+**Completed Phase**: Phase 06 - Retell Voice Agent
 **Sessions Analyzed**:
 
-- phase05-session01-dependencies-csp
-- phase05-session02-voice-hook
-- phase05-session03-provider-tab
-- phase05-session04-validation-polish
+- phase06-session01-dependencies-backend-setup
+- phase06-session02-voice-hook-sdk
+- phase06-session03-provider-tab
+- phase06-session04-testing-polish
 
 ### Change Manifest (from implementation-notes.md)
 
-| Session                     | Files Created                               | Files Modified                                      |
-| --------------------------- | ------------------------------------------- | --------------------------------------------------- |
-| session01-dependencies-csp  | -                                           | index.html (CSP), package.json (@vapi-ai/web)       |
-| session02-voice-hook        | src/hooks/useVapiVoice.ts, src/lib/vapi.ts  | -                                                   |
-| session03-provider-tab      | VapiProvider.tsx, VapiConversationPanel.tsx | voice-provider.ts, ProviderContext.tsx, Index.tsx   |
-| session04-validation-polish | useVapiVoice.test.ts, VapiProvider.test.tsx | setup.ts (Vapi mock), toolDefinitions.ts, CLAUDE.md |
+| Session                        | Files Created                                                     | Files Modified                                                |
+| ------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------- |
+| session01-dependencies-backend | server/routes/retell.js                                           | package.json, server/index.js                                 |
+| session02-voice-hook-sdk       | src/types/retell.ts, src/hooks/useRetellVoice.ts                  | -                                                             |
+| session03-provider-tab         | src/components/providers/RetellProvider.tsx                       | src/types/voice-provider.ts, src/contexts/ProviderContext.tsx |
+| session04-testing-polish       | src/test/useRetellVoice.test.ts, src/test/RetellProvider.test.tsx | setup.ts (Retell mock), CLAUDE.md, README.md, ProviderTab.tsx |
 
 ## Actions Taken
 
 ### Updated
 
-- `README.md`
-  - Added Vapi to Supported Providers table
-  - Added Vapi Setup section with environment variables
-  - Updated Multi-Provider Support feature description
-
 - `docs/ARCHITECTURE.md`
-  - Added Vapi to architecture overview
-  - Added 'vapi' to ProviderType union
-  - Added useVapiVoice to Provider Context Pattern
+  - Added Retell to architecture overview (7 providers now)
+  - Added 'retell' to ProviderType union
+  - Added useRetellVoice to Provider Context Pattern
+  - Added useVapiVoice and useRetellVoice to hooks list
+  - Added retell.js to server routes
+  - Added /api/retell/create-web-call to API endpoints table
+  - Added Retell test files to test structure
+  - Updated test count from 259 to 429
 
 - `docs/onboarding.md`
-  - Added Vapi account to prerequisites
-  - Added VITE_VAPI_WEB_TOKEN to secrets table
-  - Added Vapi tab to verification checklist
-
-- `docs/environments.md`
-  - Added VITE_VAPI_ENABLED
-  - Added VITE_VAPI_WEB_TOKEN
-  - Added VITE_VAPI_ASSISTANT_ID
-  - Added VITE_VAPI_VOICE
+  - Added Retell account to prerequisites
+  - Added RETELL_API_KEY and VITE_RETELL_AGENT_ID to secrets table
+  - Added Retell tab to verification checklist
 
 - `docs/development.md`
-  - Added useVapiVoice.test.ts and VapiProvider.test.tsx to test structure
-  - Updated test count from 259 to 263
-  - Updated file count from 18 to 20
+  - Added useRetellVoice.test.ts and RetellProvider.test.tsx to test structure
+  - Updated test count from 263 to 429
+  - Updated file count from 20 to 22
+
+- `docs/environments.md`
+  - Added VITE_RETELL_ENABLED
+  - Added VITE_RETELL_AGENT_ID
+  - Added RETELL_API_KEY to server-side variables
+
+- `docs/DEPLOYMENT.md`
+  - Added ULTRAVOX_API_KEY and RETELL_API_KEY to provider keys table
+  - Added VITE_ULTRAVOX_ENABLED, VITE_VAPI_ENABLED, VITE_RETELL_ENABLED
+  - Added VITE_RETELL_AGENT_ID to frontend variables
+  - Updated last modified date
 
 ### Verified (No Changes Needed)
 
-- `CLAUDE.md` - Already updated in Phase 05 session 04
+- `README.md` - Already updated in Phase 06 session 04
+- `CLAUDE.md` - Already updated in Phase 06 session 04
 - `CONTRIBUTING.md` - Current and complete
 - `LICENSE` - Present
-- `docs/DEPLOYMENT.md` - Current
 - `docs/CODEOWNERS` - Present
 - `docs/adr/` - Contains template and multi-provider decision
 - `docs/runbooks/incident-response.md` - Present and current
@@ -77,7 +82,7 @@
 
 ### Root Level (3/3)
 
-- [x] README.md (updated)
+- [x] README.md (verified current)
 - [x] CONTRIBUTING.md
 - [x] LICENSE
 
@@ -88,7 +93,7 @@
 - [x] onboarding.md (updated)
 - [x] development.md (updated)
 - [x] environments.md (updated)
-- [x] DEPLOYMENT.md
+- [x] DEPLOYMENT.md (updated)
 - [x] adr/ (2 ADRs)
 - [x] runbooks/
 - [x] research/ (bonus - OpenAI research docs)
@@ -106,23 +111,24 @@
 - TROUBLESHOOTING.md
 - VOICE_FEATURES.md
 
-## Phase 05 Feature Documentation
+## Phase 06 Feature Documentation
 
-### Vapi Voice Provider (Sessions 01-04)
+### Retell Voice Provider (Sessions 01-04)
 
-- SDK: @vapi-ai/web v1.0.255 with Daily.co WebRTC
-- Frontend-only integration (public web token, no backend required)
-- Hook: useVapiVoice.ts for call state and transcripts
-- Provider component: VapiProvider with purple/violet color scheme
-- Conversation panel with partial transcript support (typing indicator)
-- 82 new unit tests (41 hook + 41 provider tests)
-- Function calling support via getVapiTools() transformer
+- SDK: retell-client-js-sdk v2.0.7 with LiveKit WebRTC
+- Backend-generated access tokens for secure connections
+- Backend route: server/routes/retell.js with /api/retell/create-web-call
+- Hook: useRetellVoice.ts for call state and transcript accumulation
+- Provider component: RetellProvider with teal/cyan color scheme
+- Local transcript accumulation (SDK only provides last 5 sentences)
+- 60 new unit tests (35 hook + 25 provider tests)
+- Agent configuration managed in Retell dashboard
 
 ## Test Coverage Summary
 
-- 263 unit tests (Vitest) - up from 259
+- 429 unit tests (Vitest) - up from 263
 - 920+ E2E tests (Playwright across 5 browsers)
-- 20 test files total
+- 22 test files total
 
 ## Documentation Gaps
 
@@ -147,12 +153,12 @@ npm install && npm run dev:all
 
 Complete inventory in `.env.example` and `docs/environments.md`:
 
-- 23 client-side variables (VITE\_ prefix) - up from 19
-- 6 server-side variables
+- 25 client-side variables (VITE\_ prefix) - up from 23
+- 7 server-side variables - up from 6
 
 ## Project Status
 
-All 6 phases (00-05) are COMPLETE with 26 sessions total:
+All 7 phases (00-06) are COMPLETE with 30 sessions total:
 
 - Phase 00: Multi-Provider Voice (4 sessions)
 - Phase 01: OpenAI Voice Agent (4 sessions)
@@ -160,6 +166,7 @@ All 6 phases (00-05) are COMPLETE with 26 sessions total:
 - Phase 03: Testing & Configuration (5 sessions)
 - Phase 04: Deployment & New Providers (4 sessions)
 - Phase 05: Vapi Voice Agent (4 sessions)
+- Phase 06: Retell Voice Agent (4 sessions)
 
 All voice providers implemented:
 
@@ -168,16 +175,17 @@ All voice providers implemented:
 3. OpenAI Realtime (WebSocket + ephemeral token)
 4. Ultravox (SDK + joinUrl)
 5. Vapi (SDK + public web token)
+6. Retell (SDK + backend access token)
 
 ## Next Audit
 
 Recommend re-running `/documents` after:
 
-- Completing Phase 06 (Retell Voice Agent) if implemented
+- Completing the next phase
 - Making architectural changes
 - Adding new packages/services
 
 ---
 
 **Documentation Status**: COMPLETE
-**All Phase 05 changes documented**
+**All Phase 06 changes documented**

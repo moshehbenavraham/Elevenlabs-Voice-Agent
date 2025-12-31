@@ -203,6 +203,8 @@ NODE_ENV=production node server/index.js
 | `ELEVENLABS_API_KEY` | ElevenLabs | For ElevenLabs SDK provider |
 | `XAI_API_KEY`        | xAI Grok   | For xAI Realtime API        |
 | `OPENAI_API_KEY`     | OpenAI     | For OpenAI Realtime API     |
+| `ULTRAVOX_API_KEY`   | Ultravox   | For Ultravox call creation  |
+| `RETELL_API_KEY`     | Retell     | For Retell web call tokens  |
 
 ### Frontend Variables (build-time)
 
@@ -213,6 +215,10 @@ NODE_ENV=production node server/index.js
 | `VITE_ELEVENLABS_ENABLED`  | Enable ElevenLabs   | `true`                    |
 | `VITE_XAI_ENABLED`         | Enable xAI          | `true`                    |
 | `VITE_OPENAI_ENABLED`      | Enable OpenAI       | `true`                    |
+| `VITE_ULTRAVOX_ENABLED`    | Enable Ultravox     | `true`                    |
+| `VITE_VAPI_ENABLED`        | Enable Vapi         | `true`                    |
+| `VITE_RETELL_ENABLED`      | Enable Retell       | `true`                    |
+| `VITE_RETELL_AGENT_ID`     | Retell Agent ID     | `agent_xxx`               |
 
 ### Security Notes
 
@@ -363,4 +369,4 @@ For deployment issues:
 
 ---
 
-**Last Updated**: 2025-12-30
+**Last Updated**: 2025-12-31

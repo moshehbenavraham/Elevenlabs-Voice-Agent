@@ -125,6 +125,11 @@ Object.defineProperty(navigator, 'mediaDevices', {
   },
 });
 
+// Mock Daily call object for Vapi SDK
+export const mockDailyCall = {
+  updateInputSettings: vi.fn().mockResolvedValue(undefined),
+};
+
 // Mock Vapi SDK (@vapi-ai/web)
 // Follows same pattern as Ultravox mocks with event emitter support
 // Export functions to allow resetting between tests
@@ -133,6 +138,7 @@ export const vapiMocks = {
   stop: vi.fn(),
   on: vi.fn(),
   off: vi.fn(),
+  getDailyCallObject: vi.fn(() => mockDailyCall),
   // Track registered event handlers for testing
   eventHandlers: new Map<string, Set<(...args: unknown[]) => void>>(),
   // Helper to emit events in tests
@@ -148,6 +154,8 @@ export const vapiMocks = {
     vapiMocks.stop.mockClear();
     vapiMocks.on.mockClear();
     vapiMocks.off.mockClear();
+    vapiMocks.getDailyCallObject.mockClear();
+    mockDailyCall.updateInputSettings.mockClear();
     vapiMocks.eventHandlers.clear();
   },
 };
@@ -161,6 +169,7 @@ vi.mock('@vapi-ai/web', () => {
       }
       start = vi.fn((...args: unknown[]) => vapiMocks.start(...args));
       stop = vi.fn(() => vapiMocks.stop());
+      getDailyCallObject = vi.fn(() => vapiMocks.getDailyCallObject());
       on = vi.fn((event: string, handler: (...args: unknown[]) => void) => {
         if (!vapiMocks.eventHandlers.has(event)) {
           vapiMocks.eventHandlers.set(event, new Set());

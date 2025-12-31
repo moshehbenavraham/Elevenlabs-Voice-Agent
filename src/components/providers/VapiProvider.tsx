@@ -10,7 +10,7 @@ import {
   Settings,
   Square,
 } from 'lucide-react';
-import { useVapiVoice } from '@/hooks/useVapiVoice';
+import { VapiVoiceProvider, useVapiVoiceContext } from '@/contexts/VapiVoiceContext';
 import { VapiCallStatus } from '@/types/vapi';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
@@ -39,11 +39,11 @@ interface VapiProviderProps {
 }
 
 /**
- * Vapi Voice Provider wrapper component
- * Provides Vapi voice functionality to children
+ * Inner component that handles disconnect logic
+ * Must be inside VapiVoiceProvider to use the context
  */
-export function VapiProvider({ children, onDisconnect }: VapiProviderProps) {
-  const { stop, callStatus } = useVapiVoice();
+function VapiProviderInner({ children, onDisconnect }: VapiProviderProps) {
+  const { stop, callStatus } = useVapiVoiceContext();
 
   // Handle disconnect callback when call ends
   useEffect(() => {
@@ -62,6 +62,21 @@ export function VapiProvider({ children, onDisconnect }: VapiProviderProps) {
   return <>{children}</>;
 }
 
+/**
+ * Vapi Voice Provider wrapper component
+ * Provides Vapi voice functionality to children via React Context
+ *
+ * This wraps children with VapiVoiceProvider to ensure event listeners
+ * are registered only once, preventing the multiple-instantiation bug.
+ */
+export function VapiProvider({ children, onDisconnect }: VapiProviderProps) {
+  return (
+    <VapiVoiceProvider>
+      <VapiProviderInner onDisconnect={onDisconnect}>{children}</VapiProviderInner>
+    </VapiVoiceProvider>
+  );
+}
+
 interface VapiButtonProps {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
@@ -74,7 +89,7 @@ interface VapiButtonProps {
  * Features color state transitions and audio-level glow visualization
  */
 export function VapiButton({ className, size = 'lg', onConnect, onDisconnect }: VapiButtonProps) {
-  const { callStatus, isSpeechActive, audioLevel, start, stop, error } = useVapiVoice();
+  const { callStatus, isSpeechActive, audioLevel, start, stop, error } = useVapiVoiceContext();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const wasConnectedRef = useRef(false);
 
@@ -384,7 +399,7 @@ interface VapiVoiceStatusProps {
  * Voice status display for Vapi provider
  */
 export function VapiVoiceStatus({ className }: VapiVoiceStatusProps) {
-  const { callStatus, isSpeechActive, error } = useVapiVoice();
+  const { callStatus, isSpeechActive, error } = useVapiVoiceContext();
 
   const isConnected = callStatus === VapiCallStatus.ACTIVE;
   const isLoading = callStatus === VapiCallStatus.LOADING;

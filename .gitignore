@@ -38,3 +38,6 @@ EXAMPLE/
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+RETELL_EXAMPLE/
+VAPI_EXAMPLE/

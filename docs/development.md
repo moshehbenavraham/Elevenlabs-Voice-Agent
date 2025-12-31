@@ -77,7 +77,9 @@ src/test/
 ├── UltravoxProvider.test.tsx       # Ultravox provider tests (21 tests)
 ├── useVapiVoice.test.ts            # Vapi hook tests (41 tests)
 ├── VapiProvider.test.tsx           # Vapi provider tests (41 tests)
-└── ... (263 tests total across 20 files)
+├── useRetellVoice.test.ts          # Retell hook tests (35 tests)
+├── RetellProvider.test.tsx         # Retell provider tests (25 tests)
+└── ... (429 tests total across 22 files)
 
 src/lib/audio/__tests__/
 └── audioUtils.test.ts          # Audio utility tests

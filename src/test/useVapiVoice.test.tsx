@@ -7,19 +7,25 @@
  * - Event handling (call-start, call-end, speech, volume, message, error)
  * - Transcript handling (partial vs final)
  * - Cleanup and edge cases
+ *
+ * Note: The hook must be used within VapiVoiceProvider, so we wrap all
+ * renderHook calls with the provider.
  */
 
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useVapiVoice } from '@/hooks/useVapiVoice';
+import { VapiVoiceProvider } from '@/contexts/VapiVoiceContext';
 import { VapiCallStatus, VapiMessageType, VapiTranscriptType, VapiMessageRole } from '@/types/vapi';
 import { vapiMocks } from './setup';
+import type { ReactNode } from 'react';
 
 // Mock the vapi singleton module
 vi.mock('@/lib/vapi', () => ({
   vapi: {
     start: vi.fn((...args: unknown[]) => vapiMocks.start(...args)),
     stop: vi.fn(() => vapiMocks.stop()),
+    getDailyCallObject: vi.fn(() => vapiMocks.getDailyCallObject()),
     on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
       if (!vapiMocks.eventHandlers.has(event)) {
         vapiMocks.eventHandlers.set(event, new Set());
@@ -33,6 +39,11 @@ vi.mock('@/lib/vapi', () => ({
     }),
   },
 }));
+
+// Wrapper component that provides VapiVoiceProvider
+function TestWrapper({ children }: { children: ReactNode }) {
+  return <VapiVoiceProvider>{children}</VapiVoiceProvider>;
+}
 
 describe('useVapiVoice', () => {
   beforeEach(() => {
@@ -49,38 +60,38 @@ describe('useVapiVoice', () => {
   // ===========================================
   describe('initial state', () => {
     it('returns callStatus as INACTIVE initially', () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
       expect(result.current.callStatus).toBe(VapiCallStatus.INACTIVE);
     });
 
     it('returns isSpeechActive as false initially', () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
       expect(result.current.isSpeechActive).toBe(false);
     });
 
     it('returns empty messages array initially', () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
       expect(result.current.messages).toEqual([]);
     });
 
     it('returns null activeTranscript initially', () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
       expect(result.current.activeTranscript).toBeNull();
     });
 
     it('returns audioLevel as 0 initially', () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
       expect(result.current.audioLevel).toBe(0);
     });
 
     it('returns null error initially (when SDK is initialized)', () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
       // Error may be set if vapi is null, but with our mock it should be null
       expect(result.current.error).toBeNull();
     });
 
     it('provides start, stop, and toggleCall functions', () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
       expect(typeof result.current.start).toBe('function');
       expect(typeof result.current.stop).toBe('function');
       expect(typeof result.current.toggleCall).toBe('function');
@@ -92,7 +103,7 @@ describe('useVapiVoice', () => {
   // ===========================================
   describe('connection lifecycle', () => {
     it('sets callStatus to LOADING when start() is called', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       act(() => {
         result.current.start();
@@ -102,7 +113,7 @@ describe('useVapiVoice', () => {
     });
 
     it('calls vapi.start when start() is called', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start();
@@ -112,7 +123,7 @@ describe('useVapiVoice', () => {
     });
 
     it('passes assistant ID to vapi.start when provided as string', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start('asst_123');
@@ -122,7 +133,7 @@ describe('useVapiVoice', () => {
     });
 
     it('passes assistantId from config object to vapi.start', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start({ assistantId: 'asst_456' });
@@ -132,7 +143,7 @@ describe('useVapiVoice', () => {
     });
 
     it('sets callStatus to LOADING when stop() is called while connected', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       // Start and simulate call-start event
       await act(async () => {
@@ -150,7 +161,7 @@ describe('useVapiVoice', () => {
     });
 
     it('calls vapi.stop when stop() is called', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       // Start and connect
       await act(async () => {
@@ -166,7 +177,7 @@ describe('useVapiVoice', () => {
     });
 
     it('does not call stop when already inactive', () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       act(() => {
         result.current.stop();
@@ -176,7 +187,7 @@ describe('useVapiVoice', () => {
     });
 
     it('toggleCall starts when inactive', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       act(() => {
         result.current.toggleCall();
@@ -187,7 +198,7 @@ describe('useVapiVoice', () => {
     });
 
     it('toggleCall stops when active', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       // Start and connect
       await act(async () => {
@@ -203,7 +214,7 @@ describe('useVapiVoice', () => {
     });
 
     it('toggleCall does nothing when loading', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       act(() => {
         result.current.start();
@@ -229,7 +240,7 @@ describe('useVapiVoice', () => {
   // ===========================================
   describe('event handling', () => {
     it('sets callStatus to ACTIVE on call-start event', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start();
@@ -240,7 +251,7 @@ describe('useVapiVoice', () => {
     });
 
     it('clears error on call-start event', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       // Simulate an error first
       await act(async () => {
@@ -257,7 +268,7 @@ describe('useVapiVoice', () => {
     });
 
     it('clears messages on call-start event', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       // Add a message first
       await act(async () => {
@@ -284,7 +295,7 @@ describe('useVapiVoice', () => {
     });
 
     it('sets callStatus to INACTIVE on call-end event', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start();
@@ -301,7 +312,7 @@ describe('useVapiVoice', () => {
     });
 
     it('clears activeTranscript on call-end event', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start();
@@ -325,7 +336,7 @@ describe('useVapiVoice', () => {
     });
 
     it('sets isSpeechActive to true on speech-start event', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start();
@@ -337,7 +348,7 @@ describe('useVapiVoice', () => {
     });
 
     it('sets isSpeechActive to false on speech-end event', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start();
@@ -355,7 +366,7 @@ describe('useVapiVoice', () => {
     });
 
     it('updates audioLevel on volume-level event', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start();
@@ -367,7 +378,7 @@ describe('useVapiVoice', () => {
     });
 
     it('sets error on error event', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         vapiMocks.emit('error', new Error('Connection failed'));
@@ -377,7 +388,7 @@ describe('useVapiVoice', () => {
     });
 
     it('sets callStatus to INACTIVE on error event', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start();
@@ -394,7 +405,7 @@ describe('useVapiVoice', () => {
     });
 
     it('handles error objects with message property', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         vapiMocks.emit('error', { message: 'Custom error message' });
@@ -404,7 +415,7 @@ describe('useVapiVoice', () => {
     });
 
     it('handles unknown error types', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         vapiMocks.emit('error', 'string error');
@@ -419,7 +430,7 @@ describe('useVapiVoice', () => {
   // ===========================================
   describe('transcript handling', () => {
     it('stores partial transcript in activeTranscript', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       const partialMessage = {
         type: VapiMessageType.TRANSCRIPT,
@@ -439,7 +450,7 @@ describe('useVapiVoice', () => {
     });
 
     it('adds final transcript to messages array', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       const finalMessage = {
         type: VapiMessageType.TRANSCRIPT,
@@ -458,7 +469,7 @@ describe('useVapiVoice', () => {
     });
 
     it('clears activeTranscript when final transcript arrives', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start();
@@ -488,7 +499,7 @@ describe('useVapiVoice', () => {
     });
 
     it('handles user transcripts', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       const userMessage = {
         type: VapiMessageType.TRANSCRIPT,
@@ -507,7 +518,7 @@ describe('useVapiVoice', () => {
     });
 
     it('handles function call messages', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       const functionCallMessage = {
         type: VapiMessageType.FUNCTION_CALL,
@@ -527,7 +538,7 @@ describe('useVapiVoice', () => {
     });
 
     it('accumulates multiple messages', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start();
@@ -555,7 +566,7 @@ describe('useVapiVoice', () => {
   // ===========================================
   describe('cleanup and edge cases', () => {
     it('removes event listeners on unmount', () => {
-      const { unmount } = renderHook(() => useVapiVoice());
+      const { unmount } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       unmount();
 
@@ -570,7 +581,7 @@ describe('useVapiVoice', () => {
     });
 
     it('prevents duplicate start when already active', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start();
@@ -591,7 +602,7 @@ describe('useVapiVoice', () => {
     });
 
     it('handles start error gracefully', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       vapiMocks.start.mockRejectedValueOnce(new Error('Failed to start'));
 
@@ -604,7 +615,7 @@ describe('useVapiVoice', () => {
     });
 
     it('handles non-Error start failures', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       vapiMocks.start.mockRejectedValueOnce('string error');
 
@@ -616,7 +627,7 @@ describe('useVapiVoice', () => {
     });
 
     it('handles rapid connect/disconnect cycles', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       // Rapid cycle
       await act(async () => {
@@ -632,7 +643,7 @@ describe('useVapiVoice', () => {
     });
 
     it('updates activeTranscript progressively for typing indicator', async () => {
-      const { result } = renderHook(() => useVapiVoice());
+      const { result } = renderHook(() => useVapiVoice(), { wrapper: TestWrapper });
 
       await act(async () => {
         await result.current.start();

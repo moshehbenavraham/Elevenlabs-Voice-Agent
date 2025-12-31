@@ -4,7 +4,7 @@ This document outlines the technical architecture of the Conversational Voice AI
 
 ## Architecture Overview
 
-A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), OpenAI, Ultravox, and Vapi. The architecture emphasizes provider abstraction, performance, and accessibility.
+A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), OpenAI, Ultravox, Vapi, and Retell. The architecture emphasizes provider abstraction, performance, and accessibility.
 
 ## Table of Contents
 
@@ -63,7 +63,14 @@ The application uses a unified provider interface allowing seamless switching be
 
 ```typescript
 // src/types/voice-provider.ts
-export type ProviderType = 'elevenlabs' | 'elevenlabs-sdk' | 'xai' | 'openai' | 'ultravox' | 'vapi';
+export type ProviderType =
+  | 'elevenlabs'
+  | 'elevenlabs-sdk'
+  | 'xai'
+  | 'openai'
+  | 'ultravox'
+  | 'vapi'
+  | 'retell';
 
 export interface VoiceProvider {
   id: ProviderType;
@@ -82,7 +89,8 @@ ProviderContext (active provider selection)
     ├── XAIVoiceContext (WebSocket + ephemeral token)
     ├── OpenAIVoiceContext (WebSocket + ephemeral token)
     ├── UltravoxVoiceContext (SDK with joinUrl)
-    └── useVapiVoice (SDK with public web token)
+    ├── useVapiVoice (SDK with public web token)
+    └── useRetellVoice (SDK with backend access token)
 ```
 
 **Key Benefits**:
@@ -296,6 +304,8 @@ Used for feature-specific state management:
 - `useXAIVoice` - xAI voice hook
 - `useOpenAIVoice` - OpenAI voice hook
 - `useUltravoxVoice` - Ultravox voice hook
+- `useVapiVoice` - Vapi voice hook
+- `useRetellVoice` - Retell voice hook
 - `useReconnection` - WebSocket reconnection with backoff
 - `useReducedMotion` - Accessibility preference detection
 - `useAccessibility` - Accessibility features
@@ -384,18 +394,20 @@ server/
 └── routes/
     ├── xai.js            # xAI ephemeral token endpoint
     ├── openai.js         # OpenAI ephemeral token endpoint
-    └── ultravox.js       # Ultravox call creation endpoint
+    ├── ultravox.js       # Ultravox call creation endpoint
+    └── retell.js         # Retell web call creation endpoint
 ```
 
 ### API Endpoints
 
-| Method | Endpoint                     | Description                    |
-| ------ | ---------------------------- | ------------------------------ |
-| GET    | `/api/health`                | Server health check            |
-| GET    | `/api/elevenlabs/signed-url` | ElevenLabs signed URL for SDK  |
-| POST   | `/api/xai/session`           | Create xAI ephemeral token     |
-| POST   | `/api/openai/session`        | Create OpenAI ephemeral token  |
-| POST   | `/api/ultravox/call`         | Create Ultravox call (joinUrl) |
+| Method | Endpoint                      | Description                     |
+| ------ | ----------------------------- | ------------------------------- |
+| GET    | `/api/health`                 | Server health check             |
+| GET    | `/api/elevenlabs/signed-url`  | ElevenLabs signed URL for SDK   |
+| POST   | `/api/xai/session`            | Create xAI ephemeral token      |
+| POST   | `/api/openai/session`         | Create OpenAI ephemeral token   |
+| POST   | `/api/ultravox/call`          | Create Ultravox call (joinUrl)  |
+| POST   | `/api/retell/create-web-call` | Create Retell call access token |
 
 ### xAI Token Flow
 
@@ -742,7 +754,11 @@ src/test/
 ├── ConfigurationDialog.test.tsx    # Modal accessibility tests
 ├── UltravoxVoiceContext.test.tsx   # Ultravox context tests
 ├── UltravoxProvider.test.tsx       # Ultravox provider tests
-└── ... (259 tests total across 18 files)
+├── useVapiVoice.test.ts            # Vapi hook tests
+├── VapiProvider.test.tsx           # Vapi provider tests
+├── useRetellVoice.test.ts          # Retell hook tests
+├── RetellProvider.test.tsx         # Retell provider tests
+└── ... (429 tests total across 22 files)
 ```
 
 ### E2E Tests (Playwright)
@@ -824,6 +840,6 @@ const { reconnect, cancelReconnect, reconnectionState } = useReconnection({
 
 ---
 
-**Last Updated**: December 30, 2025
+**Last Updated**: December 31, 2025
 
 This architecture is designed to be maintainable, scalable, and performant while providing excellent user experience for multi-provider voice AI interactions.

@@ -14,6 +14,7 @@ Zero-to-hero checklist for new developers.
 - [ ] OpenAI account (for OpenAI Realtime provider)
 - [ ] Ultravox account (for Ultravox provider)
 - [ ] Vapi account (for Vapi provider)
+- [ ] Retell account (for Retell provider)
 
 ## Setup Steps
 
@@ -51,6 +52,8 @@ cp .env.example .env
 | `OPENAI_API_KEY`           | [OpenAI API Keys](https://platform.openai.com/api-keys)             | Server-side API key for Realtime |
 | `ULTRAVOX_API_KEY`         | [Ultravox Dashboard](https://ultravox.ai/)                          | Server-side API key for Ultravox |
 | `VITE_VAPI_WEB_TOKEN`      | [Vapi Dashboard](https://dashboard.vapi.ai/)                        | Public web token (frontend-safe) |
+| `RETELL_API_KEY`           | [Retell Dashboard](https://dashboard.retellai.com/)                 | Server-side API key for Retell   |
+| `VITE_RETELL_AGENT_ID`     | [Retell Dashboard](https://dashboard.retellai.com/)                 | Retell Agent ID                  |
 
 ### 5. Start Development
 
@@ -72,6 +75,7 @@ npm run dev
 - [ ] OpenAI tab shows (if `VITE_OPENAI_ENABLED=true`)
 - [ ] Ultravox tab shows (if `VITE_ULTRAVOX_ENABLED=true`)
 - [ ] Vapi tab shows (if `VITE_VAPI_ENABLED=true`)
+- [ ] Retell tab shows (if `VITE_RETELL_ENABLED=true`)
 - [ ] Voice connection works when clicking "Start Conversation"
 
 ## Project Structure

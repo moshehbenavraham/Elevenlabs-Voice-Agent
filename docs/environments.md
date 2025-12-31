@@ -35,6 +35,8 @@ These are embedded in the build and visible to users.
 | `VITE_VAPI_WEB_TOKEN`         | -                       | Vapi public web token    |
 | `VITE_VAPI_ASSISTANT_ID`      | -                       | Vapi assistant ID (opt.) |
 | `VITE_VAPI_VOICE`             | `paula`                 | Vapi voice selection     |
+| `VITE_RETELL_ENABLED`         | `true`                  | Show Retell tab          |
+| `VITE_RETELL_AGENT_ID`        | -                       | Retell Agent ID          |
 | `VITE_DEFAULT_PROVIDER`       | `elevenlabs`            | Default active tab       |
 | `VITE_ELEVENLABS_AGENT_ID`    | -                       | ElevenLabs agent ID      |
 | `VITE_VOICE_CONNECTION_MODE`  | `agent-sdk`             | SDK or widget mode       |
@@ -54,6 +56,7 @@ These are secure and never sent to the browser.
 | `XAI_API_KEY`        | xAI API key for ephemeral tokens             |
 | `OPENAI_API_KEY`     | OpenAI API key for Realtime ephemeral tokens |
 | `ULTRAVOX_API_KEY`   | Ultravox API key for call creation           |
+| `RETELL_API_KEY`     | Retell API key for web call tokens           |
 | `SERVER_PORT`        | Backend server port (default: 3001)          |
 | `CORS_ORIGIN`        | Allowed CORS origin                          |
 
