@@ -32,3 +32,16 @@ export type {
 } from './ultravox';
 
 export { mapUltravoxStatus } from './ultravox';
+
+export { VapiMessageType, VapiMessageRole, VapiTranscriptType, VapiCallStatus } from './vapi';
+
+export type {
+  VapiBaseMessage,
+  VapiTranscriptMessage,
+  VapiFunctionCallMessage,
+  VapiFunctionCallResultMessage,
+  VapiMessage,
+  VapiVoiceState,
+  VapiStartConfig,
+  VapiVoiceHookReturn,
+} from './vapi';

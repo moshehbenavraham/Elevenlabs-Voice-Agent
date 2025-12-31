@@ -4,7 +4,7 @@
 **Sessions**: 4
 **Estimated Duration**: 1-2 days
 
-**Progress**: 1/4 sessions (25%)
+**Progress**: 2/4 sessions (50%)
 
 ---
 
@@ -21,7 +21,7 @@ Integrate Vapi as the fifth voice provider in the multi-provider voice AI applic
 | Session | Name               | Status      | Est. Tasks | Validated  |
 | ------- | ------------------ | ----------- | ---------- | ---------- |
 | 01      | Dependencies & CSP | Complete    | 18         | 2025-12-31 |
-| 02      | Voice Hook & SDK   | Not Started | ~20        | -          |
+| 02      | Voice Hook & SDK   | Complete    | 18         | 2025-12-31 |
 | 03      | Provider Component | Not Started | ~18        | -          |
 | 04      | Testing & Polish   | Not Started | ~22        | -          |
 
@@ -36,11 +36,19 @@ Integrate Vapi as the fifth voice provider in the multi-provider voice AI applic
 - Created type verification file at `src/lib/vapi/types.ts`
 - Updated `.env.example` with comprehensive Vapi configuration
 
+### Session 02: Voice Hook & SDK (2025-12-31)
+
+- Created comprehensive type definitions (`src/types/vapi.ts`) with 4 enums, 8 interfaces
+- Implemented SDK singleton (`src/lib/vapi.ts`) with web token initialization
+- Built `useVapiVoice` hook (`src/hooks/useVapiVoice.ts`) with all 7 Vapi events
+- Added partial transcript handling with `activeTranscript` state
+- Dual config support: assistantId string OR inline CreateAssistantDTO
+
 ---
 
 ## Upcoming Sessions
 
-- Session 02: Voice Hook & SDK Implementation
+- Session 03: Provider Component
 
 ---
 
