@@ -9,8 +9,17 @@
  * - Cleanup and edge cases
  */
 
+import { vi } from 'vitest';
+
+// Mock environment variables BEFORE any module imports
+// vi.hoisted runs before all imports are evaluated
+vi.hoisted(() => {
+  vi.stubEnv('VITE_RETELL_AGENT_ID', 'test-agent-id');
+  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:3001');
+});
+
 import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { useRetellVoice } from '@/hooks/useRetellVoice';
 import { RetellCallStatus, RetellMessageRole, RetellTranscriptType } from '@/types/retell';
 import { retellMocks } from './setup';
@@ -18,10 +27,6 @@ import { retellMocks } from './setup';
 // Mock fetch for backend token calls
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
-
-// Mock environment variables
-vi.stubEnv('VITE_RETELL_AGENT_ID', 'test-agent-id');
-vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:3001');
 
 describe('useRetellVoice', () => {
   beforeEach(() => {
