@@ -25,7 +25,7 @@ A sophisticated voice AI web application built with React, TypeScript, and the E
 ### Core Features
 
 - **Real-time Voice Conversation**: Talk naturally with advanced AI using ElevenLabs technology
-- **Multi-Provider Support**: Switch between ElevenLabs, xAI Grok, OpenAI, and Ultravox voice providers with smooth tab animations
+- **Multi-Provider Support**: Switch between ElevenLabs, xAI Grok, OpenAI, Ultravox, and Vapi voice providers with smooth tab animations
 - **Audio Visualization**: Beautiful 60fps audio visualizer with real-time frequency analysis
 - **Glassmorphism Design**: Modern, premium UI with dark/light theme toggle
 - **Mobile-First**: Responsive design optimized for all devices (375px to 1920px)
@@ -61,6 +61,7 @@ This application supports multiple voice AI providers through a tabbed interface
 | **xAI Grok**   | Available | Grok-powered voice assistant with realtime API              |
 | **OpenAI**     | Available | GPT-4o realtime voice conversations with server VAD         |
 | **Ultravox**   | Available | Low-latency voice AI with call-based WebSocket connections  |
+| **Vapi**       | Available | Voice AI platform with Daily.co WebRTC and public web token |
 
 ### Configuration
 
@@ -108,6 +109,18 @@ VITE_API_BASE_URL=http://localhost:3001
 ```
 
 Ultravox uses a call-based model where the backend creates a call via REST API and returns a WebSocket joinUrl. The frontend connects using the ultravox-client SDK.
+
+#### Vapi Setup
+
+```bash
+# Client-side only (Vapi uses public web token, no backend required)
+VITE_VAPI_ENABLED=true
+VITE_VAPI_WEB_TOKEN=your_public_web_token_here
+VITE_VAPI_ASSISTANT_ID=your_assistant_id_here  # Optional
+VITE_VAPI_VOICE=paula  # Default voice
+```
+
+Vapi uses a frontend-only integration with a public web token. The @vapi-ai/web SDK handles all connection and audio via Daily.co WebRTC. No backend is required.
 
 ### Provider Features
 

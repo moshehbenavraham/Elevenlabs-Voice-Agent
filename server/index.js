@@ -8,6 +8,7 @@ import { dirname, join } from 'path';
 import xaiRoutes from './routes/xai.js';
 import openaiRoutes from './routes/openai.js';
 import ultravoxRoutes from './routes/ultravox.js';
+import retellRoutes from './routes/retell.js';
 import functionsRoutes from './routes/functions.js';
 
 // ES module __dirname equivalent
@@ -75,11 +76,13 @@ app.use('/api/xai/token', tokenLimiter);
 app.use('/api/openai/token', tokenLimiter);
 app.use('/api/elevenlabs/signed-url', tokenLimiter);
 app.use('/api/ultravox/call', tokenLimiter);
+app.use('/api/retell/create-web-call', tokenLimiter);
 
 // API Routes
 app.use('/api/xai', xaiRoutes);
 app.use('/api/openai', openaiRoutes);
 app.use('/api/ultravox', ultravoxRoutes);
+app.use('/api/retell', retellRoutes);
 app.use('/api/functions', functionsRoutes);
 
 // Health check endpoint
@@ -100,6 +103,9 @@ app.get('/api/health', (req, res) => {
     },
     ultravox: {
       configured: !!process.env.ULTRAVOX_API_KEY,
+    },
+    retell: {
+      configured: !!process.env.RETELL_API_KEY,
     },
   };
 
@@ -218,4 +224,5 @@ app.listen(PORT, () => {
   console.log(`[Server] xAI API key: ${process.env.XAI_API_KEY ? 'Yes' : 'No'}`);
   console.log(`[Server] OpenAI API key: ${process.env.OPENAI_API_KEY ? 'Yes' : 'No'}`);
   console.log(`[Server] Ultravox API key: ${process.env.ULTRAVOX_API_KEY ? 'Yes' : 'No'}`);
+  console.log(`[Server] Retell API key: ${process.env.RETELL_API_KEY ? 'Yes' : 'No'}`);
 });

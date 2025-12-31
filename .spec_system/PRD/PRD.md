@@ -2175,7 +2175,7 @@ RETELL_API_KEY=your-retell-api-key
 | xAI (Grok)      | Complete |
 | OpenAI          | Complete |
 | Ultravox        | Complete |
-| Vapi            | Phase 05 |
+| Vapi            | Complete |
 | Retell          | Phase 06 |
 | Google (Gemini) | Planned  |
 | Anthropic       | Planned  |

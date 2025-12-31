@@ -4,7 +4,7 @@ This document outlines the technical architecture of the Conversational Voice AI
 
 ## Architecture Overview
 
-A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), OpenAI, and Ultravox. The architecture emphasizes provider abstraction, performance, and accessibility.
+A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), OpenAI, Ultravox, and Vapi. The architecture emphasizes provider abstraction, performance, and accessibility.
 
 ## Table of Contents
 
@@ -63,7 +63,7 @@ The application uses a unified provider interface allowing seamless switching be
 
 ```typescript
 // src/types/voice-provider.ts
-export type ProviderType = 'elevenlabs' | 'elevenlabs-sdk' | 'xai' | 'openai' | 'ultravox';
+export type ProviderType = 'elevenlabs' | 'elevenlabs-sdk' | 'xai' | 'openai' | 'ultravox' | 'vapi';
 
 export interface VoiceProvider {
   id: ProviderType;
@@ -81,7 +81,8 @@ ProviderContext (active provider selection)
     ├── ElevenLabs VoiceContext (SDK with reconnection)
     ├── XAIVoiceContext (WebSocket + ephemeral token)
     ├── OpenAIVoiceContext (WebSocket + ephemeral token)
-    └── UltravoxVoiceContext (SDK with joinUrl)
+    ├── UltravoxVoiceContext (SDK with joinUrl)
+    └── useVapiVoice (SDK with public web token)
 ```
 
 **Key Benefits**:

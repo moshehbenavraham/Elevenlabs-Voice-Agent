@@ -31,6 +31,10 @@ These are embedded in the build and visible to users.
 | `VITE_XAI_ENABLED`            | `true`                  | Show xAI tab             |
 | `VITE_OPENAI_ENABLED`         | `true`                  | Show OpenAI tab          |
 | `VITE_ULTRAVOX_ENABLED`       | `true`                  | Show Ultravox tab        |
+| `VITE_VAPI_ENABLED`           | `true`                  | Show Vapi tab            |
+| `VITE_VAPI_WEB_TOKEN`         | -                       | Vapi public web token    |
+| `VITE_VAPI_ASSISTANT_ID`      | -                       | Vapi assistant ID (opt.) |
+| `VITE_VAPI_VOICE`             | `paula`                 | Vapi voice selection     |
 | `VITE_DEFAULT_PROVIDER`       | `elevenlabs`            | Default active tab       |
 | `VITE_ELEVENLABS_AGENT_ID`    | -                       | ElevenLabs agent ID      |
 | `VITE_VOICE_CONNECTION_MODE`  | `agent-sdk`             | SDK or widget mode       |

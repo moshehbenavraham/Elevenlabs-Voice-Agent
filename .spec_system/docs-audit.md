@@ -1,8 +1,8 @@
 # Documentation Audit Report
 
-**Date**: 2025-12-30
+**Date**: 2025-12-31
 **Project**: Conversational Voice AI Agents
-**Audit Mode**: Phase-Focused (Phase 04 just completed)
+**Audit Mode**: Phase-Focused (Phase 05 - Vapi Voice Agent just completed)
 
 ## Summary
 
@@ -16,63 +16,60 @@
 
 ## Phase Focus
 
-**Completed Phase**: Phase 04 - Deployment & New Providers
+**Completed Phase**: Phase 05 - Vapi Voice Agent
 **Sessions Analyzed**:
 
-- phase04-session01-coolify-deployment
-- phase04-session02-ultravox-backend
-- phase04-session03-ultravox-frontend
-- phase04-session04-validation-polish
+- phase05-session01-dependencies-csp
+- phase05-session02-voice-hook
+- phase05-session03-provider-tab
+- phase05-session04-validation-polish
 
 ### Change Manifest (from implementation-notes.md)
 
-| Session                      | Files Created                                                                                      | Files Modified                                                     |
-| ---------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| session01-coolify-deployment | Dockerfile, docker-compose.yml, .dockerignore                                                      | server/index.js, package.json                                      |
-| session02-ultravox-backend   | server/routes/ultravox.js, src/types/ultravox.ts                                                   | server/index.js, src/types/index.ts, .env.example                  |
-| session03-ultravox-frontend  | UltravoxVoiceContext.tsx, useUltravoxVoice.ts, UltravoxProvider.tsx, UltravoxConversationPanel.tsx | ProviderContext.tsx, voice-provider.ts, Index.tsx, ProviderTab.tsx |
-| session04-validation-polish  | UltravoxVoiceContext.test.tsx, UltravoxProvider.test.tsx                                           | setup.ts, CLAUDE.md, README.md, UltravoxVoiceContext.tsx           |
+| Session                     | Files Created                               | Files Modified                                      |
+| --------------------------- | ------------------------------------------- | --------------------------------------------------- |
+| session01-dependencies-csp  | -                                           | index.html (CSP), package.json (@vapi-ai/web)       |
+| session02-voice-hook        | src/hooks/useVapiVoice.ts, src/lib/vapi.ts  | -                                                   |
+| session03-provider-tab      | VapiProvider.tsx, VapiConversationPanel.tsx | voice-provider.ts, ProviderContext.tsx, Index.tsx   |
+| session04-validation-polish | useVapiVoice.test.ts, VapiProvider.test.tsx | setup.ts (Vapi mock), toolDefinitions.ts, CLAUDE.md |
 
 ## Actions Taken
 
-### Created
-
-- `docs/CODEOWNERS` - Code ownership template (needs team assignment)
-
 ### Updated
 
-- `docs/ARCHITECTURE.md`
-  - Added Ultravox to provider type ('ultravox')
-  - Added UltravoxVoiceContext to Provider Context Pattern
-  - Added useUltravoxVoice to custom hooks list
-  - Updated Server Architecture with routes/ultravox.js
-  - Added /api/ultravox/call endpoint to API table
-  - Updated test count to 259 (was 215+)
-  - Added Ultravox test files to test structure
+- `README.md`
+  - Added Vapi to Supported Providers table
+  - Added Vapi Setup section with environment variables
+  - Updated Multi-Provider Support feature description
 
-- `docs/development.md`
-  - Added Docker scripts (docker:build, docker:up, docker:down)
-  - Added Ultravox test files to Test Structure
-  - Updated test count to 259
+- `docs/ARCHITECTURE.md`
+  - Added Vapi to architecture overview
+  - Added 'vapi' to ProviderType union
+  - Added useVapiVoice to Provider Context Pattern
 
 - `docs/onboarding.md`
-  - Added OpenAI and Ultravox account prerequisites
-  - Added OPENAI_API_KEY and ULTRAVOX_API_KEY to secrets table
-  - Added OpenAI and Ultravox tabs to verification checklist
+  - Added Vapi account to prerequisites
+  - Added VITE_VAPI_WEB_TOKEN to secrets table
+  - Added Vapi tab to verification checklist
 
 - `docs/environments.md`
-  - Added VITE_ELEVENLABS_SDK_ENABLED
-  - Added VITE_OPENAI_ENABLED, VITE_ULTRAVOX_ENABLED
-  - Added VITE_OPENAI_VOICE, VITE_ULTRAVOX_VOICE
-  - Added OPENAI_API_KEY, ULTRAVOX_API_KEY to server-side vars
+  - Added VITE_VAPI_ENABLED
+  - Added VITE_VAPI_WEB_TOKEN
+  - Added VITE_VAPI_ASSISTANT_ID
+  - Added VITE_VAPI_VOICE
+
+- `docs/development.md`
+  - Added useVapiVoice.test.ts and VapiProvider.test.tsx to test structure
+  - Updated test count from 259 to 263
+  - Updated file count from 18 to 20
 
 ### Verified (No Changes Needed)
 
-- `README.md` - Already updated in Phase 04 session 04
-- `CLAUDE.md` - Already updated in Phase 04 session 04
+- `CLAUDE.md` - Already updated in Phase 05 session 04
 - `CONTRIBUTING.md` - Current and complete
 - `LICENSE` - Present
-- `docs/DEPLOYMENT.md` - Already updated in Phase 04 session 01
+- `docs/DEPLOYMENT.md` - Current
+- `docs/CODEOWNERS` - Present
 - `docs/adr/` - Contains template and multi-provider decision
 - `docs/runbooks/incident-response.md` - Present and current
 
@@ -80,14 +77,14 @@
 
 ### Root Level (3/3)
 
-- [x] README.md
+- [x] README.md (updated)
 - [x] CONTRIBUTING.md
 - [x] LICENSE
 
 ### /docs/ Directory (10/8 standard + extras)
 
 - [x] ARCHITECTURE.md (updated)
-- [x] CODEOWNERS (created)
+- [x] CODEOWNERS
 - [x] onboarding.md (updated)
 - [x] development.md (updated)
 - [x] environments.md (updated)
@@ -109,31 +106,23 @@
 - TROUBLESHOOTING.md
 - VOICE_FEATURES.md
 
-## Phase 04 Feature Documentation
+## Phase 05 Feature Documentation
 
-### Docker/Coolify Deployment (Session 01)
+### Vapi Voice Provider (Sessions 01-04)
 
-- Multi-stage Dockerfile for production builds
-- docker-compose.yml for local testing
-- npm scripts: docker:build, docker:up, docker:down
-- Express 5 production mode with static file serving
-- Health check endpoint for container orchestration
-- Image size: 249MB
-
-### Ultravox Voice Provider (Sessions 02-04)
-
-- Backend route: /api/ultravox/call for joinUrl creation
-- Frontend context: UltravoxVoiceContext with SDK integration
-- Provider component: UltravoxProvider with teal/cyan color scheme
-- Conversation panel with real-time transcripts
-- 44 new unit tests (23 context + 21 provider tests)
-- Total tests: 259 across 18 files
+- SDK: @vapi-ai/web v1.0.255 with Daily.co WebRTC
+- Frontend-only integration (public web token, no backend required)
+- Hook: useVapiVoice.ts for call state and transcripts
+- Provider component: VapiProvider with purple/violet color scheme
+- Conversation panel with partial transcript support (typing indicator)
+- 82 new unit tests (41 hook + 41 provider tests)
+- Function calling support via getVapiTools() transformer
 
 ## Test Coverage Summary
 
-- 259 unit tests (Vitest) - up from 215
+- 263 unit tests (Vitest) - up from 259
 - 920+ E2E tests (Playwright across 5 browsers)
-- 18 test files total
+- 20 test files total
 
 ## Documentation Gaps
 
@@ -158,18 +147,19 @@ npm install && npm run dev:all
 
 Complete inventory in `.env.example` and `docs/environments.md`:
 
-- 19 client-side variables (VITE\_ prefix) - up from 16
-- 6 server-side variables - up from 4
+- 23 client-side variables (VITE\_ prefix) - up from 19
+- 6 server-side variables
 
 ## Project Status
 
-All 5 phases (00-04) are COMPLETE with 22 sessions total:
+All 6 phases (00-05) are COMPLETE with 26 sessions total:
 
 - Phase 00: Multi-Provider Voice (4 sessions)
 - Phase 01: OpenAI Voice Agent (4 sessions)
 - Phase 02: Advanced Features (5 sessions)
 - Phase 03: Testing & Configuration (5 sessions)
 - Phase 04: Deployment & New Providers (4 sessions)
+- Phase 05: Vapi Voice Agent (4 sessions)
 
 All voice providers implemented:
 
@@ -177,16 +167,17 @@ All voice providers implemented:
 2. xAI Grok (WebSocket + ephemeral token)
 3. OpenAI Realtime (WebSocket + ephemeral token)
 4. Ultravox (SDK + joinUrl)
+5. Vapi (SDK + public web token)
 
 ## Next Audit
 
 Recommend re-running `/documents` after:
 
-- Adding new provider integrations
+- Completing Phase 06 (Retell Voice Agent) if implemented
 - Making architectural changes
 - Adding new packages/services
 
 ---
 
 **Documentation Status**: COMPLETE
-**All Phase 04 changes documented**
+**All Phase 05 changes documented**
