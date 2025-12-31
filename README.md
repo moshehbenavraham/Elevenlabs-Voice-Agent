@@ -25,7 +25,7 @@ A sophisticated voice AI web application built with React, TypeScript, and the E
 ### Core Features
 
 - **Real-time Voice Conversation**: Talk naturally with advanced AI using ElevenLabs technology
-- **Multi-Provider Support**: Switch between ElevenLabs, xAI Grok, OpenAI, Ultravox, and Vapi voice providers with smooth tab animations
+- **Multi-Provider Support**: Switch between ElevenLabs, xAI Grok, OpenAI, Ultravox, Vapi, and Retell voice providers with smooth tab animations
 - **Audio Visualization**: Beautiful 60fps audio visualizer with real-time frequency analysis
 - **Glassmorphism Design**: Modern, premium UI with dark/light theme toggle
 - **Mobile-First**: Responsive design optimized for all devices (375px to 1920px)
@@ -62,6 +62,7 @@ This application supports multiple voice AI providers through a tabbed interface
 | **OpenAI**     | Available | GPT-4o realtime voice conversations with server VAD         |
 | **Ultravox**   | Available | Low-latency voice AI with call-based WebSocket connections  |
 | **Vapi**       | Available | Voice AI platform with Daily.co WebRTC and public web token |
+| **Retell**     | Available | Retell AI with LiveKit WebRTC and agent dashboard config    |
 
 ### Configuration
 
@@ -121,6 +122,20 @@ VITE_VAPI_VOICE=paula  # Default voice
 ```
 
 Vapi uses a frontend-only integration with a public web token. The @vapi-ai/web SDK handles all connection and audio via Daily.co WebRTC. No backend is required.
+
+#### Retell Setup
+
+```bash
+# Server-side environment (Retell requires backend for access tokens)
+RETELL_API_KEY=key_your_retell_api_key_here
+
+# Client-side (enable Retell in frontend)
+VITE_RETELL_ENABLED=true
+VITE_RETELL_AGENT_ID=your-retell-agent-id
+VITE_API_BASE_URL=http://localhost:3001
+```
+
+Retell uses a backend-generated access token for secure WebRTC connections via LiveKit. The agent configuration (voice, LLM, prompts) is managed in the [Retell Dashboard](https://dashboard.retellai.com/). The `retell-client-js-sdk` handles audio streaming.
 
 ### Provider Features
 
@@ -383,12 +398,16 @@ vercel --prod
    VITE_XAI_ENABLED=true
    VITE_OPENAI_ENABLED=true
    VITE_ULTRAVOX_ENABLED=true
+   VITE_VAPI_ENABLED=true
+   VITE_RETELL_ENABLED=true
+   VITE_RETELL_AGENT_ID=your_retell_agent_id
 
    # Backend (runtime)
    ELEVENLABS_API_KEY=sk_xxx
    XAI_API_KEY=xai-xxx
    OPENAI_API_KEY=sk-xxx
    ULTRAVOX_API_KEY=your_ultravox_key
+   RETELL_API_KEY=key_xxx
    CORS_ORIGIN=https://your-frontend.com
    ```
 

@@ -51,6 +51,7 @@ describe('ProviderTabs', () => {
       expect(screen.getByRole('tab', { name: /openai/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /ultravox/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /vapi/i })).toBeInTheDocument();
+      expect(screen.getByRole('tab', { name: /retell/i })).toBeInTheDocument();
     });
 
     it('renders with correct aria-label', () => {

@@ -233,14 +233,28 @@ export function useRetellVoice(): RetellVoiceHookReturn {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to create call' }));
-        throw new Error(errorData.message || `HTTP ${response.status}`);
+        const errorData = await response.json().catch(() => ({ message: 'Server error' }));
+        const statusMessages: Record<number, string> = {
+          400: 'Invalid request - check agent configuration',
+          401: 'Authentication failed - check Retell API key',
+          403: 'Access denied - verify Retell permissions',
+          404: 'Agent not found - check VITE_RETELL_AGENT_ID',
+          429: 'Rate limited - please wait and try again',
+          500: 'Retell server error - try again later',
+          502: 'Retell service unavailable - try again later',
+          503: 'Retell service temporarily unavailable',
+        };
+        throw new Error(
+          errorData.message ||
+            statusMessages[response.status] ||
+            `Connection failed (${response.status})`
+        );
       }
 
       const data = await response.json();
 
       if (!data.access_token) {
-        throw new Error('No access token received from backend');
+        throw new Error('Backend did not return access token - check server logs');
       }
 
       // Store call ID if returned

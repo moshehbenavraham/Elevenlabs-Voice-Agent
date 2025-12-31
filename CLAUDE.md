@@ -30,7 +30,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build Tool**: Vite with SWC for fast compilation
 - **Styling**: Tailwind CSS with custom glassmorphism design system
 - **UI Components**: Radix UI primitives wrapped in shadcn/ui pattern
-- **Voice AI**: @elevenlabs/react SDK v0.12.1, OpenAI Realtime API, xAI Realtime API, Ultravox SDK, Vapi SDK
+- **Voice AI**: @elevenlabs/react SDK v0.12.1, OpenAI Realtime API, xAI Realtime API, Ultravox SDK, Vapi SDK, Retell SDK
 - **Animations**: Framer Motion for smooth transitions
 - **State**: React Context (theme), Tanstack Query (server state), custom hooks
 
@@ -52,7 +52,8 @@ src/
 |   |   |-- OpenAIProvider.tsx # OpenAI Realtime interface
 |   |   |-- XAIProvider.tsx # xAI Grok interface
 |   |   |-- UltravoxProvider.tsx # Ultravox voice interface (Phase 04)
-|   |   `-- VapiProvider.tsx # Vapi voice interface (Phase 05)
+|   |   |-- VapiProvider.tsx # Vapi voice interface (Phase 05)
+|   |   `-- RetellProvider.tsx # Retell voice interface (Phase 06)
 |   |-- tabs/           # Tab navigation
 |   |   |-- ProviderTabs.tsx # Provider tab container
 |   |   `-- ProviderTab.tsx # Individual tab component
@@ -65,6 +66,7 @@ src/
 |   |-- useAccessibility.ts # Accessibility features
 |   |-- useReconnection.ts # WebSocket reconnection with backoff (Phase 02)
 |   |-- useVapiVoice.ts # Vapi voice hook (Phase 05)
+|   |-- useRetellVoice.ts # Retell voice hook (Phase 06)
 |   |-- use-mobile.tsx  # Mobile detection hook
 |   `-- use-toast.ts    # Toast notifications
 |-- pages/              # Route components
@@ -106,6 +108,8 @@ src/
   - `VITE_VAPI_WEB_TOKEN` - Vapi public web token (frontend-safe)
   - `VITE_VAPI_ASSISTANT_ID` - Optional pre-created Vapi assistant ID
   - `VITE_VAPI_VOICE` - Vapi voice ID (default: paula)
+  - `VITE_RETELL_ENABLED` - Enable Retell provider tab (true/false)
+  - `VITE_RETELL_AGENT_ID` - Retell Agent ID (from Retell dashboard)
   - `VITE_API_BASE_URL` - Backend API URL (default: http://localhost:3001)
   - `VITE_OPENAI_VOICE` / `VITE_XAI_VOICE` / `VITE_ULTRAVOX_VOICE` - Default voice selection
 - **Backend Variables** (server-side only):
@@ -113,6 +117,7 @@ src/
   - `XAI_API_KEY` - xAI API key for Grok
   - `OPENAI_API_KEY` - OpenAI API key for Realtime API
   - `ULTRAVOX_API_KEY` - Ultravox API key
+  - `RETELL_API_KEY` - Retell API key for creating web call tokens
   - `CORS_ORIGIN` - Allowed frontend origin
 
 ### Key Integration Points
@@ -158,36 +163,47 @@ src/
    - Partial transcript support via `activeTranscript` for typing indicators
    - Function calling via `CreateAssistantDTO.model.functions`
 
-6. **Reconnection with Backoff** (Phase 02):
+6. **Retell Voice API** (Phase 06):
+   - Uses backend-generated access tokens for secure WebRTC connections
+   - `retell-client-js-sdk` SDK handles audio streaming via LiveKit
+   - `useRetellVoice.ts` hook manages call state and transcript accumulation
+   - `RetellProvider.tsx` provides UI components (RetellButton, RetellVoiceStatus, RetellEmptyState)
+   - Agent configuration managed in Retell dashboard (voice, LLM, prompts)
+   - 6 events: call_started, call_ended, agent_start_talking, agent_stop_talking, update, error
+   - Local transcript accumulation (SDK only provides last 5 sentences)
+   - Teal/cyan color scheme to distinguish from other providers
+
+7. **Reconnection with Backoff** (Phase 02):
    - Automatic reconnection on WebSocket disconnect
    - Exponential backoff: 1s, 2s, 4s, 8s, up to 30s max
    - Maximum 10 retry attempts
    - `useReconnection.ts` hook handles logic
 
-7. **Function Calling** (Phase 02):
+8. **Function Calling** (Phase 02):
    - Tool definitions in `lib/tools/toolDefinitions.ts`
    - Demo tools: weather, time, calculator
    - Results displayed via `FunctionCallIndicator.tsx`
    - AI incorporates function results into responses
 
-8. **Audio Visualization**:
+9. **Audio Visualization**:
    - `VoiceVisualizer.tsx` uses Web Audio API for real-time frequency analysis
    - Canvas-based rendering optimized for 60fps
    - Integrates with voice state from conversation events
 
-9. **Theme System**:
-   - Glassmorphism design with backdrop-filter effects
-   - Theme toggle persists to localStorage
-   - CSS variables defined in Tailwind config
+10. **Theme System**:
 
-10. **Configuration Modal** (Phase 03):
+- Glassmorphism design with backdrop-filter effects
+- Theme toggle persists to localStorage
+- CSS variables defined in Tailwind config
+
+11. **Configuration Modal** (Phase 03):
 
 - Provider settings accessible via ConfigurationModal.tsx
 - Uses ConfigurationDialog.tsx (Radix UI Dialog) for advanced settings
 - Proper ARIA attributes (role="dialog", aria-modal, aria-labelledby)
 - Settings persistence via settingsStorage.ts
 
-11. **E2E Testing Infrastructure** (Phase 03):
+12. **E2E Testing Infrastructure** (Phase 03):
 
 - Playwright-based end-to-end tests in `tests/e2e/`
 - Multi-browser support (Chromium, Firefox, WebKit)

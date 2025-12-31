@@ -176,6 +176,54 @@ vi.mock('@vapi-ai/web', () => {
   };
 });
 
+// Mock Retell SDK (retell-client-js-sdk)
+// Follows same pattern as Vapi mocks with event emitter support
+// Export functions to allow resetting between tests
+export const retellMocks = {
+  startCall: vi.fn().mockResolvedValue(undefined),
+  stopCall: vi.fn(),
+  on: vi.fn(),
+  off: vi.fn(),
+  // Track registered event handlers for testing
+  eventHandlers: new Map<string, Set<(...args: unknown[]) => void>>(),
+  // Helper to emit events in tests
+  emit: (event: string, ...args: unknown[]) => {
+    const handlers = retellMocks.eventHandlers.get(event);
+    if (handlers) {
+      handlers.forEach((handler) => handler(...args));
+    }
+  },
+  // Reset all mocks and event handlers
+  reset: () => {
+    retellMocks.startCall.mockClear();
+    retellMocks.stopCall.mockClear();
+    retellMocks.on.mockClear();
+    retellMocks.off.mockClear();
+    retellMocks.eventHandlers.clear();
+  },
+};
+
+// Mock RetellWebClient class with event emitter pattern
+vi.mock('retell-client-js-sdk', () => {
+  return {
+    RetellWebClient: class MockRetellWebClient {
+      startCall = vi.fn((...args: unknown[]) => retellMocks.startCall(...args));
+      stopCall = vi.fn(() => retellMocks.stopCall());
+      on = vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+        if (!retellMocks.eventHandlers.has(event)) {
+          retellMocks.eventHandlers.set(event, new Set());
+        }
+        retellMocks.eventHandlers.get(event)?.add(handler);
+        retellMocks.on(event, handler);
+      });
+      off = vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+        retellMocks.eventHandlers.get(event)?.delete(handler);
+        retellMocks.off(event, handler);
+      });
+    },
+  };
+});
+
 // Mock Ultravox SDK (ultravox-client)
 // Follows same pattern as ElevenLabs and xAI/OpenAI mocks
 // Export functions to allow resetting between tests
