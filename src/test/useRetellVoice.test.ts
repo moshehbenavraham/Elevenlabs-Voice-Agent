@@ -9,7 +9,7 @@
  * - Cleanup and edge cases
  */
 
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useRetellVoice } from '@/hooks/useRetellVoice';
 import { RetellCallStatus, RetellMessageRole, RetellTranscriptType } from '@/types/retell';
@@ -85,13 +85,33 @@ describe('useRetellVoice', () => {
   // ===========================================
   describe('connection lifecycle', () => {
     it('sets callStatus to CONNECTING when startCall() is called', async () => {
+      // Use a deferred promise to control fetch timing
+      let resolveFetch: (value: unknown) => void;
+      const fetchPromise = new Promise((resolve) => {
+        resolveFetch = resolve;
+      });
+      mockFetch.mockReturnValue(fetchPromise);
+
       const { result } = renderHook(() => useRetellVoice());
 
-      act(() => {
+      // Start the call without awaiting completion
+      await act(async () => {
         result.current.startCall();
+        // Allow React to flush the synchronous state update
+        await Promise.resolve();
       });
 
+      // Status should be CONNECTING while fetch is pending
       expect(result.current.callStatus).toBe(RetellCallStatus.CONNECTING);
+
+      // Clean up: resolve the fetch to avoid hanging promise
+      await act(async () => {
+        resolveFetch!({
+          ok: true,
+          json: () => Promise.resolve({ access_token: 'test-token', call_id: 'call-123' }),
+        });
+        await Promise.resolve();
+      });
     });
 
     it('fetches access token from backend when starting call', async () => {
@@ -182,22 +202,42 @@ describe('useRetellVoice', () => {
     });
 
     it('does not start when already connecting', async () => {
+      // Use a deferred promise to keep status in CONNECTING state
+      let resolveFetch: (value: unknown) => void;
+      const fetchPromise = new Promise((resolve) => {
+        resolveFetch = resolve;
+      });
+      mockFetch.mockReturnValue(fetchPromise);
+
       const { result } = renderHook(() => useRetellVoice());
 
-      act(() => {
+      // Start the first call
+      await act(async () => {
         result.current.startCall();
+        await Promise.resolve();
       });
 
       expect(result.current.callStatus).toBe(RetellCallStatus.CONNECTING);
 
       mockFetch.mockClear();
 
-      act(() => {
+      // Try to start again while connecting
+      await act(async () => {
         result.current.startCall();
+        await Promise.resolve();
       });
 
       // Should not call fetch again
       expect(mockFetch).not.toHaveBeenCalled();
+
+      // Clean up
+      await act(async () => {
+        resolveFetch!({
+          ok: true,
+          json: () => Promise.resolve({ access_token: 'test-token', call_id: 'call-123' }),
+        });
+        await Promise.resolve();
+      });
     });
 
     it('calls SDK stopCall when stopCall() is called while connected', async () => {
@@ -228,13 +268,30 @@ describe('useRetellVoice', () => {
     });
 
     it('toggleCall starts when idle', async () => {
+      // Use a deferred promise to control fetch timing
+      let resolveFetch: (value: unknown) => void;
+      const fetchPromise = new Promise((resolve) => {
+        resolveFetch = resolve;
+      });
+      mockFetch.mockReturnValue(fetchPromise);
+
       const { result } = renderHook(() => useRetellVoice());
 
-      act(() => {
+      await act(async () => {
         result.current.toggleCall();
+        await Promise.resolve();
       });
 
       expect(result.current.callStatus).toBe(RetellCallStatus.CONNECTING);
+
+      // Clean up
+      await act(async () => {
+        resolveFetch!({
+          ok: true,
+          json: () => Promise.resolve({ access_token: 'test-token', call_id: 'call-123' }),
+        });
+        await Promise.resolve();
+      });
     });
 
     it('toggleCall stops when connected', async () => {
@@ -253,10 +310,18 @@ describe('useRetellVoice', () => {
     });
 
     it('toggleCall does nothing when connecting', async () => {
+      // Use a deferred promise to keep status in CONNECTING state
+      let resolveFetch: (value: unknown) => void;
+      const fetchPromise = new Promise((resolve) => {
+        resolveFetch = resolve;
+      });
+      mockFetch.mockReturnValue(fetchPromise);
+
       const { result } = renderHook(() => useRetellVoice());
 
-      act(() => {
+      await act(async () => {
         result.current.startCall();
+        await Promise.resolve();
       });
 
       expect(result.current.callStatus).toBe(RetellCallStatus.CONNECTING);
@@ -264,12 +329,22 @@ describe('useRetellVoice', () => {
       retellMocks.startCall.mockClear();
       retellMocks.stopCall.mockClear();
 
-      act(() => {
+      await act(async () => {
         result.current.toggleCall();
+        await Promise.resolve();
       });
 
       // Should not start or stop
       expect(retellMocks.stopCall).not.toHaveBeenCalled();
+
+      // Clean up
+      await act(async () => {
+        resolveFetch!({
+          ok: true,
+          json: () => Promise.resolve({ access_token: 'test-token', call_id: 'call-123' }),
+        });
+        await Promise.resolve();
+      });
     });
 
     it('toggleCall starts when in error state', async () => {
@@ -287,17 +362,28 @@ describe('useRetellVoice', () => {
 
       expect(result.current.callStatus).toBe(RetellCallStatus.ERROR);
 
-      // Reset fetch mock
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: () => Promise.resolve({ access_token: 'test-token' }),
+      // Use a deferred promise to control fetch timing
+      let resolveFetch: (value: unknown) => void;
+      const fetchPromise = new Promise((resolve) => {
+        resolveFetch = resolve;
       });
+      mockFetch.mockReturnValue(fetchPromise);
 
-      act(() => {
+      await act(async () => {
         result.current.toggleCall();
+        await Promise.resolve();
       });
 
       expect(result.current.callStatus).toBe(RetellCallStatus.CONNECTING);
+
+      // Clean up
+      await act(async () => {
+        resolveFetch!({
+          ok: true,
+          json: () => Promise.resolve({ access_token: 'test-token', call_id: 'call-123' }),
+        });
+        await Promise.resolve();
+      });
     });
   });
 
