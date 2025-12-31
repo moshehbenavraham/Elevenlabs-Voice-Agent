@@ -9,7 +9,7 @@
 /**
  * Union type of all supported voice providers
  */
-export type ProviderType = 'elevenlabs' | 'elevenlabs-sdk' | 'xai' | 'openai' | 'ultravox';
+export type ProviderType = 'elevenlabs' | 'elevenlabs-sdk' | 'xai' | 'openai' | 'ultravox' | 'vapi';
 
 /**
  * Message role type for conversation messages
@@ -146,6 +146,14 @@ const isUltravoxEnabled = (): boolean => {
 };
 
 /**
+ * Check if Vapi provider is enabled via environment variable
+ */
+const isVapiEnabled = (): boolean => {
+  const envValue = import.meta.env.VITE_VAPI_ENABLED;
+  return envValue === 'true' || envValue === true;
+};
+
+/**
  * Default provider configurations
  */
 export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
@@ -188,6 +196,14 @@ export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
     isAvailable: isUltravoxEnabled(),
     requiresApiKey: true,
     icon: 'AudioWaveform',
+  },
+  vapi: {
+    id: 'vapi',
+    name: 'Vapi',
+    description: 'Vapi voice agent conversations',
+    isAvailable: isVapiEnabled(),
+    requiresApiKey: false,
+    icon: 'PhoneCall',
   },
 };
 

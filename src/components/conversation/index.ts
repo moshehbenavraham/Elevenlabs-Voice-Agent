@@ -8,3 +8,4 @@ export { ElevenLabsConversationPanel } from './ElevenLabsConversationPanel';
 export { XAIConversationPanel } from './XAIConversationPanel';
 export { OpenAIConversationPanel } from './OpenAIConversationPanel';
 export { UltravoxConversationPanel } from './UltravoxConversationPanel';
+export { VapiConversationPanel } from './VapiConversationPanel';

@@ -65,7 +65,8 @@
     "phase04-session03-ultravox-frontend",
     "phase04-session04-validation-polish",
     "phase05-session01-dependencies-csp",
-    "phase05-session02-voice-hook"
+    "phase05-session02-voice-hook",
+    "phase05-session03-provider-tab"
   ],
   "next_session_history": [
     {
@@ -186,6 +187,11 @@
     {
       "date": "2025-12-31",
       "session": "phase05-session02-voice-hook",
+      "status": "completed"
+    },
+    {
+      "date": "2025-12-31",
+      "session": "phase05-session03-provider-tab",
       "status": "completed"
     }
   ]

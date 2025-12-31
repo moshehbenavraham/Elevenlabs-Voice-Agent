@@ -14,6 +14,7 @@ import {
   XAIConversationPanel,
   OpenAIConversationPanel,
   UltravoxConversationPanel,
+  VapiConversationPanel,
 } from '@/components/conversation';
 import {
   XAIProvider,
@@ -27,6 +28,9 @@ import {
   UltravoxProvider,
   UltravoxVoiceButton,
   UltravoxVoiceStatus,
+  VapiProvider,
+  VapiButton,
+  VapiVoiceStatus,
 } from '@/components/providers';
 import { useVoice } from '@/contexts/VoiceContext';
 import { useProvider } from '@/contexts/ProviderContext';
@@ -50,6 +54,7 @@ export const Index = () => {
   const [xaiHasStarted, setXaiHasStarted] = useState(false);
   const [openaiHasStarted, setOpenaiHasStarted] = useState(false);
   const [ultravoxHasStarted, setUltravoxHasStarted] = useState(false);
+  const [vapiHasStarted, setVapiHasStarted] = useState(false);
 
   // Handle provider change - disconnect active connection before switching
   const handleProviderChange = useCallback(
@@ -84,12 +89,26 @@ export const Index = () => {
         setUltravoxHasStarted(false);
       }
 
+      // Disconnect Vapi if active
+      if (vapiHasStarted && activeProvider === 'vapi') {
+        debugLog('handleProviderChange', 'Disconnecting Vapi before switch');
+        setVapiHasStarted(false);
+      }
+
       toast({
         title: 'Provider Changed',
         description: `Switched to ${newProvider}`,
       });
     },
-    [activeProvider, isConnected, disconnect, xaiHasStarted, openaiHasStarted, ultravoxHasStarted]
+    [
+      activeProvider,
+      isConnected,
+      disconnect,
+      xaiHasStarted,
+      openaiHasStarted,
+      ultravoxHasStarted,
+      vapiHasStarted,
+    ]
   );
 
   // Handle xAI disconnect
@@ -143,6 +162,24 @@ export const Index = () => {
     toast({
       title: 'Connected',
       description: 'Ultravox voice conversation is now active',
+    });
+  }, []);
+
+  // Handle Vapi disconnect
+  const handleVapiDisconnect = useCallback(() => {
+    setVapiHasStarted(false);
+    toast({
+      title: 'Disconnected',
+      description: 'Vapi voice conversation ended',
+    });
+  }, []);
+
+  // Handle Vapi connect
+  const handleVapiConnect = useCallback(() => {
+    setVapiHasStarted(true);
+    toast({
+      title: 'Connected',
+      description: 'Vapi voice conversation is now active',
     });
   }, []);
 
@@ -784,6 +821,122 @@ export const Index = () => {
                 </motion.div>
               )}
             </UltravoxProvider>
+          )}
+
+          {/* Vapi Provider */}
+          {activeProvider === 'vapi' && (
+            <VapiProvider onDisconnect={handleVapiDisconnect}>
+              {!vapiHasStarted ? (
+                <motion.div
+                  key="hero-vapi"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
+                  className="min-h-screen flex flex-col items-center justify-center px-6"
+                >
+                  <div className="text-center space-y-8">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <h1 className="font-display text-5xl sm:text-6xl text-zinc-100 mb-4">
+                        Talk to <span className="text-violet-400">Vapi</span>
+                      </h1>
+                      <p className="text-zinc-400 text-lg max-w-md mx-auto">
+                        Experience voice conversations powered by Vapi
+                      </p>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
+                      className="py-8"
+                    >
+                      <VapiButton size="lg" onConnect={handleVapiConnect} />
+                    </motion.div>
+
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6 }}
+                      className="text-zinc-500 text-sm"
+                    >
+                      Click to start your conversation with Vapi
+                    </motion.p>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="interface-vapi"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="min-h-screen flex flex-col"
+                >
+                  <div className="flex-1 flex flex-col items-center justify-center px-6 py-24">
+                    <div className="w-full max-w-lg space-y-12">
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-center"
+                      >
+                        <h2 className="font-display text-3xl sm:text-4xl text-zinc-100 mb-2">
+                          Vapi is Listening
+                        </h2>
+                        <p className="text-zinc-500 text-sm">
+                          Speak naturally - Vapi is processing
+                        </p>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+                        className="flex justify-center py-8"
+                      >
+                        <VapiButton size="lg" onDisconnect={handleVapiDisconnect} />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                      >
+                        <VapiVoiceStatus />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.55 }}
+                      >
+                        <VapiConversationPanel className="w-full h-64" />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.6 }}
+                        className="flex justify-center pt-4"
+                      >
+                        <button
+                          onClick={handleVapiDisconnect}
+                          className="flex items-center gap-2 px-6 py-3 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all duration-200"
+                        >
+                          <X className="w-4 h-4" />
+                          <span className="text-sm">End conversation</span>
+                        </button>
+                      </motion.div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </VapiProvider>
           )}
         </AnimatePresence>
       </main>

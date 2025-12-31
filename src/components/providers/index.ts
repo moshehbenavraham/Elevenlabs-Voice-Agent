@@ -38,3 +38,12 @@ export {
   useUltravoxConfigured,
   checkUltravoxConfiguration,
 } from './UltravoxProvider';
+
+export {
+  VapiProvider,
+  VapiButton,
+  VapiVoiceStatus,
+  VapiEmptyState,
+  useVapiConfigured,
+  checkVapiConfiguration,
+} from './VapiProvider';

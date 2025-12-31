@@ -50,6 +50,7 @@ describe('ProviderContext', () => {
         'xai',
         'openai',
         'ultravox',
+        'vapi',
       ]);
     });
 

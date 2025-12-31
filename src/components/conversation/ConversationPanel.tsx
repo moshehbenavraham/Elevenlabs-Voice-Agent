@@ -7,24 +7,33 @@ import type { VoiceMessage } from '@/types';
 interface ConversationPanelProps {
   messages: VoiceMessage[];
   className?: string;
+  /** Optional partial transcript to display as typing indicator */
+  activeTranscript?: string | null;
+  /** Role of the active transcript (defaults to 'assistant') */
+  activeTranscriptRole?: 'user' | 'assistant';
 }
 
 /**
  * Scrollable conversation transcript panel with auto-scroll and accessibility
  */
-export function ConversationPanel({ messages, className }: ConversationPanelProps) {
+export function ConversationPanel({
+  messages,
+  className,
+  activeTranscript,
+  activeTranscriptRole = 'assistant',
+}: ConversationPanelProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [isUserScrolled, setIsUserScrolled] = useState(false);
   const lastMessageCountRef = useRef(0);
 
-  // Auto-scroll to bottom when new messages arrive (unless user scrolled up)
+  // Auto-scroll to bottom when new messages arrive or active transcript changes (unless user scrolled up)
   useEffect(() => {
-    if (messages.length > lastMessageCountRef.current && !isUserScrolled) {
+    if ((messages.length > lastMessageCountRef.current || activeTranscript) && !isUserScrolled) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
     lastMessageCountRef.current = messages.length;
-  }, [messages.length, isUserScrolled]);
+  }, [messages.length, activeTranscript, isUserScrolled]);
 
   // Handle scroll to detect if user manually scrolled up
   const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
@@ -69,6 +78,30 @@ export function ConversationPanel({ messages, className }: ConversationPanelProp
             </div>
           ) : (
             messages.map((message) => <MessageBubble key={message.id} message={message} />)
+          )}
+          {/* Typing indicator for active transcript */}
+          {activeTranscript && (
+            <div
+              data-testid="typing-indicator"
+              className={cn(
+                'flex gap-2 animate-in fade-in duration-200',
+                activeTranscriptRole === 'user' ? 'justify-end' : 'justify-start'
+              )}
+            >
+              <div
+                className={cn(
+                  'max-w-[80%] px-4 py-2 rounded-2xl text-sm',
+                  activeTranscriptRole === 'user'
+                    ? 'bg-violet-500/20 text-white/90 rounded-br-md'
+                    : 'bg-white/10 text-white/80 rounded-bl-md'
+                )}
+              >
+                <span className="opacity-70">{activeTranscript}</span>
+                <span className="inline-flex ml-1">
+                  <span className="animate-pulse">...</span>
+                </span>
+              </div>
+            </div>
           )}
           <div ref={bottomRef} aria-hidden="true" />
         </div>

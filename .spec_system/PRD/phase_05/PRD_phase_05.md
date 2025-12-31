@@ -4,7 +4,7 @@
 **Sessions**: 4
 **Estimated Duration**: 1-2 days
 
-**Progress**: 2/4 sessions (50%)
+**Progress**: 3/4 sessions (75%)
 
 ---
 
@@ -22,7 +22,7 @@ Integrate Vapi as the fifth voice provider in the multi-provider voice AI applic
 | ------- | ------------------ | ----------- | ---------- | ---------- |
 | 01      | Dependencies & CSP | Complete    | 18         | 2025-12-31 |
 | 02      | Voice Hook & SDK   | Complete    | 18         | 2025-12-31 |
-| 03      | Provider Component | Not Started | ~18        | -          |
+| 03      | Provider Component | Complete    | 20         | 2025-12-31 |
 | 04      | Testing & Polish   | Not Started | ~22        | -          |
 
 ---
@@ -44,11 +44,20 @@ Integrate Vapi as the fifth voice provider in the multi-provider voice AI applic
 - Added partial transcript handling with `activeTranscript` state
 - Dual config support: assistantId string OR inline CreateAssistantDTO
 
+### Session 03: Provider Component (2025-12-31)
+
+- Created `VapiProvider.tsx` with VapiButton, VapiVoiceStatus, VapiEmptyState components
+- Added `vapi` to ProviderType union and PROVIDERS configuration
+- Integrated Vapi tab with purple/violet branding and PhoneCall icon
+- Added activeTranscript typing indicator to ConversationPanel
+- Created VapiConversationPanel wrapper for message format conversion
+- Full Index.tsx integration with connect/disconnect handlers
+
 ---
 
 ## Upcoming Sessions
 
-- Session 03: Provider Component
+- Session 04: Testing & Polish
 
 ---
 
