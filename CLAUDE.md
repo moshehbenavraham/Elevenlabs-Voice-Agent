@@ -30,7 +30,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build Tool**: Vite with SWC for fast compilation
 - **Styling**: Tailwind CSS with custom glassmorphism design system
 - **UI Components**: Radix UI primitives wrapped in shadcn/ui pattern
-- **Voice AI**: @elevenlabs/react SDK v0.12.1, OpenAI Realtime API, xAI Realtime API, Ultravox SDK
+- **Voice AI**: @elevenlabs/react SDK v0.12.1, OpenAI Realtime API, xAI Realtime API, Ultravox SDK, Vapi SDK
 - **Animations**: Framer Motion for smooth transitions
 - **State**: React Context (theme), Tanstack Query (server state), custom hooks
 
@@ -51,7 +51,8 @@ src/
 |   |   |-- ElevenLabsProvider.tsx # ElevenLabs voice interface
 |   |   |-- OpenAIProvider.tsx # OpenAI Realtime interface
 |   |   |-- XAIProvider.tsx # xAI Grok interface
-|   |   `-- UltravoxProvider.tsx # Ultravox voice interface (Phase 04)
+|   |   |-- UltravoxProvider.tsx # Ultravox voice interface (Phase 04)
+|   |   `-- VapiProvider.tsx # Vapi voice interface (Phase 05)
 |   |-- tabs/           # Tab navigation
 |   |   |-- ProviderTabs.tsx # Provider tab container
 |   |   `-- ProviderTab.tsx # Individual tab component
@@ -63,6 +64,7 @@ src/
 |-- hooks/              # Business logic
 |   |-- useAccessibility.ts # Accessibility features
 |   |-- useReconnection.ts # WebSocket reconnection with backoff (Phase 02)
+|   |-- useVapiVoice.ts # Vapi voice hook (Phase 05)
 |   |-- use-mobile.tsx  # Mobile detection hook
 |   `-- use-toast.ts    # Toast notifications
 |-- pages/              # Route components
@@ -100,6 +102,10 @@ src/
   - `VITE_XAI_ENABLED` - Enable xAI provider tab (true/false)
   - `VITE_OPENAI_ENABLED` - Enable OpenAI provider tab (true/false)
   - `VITE_ULTRAVOX_ENABLED` - Enable Ultravox provider tab (true/false)
+  - `VITE_VAPI_ENABLED` - Enable Vapi provider tab (true/false)
+  - `VITE_VAPI_WEB_TOKEN` - Vapi public web token (frontend-safe)
+  - `VITE_VAPI_ASSISTANT_ID` - Optional pre-created Vapi assistant ID
+  - `VITE_VAPI_VOICE` - Vapi voice ID (default: paula)
   - `VITE_API_BASE_URL` - Backend API URL (default: http://localhost:3001)
   - `VITE_OPENAI_VOICE` / `VITE_XAI_VOICE` / `VITE_ULTRAVOX_VOICE` - Default voice selection
 - **Backend Variables** (server-side only):
@@ -142,35 +148,46 @@ src/
    - Voice selection via `VITE_ULTRAVOX_VOICE` (default: Mark)
    - Supports speaking, listening, and thinking states
 
-5. **Reconnection with Backoff** (Phase 02):
+5. **Vapi Voice API** (Phase 05):
+   - Uses public web token (frontend-safe, no backend required)
+   - `@vapi-ai/web` SDK handles all connection and audio
+   - `useVapiVoice.ts` hook manages call state and transcripts
+   - `VapiProvider.tsx` provides UI components (VapiButton, VapiVoiceStatus)
+   - Supports inline assistant config or pre-created assistant ID
+   - 7 events: call-start, call-end, speech-start, speech-end, volume-level, message, error
+   - Partial transcript support via `activeTranscript` for typing indicators
+   - Function calling via `CreateAssistantDTO.model.functions`
+
+6. **Reconnection with Backoff** (Phase 02):
    - Automatic reconnection on WebSocket disconnect
    - Exponential backoff: 1s, 2s, 4s, 8s, up to 30s max
    - Maximum 10 retry attempts
    - `useReconnection.ts` hook handles logic
 
-6. **Function Calling** (Phase 02):
+7. **Function Calling** (Phase 02):
    - Tool definitions in `lib/tools/toolDefinitions.ts`
    - Demo tools: weather, time, calculator
    - Results displayed via `FunctionCallIndicator.tsx`
    - AI incorporates function results into responses
 
-7. **Audio Visualization**:
+8. **Audio Visualization**:
    - `VoiceVisualizer.tsx` uses Web Audio API for real-time frequency analysis
    - Canvas-based rendering optimized for 60fps
    - Integrates with voice state from conversation events
 
-8. **Theme System**:
+9. **Theme System**:
    - Glassmorphism design with backdrop-filter effects
    - Theme toggle persists to localStorage
    - CSS variables defined in Tailwind config
 
-9. **Configuration Modal** (Phase 03):
-   - Provider settings accessible via ConfigurationModal.tsx
-   - Uses ConfigurationDialog.tsx (Radix UI Dialog) for advanced settings
-   - Proper ARIA attributes (role="dialog", aria-modal, aria-labelledby)
-   - Settings persistence via settingsStorage.ts
+10. **Configuration Modal** (Phase 03):
 
-10. **E2E Testing Infrastructure** (Phase 03):
+- Provider settings accessible via ConfigurationModal.tsx
+- Uses ConfigurationDialog.tsx (Radix UI Dialog) for advanced settings
+- Proper ARIA attributes (role="dialog", aria-modal, aria-labelledby)
+- Settings persistence via settingsStorage.ts
+
+11. **E2E Testing Infrastructure** (Phase 03):
 
 - Playwright-based end-to-end tests in `tests/e2e/`
 - Multi-browser support (Chromium, Firefox, WebKit)

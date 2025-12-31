@@ -125,6 +125,57 @@ Object.defineProperty(navigator, 'mediaDevices', {
   },
 });
 
+// Mock Vapi SDK (@vapi-ai/web)
+// Follows same pattern as Ultravox mocks with event emitter support
+// Export functions to allow resetting between tests
+export const vapiMocks = {
+  start: vi.fn().mockResolvedValue(undefined),
+  stop: vi.fn(),
+  on: vi.fn(),
+  off: vi.fn(),
+  // Track registered event handlers for testing
+  eventHandlers: new Map<string, Set<(...args: unknown[]) => void>>(),
+  // Helper to emit events in tests
+  emit: (event: string, ...args: unknown[]) => {
+    const handlers = vapiMocks.eventHandlers.get(event);
+    if (handlers) {
+      handlers.forEach((handler) => handler(...args));
+    }
+  },
+  // Reset all mocks and event handlers
+  reset: () => {
+    vapiMocks.start.mockClear();
+    vapiMocks.stop.mockClear();
+    vapiMocks.on.mockClear();
+    vapiMocks.off.mockClear();
+    vapiMocks.eventHandlers.clear();
+  },
+};
+
+// Mock Vapi class with event emitter pattern
+vi.mock('@vapi-ai/web', () => {
+  return {
+    default: class MockVapi {
+      constructor(_token: string) {
+        // Token is accepted but not stored in mock
+      }
+      start = vi.fn((...args: unknown[]) => vapiMocks.start(...args));
+      stop = vi.fn(() => vapiMocks.stop());
+      on = vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+        if (!vapiMocks.eventHandlers.has(event)) {
+          vapiMocks.eventHandlers.set(event, new Set());
+        }
+        vapiMocks.eventHandlers.get(event)?.add(handler);
+        vapiMocks.on(event, handler);
+      });
+      off = vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+        vapiMocks.eventHandlers.get(event)?.delete(handler);
+        vapiMocks.off(event, handler);
+      });
+    },
+  };
+});
+
 // Mock Ultravox SDK (ultravox-client)
 // Follows same pattern as ElevenLabs and xAI/OpenAI mocks
 // Export functions to allow resetting between tests

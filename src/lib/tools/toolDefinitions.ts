@@ -58,6 +58,20 @@ export interface XAITool {
 }
 
 /**
+ * Vapi tool format for CreateAssistantDTO.model.functions
+ * Uses OpenAI-compatible function calling format
+ */
+export interface VapiTool {
+  name: string;
+  description: string;
+  parameters: {
+    type: 'object';
+    properties: Record<string, ParameterSchema>;
+    required: string[];
+  };
+}
+
+/**
  * Allowlist of valid function names for security validation
  */
 export const ALLOWED_FUNCTIONS = ['get_weather', 'calculate', 'get_current_time'] as const;
@@ -152,6 +166,18 @@ export function getXAITools(): XAITool[] {
       description: tool.description,
       parameters: tool.parameters,
     },
+  }));
+}
+
+/**
+ * Get tool definitions in Vapi format
+ * Vapi uses OpenAI-compatible flat structure for CreateAssistantDTO.model.functions
+ */
+export function getVapiTools(): VapiTool[] {
+  return TOOL_DEFINITIONS.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    parameters: tool.parameters,
   }));
 }
 
