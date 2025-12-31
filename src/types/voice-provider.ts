@@ -9,7 +9,14 @@
 /**
  * Union type of all supported voice providers
  */
-export type ProviderType = 'elevenlabs' | 'elevenlabs-sdk' | 'xai' | 'openai' | 'ultravox' | 'vapi';
+export type ProviderType =
+  | 'elevenlabs'
+  | 'elevenlabs-sdk'
+  | 'xai'
+  | 'openai'
+  | 'ultravox'
+  | 'vapi'
+  | 'retell';
 
 /**
  * Message role type for conversation messages
@@ -154,6 +161,14 @@ const isVapiEnabled = (): boolean => {
 };
 
 /**
+ * Check if Retell provider is enabled via environment variable
+ */
+const isRetellEnabled = (): boolean => {
+  const envValue = import.meta.env.VITE_RETELL_ENABLED;
+  return envValue === 'true' || envValue === true;
+};
+
+/**
  * Default provider configurations
  */
 export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
@@ -204,6 +219,14 @@ export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
     isAvailable: isVapiEnabled(),
     requiresApiKey: false,
     icon: 'PhoneCall',
+  },
+  retell: {
+    id: 'retell',
+    name: 'Retell',
+    description: 'Retell AI voice agent conversations',
+    isAvailable: isRetellEnabled(),
+    requiresApiKey: true,
+    icon: 'Phone',
   },
 };
 

@@ -75,7 +75,8 @@
     "phase05-session03-provider-tab",
     "phase05-session04-validation-polish",
     "phase06-session01-dependencies-backend-setup",
-    "phase06-session02-voice-hook-sdk"
+    "phase06-session02-voice-hook-sdk",
+    "phase06-session03-provider-tab"
   ],
   "next_session_history": [
     {
@@ -216,6 +217,11 @@
     {
       "date": "2025-12-31",
       "session": "phase06-session02-voice-hook-sdk",
+      "status": "completed"
+    },
+    {
+      "date": "2025-12-31",
+      "session": "phase06-session03-provider-tab",
       "status": "completed"
     }
   ]
