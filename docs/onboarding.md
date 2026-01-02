@@ -22,7 +22,7 @@ Zero-to-hero checklist for new developers.
 
 ```bash
 git clone <REPO_URL>
-cd Elevenlabs-Voice-Agent
+cd Voice-Agent-PuPuPlatter
 ```
 
 ### 2. Install Dependencies

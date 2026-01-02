@@ -207,7 +207,7 @@ This project includes comprehensive documentation to help you get started, contr
 ```bash
 # Clone the repository
 git clone <YOUR_GIT_URL>
-cd Elevenlabs-Voice-Agent
+cd Voice-Agent-PuPuPlatter
 
 # Install dependencies (uses Bun for faster installation)
 bun install

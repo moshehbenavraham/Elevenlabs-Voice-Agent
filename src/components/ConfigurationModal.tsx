@@ -139,7 +139,7 @@ export const ConfigurationModal: FC<ConfigurationModalProps> = ({ isOpen, onClos
                     <span className="text-sm">ElevenLabs Documentation</span>
                   </a>
                   <a
-                    href="https://github.com/moshehbenavraham/Elevenlabs-Voice-Agent"
+                    href="https://github.com/moshehbenavraham/Voice-Agent-PuPuPlatter"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-4 py-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-zinc-300 hover:text-amber-400 hover:border-amber-500/30 transition-all duration-200 group"
