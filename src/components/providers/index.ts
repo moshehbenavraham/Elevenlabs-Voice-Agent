@@ -47,3 +47,12 @@ export {
   useVapiConfigured,
   checkVapiConfiguration,
 } from './VapiProvider';
+
+export {
+  RetellProvider,
+  RetellButton,
+  RetellVoiceStatus,
+  RetellEmptyState,
+  useRetellConfigured,
+  checkRetellConfiguration,
+} from './RetellProvider';

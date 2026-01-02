@@ -2,6 +2,7 @@ import { useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MicOff, Loader2, Phone, AlertCircle, Wifi, WifiOff, Settings, Square } from 'lucide-react';
 import { useRetellVoice } from '@/hooks/useRetellVoice';
+import { RetellVoiceProvider } from '@/contexts/RetellVoiceContext';
 import { RetellCallStatus } from '@/types/retell';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
@@ -30,16 +31,20 @@ interface RetellProviderProps {
 }
 
 /**
- * Retell Voice Provider wrapper component
- * Provides Retell voice functionality to children
+ * Inner component that handles disconnect callback
+ * Must be inside RetellVoiceProvider to use the hook
  */
-export function RetellProvider({ children, onDisconnect }: RetellProviderProps) {
+function RetellProviderInner({ children, onDisconnect }: RetellProviderProps) {
   const { stopCall, callStatus } = useRetellVoice();
+  const wasConnectedRef = useRef(false);
 
   // Handle disconnect callback when call ends
   useEffect(() => {
-    if (callStatus === RetellCallStatus.IDLE && onDisconnect) {
-      // Only call onDisconnect if we were previously connected
+    if (callStatus === RetellCallStatus.CONNECTED) {
+      wasConnectedRef.current = true;
+    } else if (wasConnectedRef.current && callStatus === RetellCallStatus.IDLE) {
+      wasConnectedRef.current = false;
+      onDisconnect?.();
     }
   }, [callStatus, onDisconnect]);
 
@@ -51,6 +56,18 @@ export function RetellProvider({ children, onDisconnect }: RetellProviderProps) 
   }, [stopCall]);
 
   return <>{children}</>;
+}
+
+/**
+ * Retell Voice Provider wrapper component
+ * Wraps children with RetellVoiceProvider context to ensure single SDK instance
+ */
+export function RetellProvider({ children, onDisconnect }: RetellProviderProps) {
+  return (
+    <RetellVoiceProvider>
+      <RetellProviderInner onDisconnect={onDisconnect}>{children}</RetellProviderInner>
+    </RetellVoiceProvider>
+  );
 }
 
 interface RetellButtonProps {

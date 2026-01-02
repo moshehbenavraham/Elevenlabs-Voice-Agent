@@ -15,6 +15,7 @@ import {
   OpenAIConversationPanel,
   UltravoxConversationPanel,
   VapiConversationPanel,
+  RetellConversationPanel,
 } from '@/components/conversation';
 import {
   XAIProvider,
@@ -31,6 +32,9 @@ import {
   VapiProvider,
   VapiButton,
   VapiVoiceStatus,
+  RetellProvider,
+  RetellButton,
+  RetellVoiceStatus,
 } from '@/components/providers';
 import { useVoice } from '@/contexts/VoiceContext';
 import { useProvider } from '@/contexts/ProviderContext';
@@ -55,6 +59,7 @@ export const Index = () => {
   const [openaiHasStarted, setOpenaiHasStarted] = useState(false);
   const [ultravoxHasStarted, setUltravoxHasStarted] = useState(false);
   const [vapiHasStarted, setVapiHasStarted] = useState(false);
+  const [retellHasStarted, setRetellHasStarted] = useState(false);
 
   // Handle provider change - disconnect active connection before switching
   const handleProviderChange = useCallback(
@@ -95,6 +100,12 @@ export const Index = () => {
         setVapiHasStarted(false);
       }
 
+      // Disconnect Retell if active
+      if (retellHasStarted && activeProvider === 'retell') {
+        debugLog('handleProviderChange', 'Disconnecting Retell before switch');
+        setRetellHasStarted(false);
+      }
+
       toast({
         title: 'Provider Changed',
         description: `Switched to ${newProvider}`,
@@ -108,6 +119,7 @@ export const Index = () => {
       openaiHasStarted,
       ultravoxHasStarted,
       vapiHasStarted,
+      retellHasStarted,
     ]
   );
 
@@ -180,6 +192,24 @@ export const Index = () => {
     toast({
       title: 'Connected',
       description: 'Vapi voice conversation is now active',
+    });
+  }, []);
+
+  // Handle Retell disconnect
+  const handleRetellDisconnect = useCallback(() => {
+    setRetellHasStarted(false);
+    toast({
+      title: 'Disconnected',
+      description: 'Retell voice conversation ended',
+    });
+  }, []);
+
+  // Handle Retell connect
+  const handleRetellConnect = useCallback(() => {
+    setRetellHasStarted(true);
+    toast({
+      title: 'Connected',
+      description: 'Retell voice conversation is now active',
     });
   }, []);
 
@@ -937,6 +967,122 @@ export const Index = () => {
                 </motion.div>
               )}
             </VapiProvider>
+          )}
+
+          {/* Retell Provider */}
+          {activeProvider === 'retell' && (
+            <RetellProvider onDisconnect={handleRetellDisconnect}>
+              {!retellHasStarted ? (
+                <motion.div
+                  key="hero-retell"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.5 }}
+                  className="min-h-screen flex flex-col items-center justify-center px-6"
+                >
+                  <div className="text-center space-y-8">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <h1 className="font-display text-5xl sm:text-6xl text-zinc-100 mb-4">
+                        Talk to <span className="text-teal-400">Retell</span>
+                      </h1>
+                      <p className="text-zinc-400 text-lg max-w-md mx-auto">
+                        Experience voice conversations powered by Retell AI
+                      </p>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
+                      className="py-8"
+                    >
+                      <RetellButton size="lg" onConnect={handleRetellConnect} />
+                    </motion.div>
+
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6 }}
+                      className="text-zinc-500 text-sm"
+                    >
+                      Click to start your conversation with Retell
+                    </motion.p>
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="interface-retell"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="min-h-screen flex flex-col"
+                >
+                  <div className="flex-1 flex flex-col items-center justify-center px-6 py-24">
+                    <div className="w-full max-w-lg space-y-12">
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-center"
+                      >
+                        <h2 className="font-display text-3xl sm:text-4xl text-zinc-100 mb-2">
+                          Retell is Listening
+                        </h2>
+                        <p className="text-zinc-500 text-sm">
+                          Speak naturally - Retell is processing
+                        </p>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
+                        className="flex justify-center py-8"
+                      >
+                        <RetellButton size="lg" onDisconnect={handleRetellDisconnect} />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 }}
+                      >
+                        <RetellVoiceStatus />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.55 }}
+                      >
+                        <RetellConversationPanel className="w-full h-64" />
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.6 }}
+                        className="flex justify-center pt-4"
+                      >
+                        <button
+                          onClick={handleRetellDisconnect}
+                          className="flex items-center gap-2 px-6 py-3 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all duration-200"
+                        >
+                          <X className="w-4 h-4" />
+                          <span className="text-sm">End conversation</span>
+                        </button>
+                      </motion.div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </RetellProvider>
           )}
         </AnimatePresence>
       </main>

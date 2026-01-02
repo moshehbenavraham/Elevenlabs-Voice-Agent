@@ -10,6 +10,7 @@
  */
 
 import { vi } from 'vitest';
+import React from 'react';
 
 // Mock environment variables BEFORE any module imports
 // vi.hoisted runs before all imports are evaluated
@@ -21,8 +22,14 @@ vi.hoisted(() => {
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { useRetellVoice } from '@/hooks/useRetellVoice';
+import { RetellVoiceProvider } from '@/contexts/RetellVoiceContext';
 import { RetellCallStatus, RetellMessageRole, RetellTranscriptType } from '@/types/retell';
 import { retellMocks } from './setup';
+
+// Wrapper component that provides the RetellVoiceProvider context
+const wrapper = ({ children }: { children: React.ReactNode }) => (
+  <RetellVoiceProvider>{children}</RetellVoiceProvider>
+);
 
 // Mock fetch for backend token calls
 const mockFetch = vi.fn();
@@ -48,37 +55,37 @@ describe('useRetellVoice', () => {
   // ===========================================
   describe('initial state', () => {
     it('returns callStatus as IDLE initially', () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
       expect(result.current.callStatus).toBe(RetellCallStatus.IDLE);
     });
 
     it('returns isAgentSpeaking as false initially', () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
       expect(result.current.isAgentSpeaking).toBe(false);
     });
 
     it('returns empty messages array initially', () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
       expect(result.current.messages).toEqual([]);
     });
 
     it('returns null activeTranscript initially', () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
       expect(result.current.activeTranscript).toBeNull();
     });
 
     it('returns null error initially', () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
       expect(result.current.error).toBeNull();
     });
 
     it('returns null callId initially', () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
       expect(result.current.callId).toBeNull();
     });
 
     it('provides startCall, stopCall, and toggleCall functions', () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
       expect(typeof result.current.startCall).toBe('function');
       expect(typeof result.current.stopCall).toBe('function');
       expect(typeof result.current.toggleCall).toBe('function');
@@ -97,7 +104,7 @@ describe('useRetellVoice', () => {
       });
       mockFetch.mockReturnValue(fetchPromise);
 
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       // Start the call without awaiting completion
       await act(async () => {
@@ -120,7 +127,7 @@ describe('useRetellVoice', () => {
     });
 
     it('fetches access token from backend when starting call', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -136,7 +143,7 @@ describe('useRetellVoice', () => {
     });
 
     it('calls SDK startCall with access token', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -150,7 +157,7 @@ describe('useRetellVoice', () => {
     });
 
     it('stores callId from backend response', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -160,7 +167,7 @@ describe('useRetellVoice', () => {
     });
 
     it('clears previous messages on new call', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       // First call with messages
       await act(async () => {
@@ -187,7 +194,7 @@ describe('useRetellVoice', () => {
     });
 
     it('does not start when already connected', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -214,7 +221,7 @@ describe('useRetellVoice', () => {
       });
       mockFetch.mockReturnValue(fetchPromise);
 
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       // Start the first call
       await act(async () => {
@@ -246,7 +253,7 @@ describe('useRetellVoice', () => {
     });
 
     it('calls SDK stopCall when stopCall() is called while connected', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -263,7 +270,7 @@ describe('useRetellVoice', () => {
     });
 
     it('does nothing when stopCall called while idle', () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       act(() => {
         result.current.stopCall();
@@ -280,7 +287,7 @@ describe('useRetellVoice', () => {
       });
       mockFetch.mockReturnValue(fetchPromise);
 
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         result.current.toggleCall();
@@ -300,7 +307,7 @@ describe('useRetellVoice', () => {
     });
 
     it('toggleCall stops when connected', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -322,7 +329,7 @@ describe('useRetellVoice', () => {
       });
       mockFetch.mockReturnValue(fetchPromise);
 
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         result.current.startCall();
@@ -353,7 +360,7 @@ describe('useRetellVoice', () => {
     });
 
     it('toggleCall starts when in error state', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       // Trigger error state
       mockFetch.mockResolvedValueOnce({
@@ -397,7 +404,7 @@ describe('useRetellVoice', () => {
   // ===========================================
   describe('event handling', () => {
     it('sets callStatus to CONNECTED on call_started event', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -408,7 +415,7 @@ describe('useRetellVoice', () => {
     });
 
     it('clears error on call_started event', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       // Trigger error first
       await act(async () => {
@@ -424,7 +431,7 @@ describe('useRetellVoice', () => {
     });
 
     it('sets callStatus to IDLE on call_ended event', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -441,7 +448,7 @@ describe('useRetellVoice', () => {
     });
 
     it('clears activeTranscript on call_ended event', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -461,7 +468,7 @@ describe('useRetellVoice', () => {
     });
 
     it('sets isAgentSpeaking to true on agent_start_talking event', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -473,7 +480,7 @@ describe('useRetellVoice', () => {
     });
 
     it('sets isAgentSpeaking to false on agent_stop_talking event', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -491,7 +498,7 @@ describe('useRetellVoice', () => {
     });
 
     it('sets error on error event', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         retellMocks.emit('error', 'Connection failed');
@@ -501,7 +508,7 @@ describe('useRetellVoice', () => {
     });
 
     it('sets callStatus to ERROR on error event', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -518,7 +525,7 @@ describe('useRetellVoice', () => {
     });
 
     it('handles empty error message', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         retellMocks.emit('error', '');
@@ -533,7 +540,7 @@ describe('useRetellVoice', () => {
   // ===========================================
   describe('transcript handling', () => {
     it('adds transcripts from update event to messages', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -549,7 +556,7 @@ describe('useRetellVoice', () => {
     });
 
     it('handles user transcripts', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -563,7 +570,7 @@ describe('useRetellVoice', () => {
     });
 
     it('accumulates multiple transcripts over time', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -595,7 +602,7 @@ describe('useRetellVoice', () => {
     });
 
     it('sets activeTranscript for agent messages', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -611,7 +618,7 @@ describe('useRetellVoice', () => {
     });
 
     it('clears activeTranscript when user is last speaker', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -636,7 +643,7 @@ describe('useRetellVoice', () => {
     });
 
     it('ignores update events with invalid transcript', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -654,7 +661,7 @@ describe('useRetellVoice', () => {
     });
 
     it('assigns unique IDs to each message', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -686,7 +693,7 @@ describe('useRetellVoice', () => {
     it('handles backend fetch error', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -703,7 +710,7 @@ describe('useRetellVoice', () => {
         json: () => Promise.resolve({ message: 'Server error' }),
       });
 
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -719,7 +726,7 @@ describe('useRetellVoice', () => {
         json: () => Promise.resolve({}),
       });
 
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -732,7 +739,7 @@ describe('useRetellVoice', () => {
     it('handles SDK startCall error', async () => {
       retellMocks.startCall.mockRejectedValueOnce(new Error('SDK error'));
 
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -743,7 +750,7 @@ describe('useRetellVoice', () => {
     });
 
     it('removes event listeners on unmount', async () => {
-      const { unmount } = renderHook(() => useRetellVoice());
+      const { unmount } = renderHook(() => useRetellVoice(), { wrapper });
 
       unmount();
 
@@ -756,7 +763,7 @@ describe('useRetellVoice', () => {
     });
 
     it('calls stopCall on unmount', async () => {
-      const { unmount } = renderHook(() => useRetellVoice());
+      const { unmount } = renderHook(() => useRetellVoice(), { wrapper });
 
       unmount();
 
@@ -764,7 +771,7 @@ describe('useRetellVoice', () => {
     });
 
     it('handles stopCall error gracefully', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -784,7 +791,7 @@ describe('useRetellVoice', () => {
     });
 
     it('handles rapid connect/disconnect cycles', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       await act(async () => {
         await result.current.startCall();
@@ -809,7 +816,7 @@ describe('useRetellVoice', () => {
     });
 
     it('resets transcript index on new call', async () => {
-      const { result } = renderHook(() => useRetellVoice());
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
 
       // First call with transcripts
       await act(async () => {
@@ -856,7 +863,14 @@ describe('useRetellVoice', () => {
       vi.resetModules();
 
       const { useRetellVoice: useRetellVoiceNew } = await import('@/hooks/useRetellVoice');
-      const { result } = renderHook(() => useRetellVoiceNew());
+      const { RetellVoiceProvider: NewProvider } = await import('@/contexts/RetellVoiceContext');
+
+      // Create a new wrapper with the re-imported provider
+      const newWrapper = ({ children }: { children: React.ReactNode }) => (
+        <NewProvider>{children}</NewProvider>
+      );
+
+      const { result } = renderHook(() => useRetellVoiceNew(), { wrapper: newWrapper });
 
       await act(async () => {
         await result.current.startCall();

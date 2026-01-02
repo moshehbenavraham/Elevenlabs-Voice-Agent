@@ -7,6 +7,7 @@
  * - RetellEmptyState: Unconfigured state display
  */
 
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
@@ -26,6 +27,12 @@ const mockUseRetellVoice = vi.fn();
 
 vi.mock('@/hooks/useRetellVoice', () => ({
   useRetellVoice: () => mockUseRetellVoice(),
+}));
+
+// Mock the RetellVoiceContext to avoid creating real SDK instances
+vi.mock('@/contexts/RetellVoiceContext', () => ({
+  RetellVoiceProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useRetellVoiceContext: () => mockUseRetellVoice(),
 }));
 
 // Helper to create mock hook return value
