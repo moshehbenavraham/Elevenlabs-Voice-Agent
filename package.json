@@ -1,7 +1,7 @@
 {
   "name": "voice-agent-pupuplatter",
   "private": true,
-  "version": "1.0.30",
+  "version": "1.0.31",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -88,7 +88,6 @@
     "husky": "^9.1.7",
     "jsdom": "^27.2.0",
     "lint-staged": "^16.2.7",
-    "lovable-tagger": "^1.1.11",
     "postcss": "^8.5.6",
     "prettier": "^3.7.4",
     "tailwindcss": "^4.1.17",

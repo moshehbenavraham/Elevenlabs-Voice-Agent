@@ -23,6 +23,7 @@ This troubleshooting guide covers common issues, error messages, and solutions f
 ## ⚡ Quick Diagnostics
 
 ### System Health Check
+
 Run this diagnostic script to quickly identify common issues:
 
 ```typescript
@@ -33,23 +34,23 @@ const runSystemDiagnostics = async () => {
       webAudio: !!(window.AudioContext || window.webkitAudioContext),
       getUserMedia: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
       mediaRecorder: !!window.MediaRecorder,
-      serviceWorker: 'serviceWorker' in navigator
+      serviceWorker: 'serviceWorker' in navigator,
     },
     permissions: {
       microphone: 'unknown',
-      camera: 'unknown'
+      camera: 'unknown',
     },
     network: {
       online: navigator.onLine,
-      connection: (navigator as any).connection?.effectiveType || 'unknown'
+      connection: (navigator as any).connection?.effectiveType || 'unknown',
     },
     environment: {
       https: location.protocol === 'https:',
       localhost: location.hostname === 'localhost',
-      apiKey: !!process.env.VITE_ELEVENLABS_API_KEY
-    }
+      apiKey: !!process.env.VITE_ELEVENLABS_API_KEY,
+    },
   };
-  
+
   // Check permissions
   try {
     const micPermission = await navigator.permissions.query({ name: 'microphone' as any });
@@ -57,7 +58,7 @@ const runSystemDiagnostics = async () => {
   } catch (e) {
     diagnostics.permissions.microphone = 'unavailable';
   }
-  
+
   console.log('System Diagnostics:', diagnostics);
   return diagnostics;
 };
@@ -67,6 +68,7 @@ runSystemDiagnostics();
 ```
 
 ### Quick Fixes Checklist
+
 Before diving into specific issues, try these quick fixes:
 
 - [ ] **Refresh the page** - Clears temporary state issues
@@ -85,6 +87,7 @@ Before diving into specific issues, try these quick fixes:
 #### **Issue**: "Microphone permission denied" or no audio input detected
 
 **Possible Causes:**
+
 - Browser permissions not granted
 - Microphone blocked by system settings
 - Hardware microphone issues
@@ -93,15 +96,15 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Check Browser Permissions**
+
    ```javascript
    // Check current permission status
-   navigator.permissions.query({ name: 'microphone' })
-     .then(permission => {
-       console.log('Microphone permission:', permission.state);
-       if (permission.state === 'denied') {
-         alert('Please enable microphone access in browser settings');
-       }
-     });
+   navigator.permissions.query({ name: 'microphone' }).then((permission) => {
+     console.log('Microphone permission:', permission.state);
+     if (permission.state === 'denied') {
+       alert('Please enable microphone access in browser settings');
+     }
+   });
    ```
 
 2. **Grant Microphone Access**
@@ -118,12 +121,13 @@ Before diving into specific issues, try these quick fixes:
 4. **Test Microphone Hardware**
    ```javascript
    // Test microphone access
-   navigator.mediaDevices.getUserMedia({ audio: true })
-     .then(stream => {
+   navigator.mediaDevices
+     .getUserMedia({ audio: true })
+     .then((stream) => {
        console.log('Microphone access granted');
-       stream.getTracks().forEach(track => track.stop());
+       stream.getTracks().forEach((track) => track.stop());
      })
-     .catch(error => {
+     .catch((error) => {
        console.error('Microphone access failed:', error);
      });
    ```
@@ -133,6 +137,7 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Optimize Audio Settings**
+
    ```javascript
    const optimizedConstraints = {
      audio: {
@@ -140,8 +145,8 @@ Before diving into specific issues, try these quick fixes:
        channelCount: 1,
        echoCancellation: true,
        noiseSuppression: true,
-       autoGainControl: true
-     }
+       autoGainControl: true,
+     },
    };
    ```
 
@@ -162,6 +167,7 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Check Audio Context State**
+
    ```javascript
    const audioContext = new AudioContext();
    if (audioContext.state === 'suspended') {
@@ -173,6 +179,7 @@ Before diving into specific issues, try these quick fixes:
    ```
 
 2. **Mobile Audio Requirements**
+
    ```javascript
    // Mobile browsers require user interaction for audio
    const enableMobileAudio = () => {
@@ -194,13 +201,14 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Enable Echo Cancellation**
+
    ```javascript
    const constraints = {
      audio: {
        echoCancellation: true,
        noiseSuppression: true,
-       autoGainControl: true
-     }
+       autoGainControl: true,
+     },
    };
    ```
 
@@ -223,6 +231,7 @@ Before diving into specific issues, try these quick fixes:
 #### **Issue**: "API key invalid" or "Authentication failed"
 
 **Error Messages:**
+
 - `401 Unauthorized`
 - `Invalid API key format`
 - `API key not found`
@@ -230,12 +239,13 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Verify API Key Format**
+
    ```javascript
    const validateApiKey = (apiKey) => {
      const pattern = /^sk-[a-zA-Z0-9]{32,}$/;
      return pattern.test(apiKey);
    };
-   
+
    const apiKey = process.env.VITE_ELEVENLABS_API_KEY;
    if (!validateApiKey(apiKey)) {
      console.error('Invalid API key format');
@@ -243,6 +253,7 @@ Before diving into specific issues, try these quick fixes:
    ```
 
 2. **Check Environment Variables**
+
    ```bash
    # Verify environment variables are set
    echo $VITE_ELEVENLABS_API_KEY
@@ -250,6 +261,7 @@ Before diving into specific issues, try these quick fixes:
    ```
 
 3. **Test API Key Manually**
+
    ```bash
    curl -H "Authorization: Bearer YOUR_API_KEY" \
         https://api.elevenlabs.io/v1/user
@@ -264,6 +276,7 @@ Before diving into specific issues, try these quick fixes:
 #### **Issue**: "Rate limit exceeded" or "Quota exceeded"
 
 **Error Messages:**
+
 - `429 Too Many Requests`
 - `402 Payment Required`
 - `Quota exceeded for current subscription`
@@ -271,11 +284,12 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Check Account Limits**
+
    ```javascript
    const checkQuota = async () => {
      try {
        const response = await fetch('https://api.elevenlabs.io/v1/user', {
-         headers: { 'Authorization': `Bearer ${API_KEY}` }
+         headers: { Authorization: `Bearer ${API_KEY}` },
        });
        const userData = await response.json();
        console.log('Subscription:', userData.subscription);
@@ -286,6 +300,7 @@ Before diving into specific issues, try these quick fixes:
    ```
 
 2. **Implement Rate Limiting**
+
    ```javascript
    class RateLimiter {
      constructor(maxRequests = 100, windowMs = 60000) {
@@ -293,13 +308,13 @@ Before diving into specific issues, try these quick fixes:
        this.windowMs = windowMs;
        this.requests = [];
      }
-     
+
      canMakeRequest() {
        const now = Date.now();
-       this.requests = this.requests.filter(time => now - time < this.windowMs);
+       this.requests = this.requests.filter((time) => now - time < this.windowMs);
        return this.requests.length < this.maxRequests;
      }
-     
+
      recordRequest() {
        this.requests.push(Date.now());
      }
@@ -316,18 +331,19 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Verify Agent Configuration**
+
    ```javascript
    const checkAgent = async (agentId) => {
      try {
        const response = await fetch(`https://api.elevenlabs.io/v1/agents/${agentId}`, {
-         headers: { 'Authorization': `Bearer ${API_KEY}` }
+         headers: { Authorization: `Bearer ${API_KEY}` },
        });
-       
+
        if (!response.ok) {
          console.error('Agent not found:', agentId);
          return false;
        }
-       
+
        const agent = await response.json();
        console.log('Agent found:', agent.name);
        return true;
@@ -343,7 +359,7 @@ Before diving into specific issues, try these quick fixes:
    const listAgents = async () => {
      try {
        const response = await fetch('https://api.elevenlabs.io/v1/agents', {
-         headers: { 'Authorization': `Bearer ${API_KEY}` }
+         headers: { Authorization: `Bearer ${API_KEY}` },
        });
        const agents = await response.json();
        console.log('Available agents:', agents);
@@ -367,6 +383,7 @@ Before diving into specific issues, try these quick fixes:
    - Enable experimental web features in `chrome://flags`
 
 2. **Clear Chrome Data**
+
    ```bash
    # Clear specific site data
    # Go to chrome://settings/content/all
@@ -385,6 +402,7 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Use Safari-Compatible Recording**
+
    ```javascript
    const createSafariCompatibleRecorder = (stream) => {
      if (!window.MediaRecorder || !MediaRecorder.isTypeSupported('audio/webm')) {
@@ -408,14 +426,14 @@ Before diving into specific issues, try these quick fixes:
    ```javascript
    const handleSafariAudio = () => {
      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-     
+
      if (audioContext.state === 'suspended') {
        const resumeAudio = () => {
          audioContext.resume();
          document.removeEventListener('touchstart', resumeAudio);
          document.removeEventListener('click', resumeAudio);
        };
-       
+
        document.addEventListener('touchstart', resumeAudio, { once: true });
        document.addEventListener('click', resumeAudio, { once: true });
      }
@@ -442,8 +460,8 @@ Before diving into specific issues, try these quick fixes:
      const constraints = {
        audio: {
          mozNoiseSuppression: true,
-         mozAutoGainControl: true
-       }
+         mozAutoGainControl: true,
+       },
      };
    }
    ```
@@ -457,20 +475,21 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Handle iOS Audio Context**
+
    ```javascript
    const enableiOSAudio = () => {
      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-     
+
      if (isIOS) {
        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-       
+
        if (audioContext.state === 'suspended') {
          const unlock = () => {
            audioContext.resume();
            document.body.removeEventListener('touchstart', unlock);
            document.body.removeEventListener('touchend', unlock);
          };
-         
+
          document.body.addEventListener('touchstart', unlock, false);
          document.body.addEventListener('touchend', unlock, false);
        }
@@ -488,17 +507,26 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Optimize Touch Handling**
+
    ```javascript
    const handleIOSTouch = (element) => {
-     element.addEventListener('touchstart', (e) => {
-       e.preventDefault();
-       element.classList.add('touching');
-     }, { passive: false });
-     
-     element.addEventListener('touchend', (e) => {
-       e.preventDefault();
-       element.classList.remove('touching');
-     }, { passive: false });
+     element.addEventListener(
+       'touchstart',
+       (e) => {
+         e.preventDefault();
+         element.classList.add('touching');
+       },
+       { passive: false }
+     );
+
+     element.addEventListener(
+       'touchend',
+       (e) => {
+         e.preventDefault();
+         element.classList.remove('touching');
+       },
+       { passive: false }
+     );
    };
    ```
 
@@ -520,15 +548,16 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Optimize Android Audio**
+
    ```javascript
    const optimizeAndroidAudio = () => {
      const isAndroid = /Android/.test(navigator.userAgent);
-     
+
      if (isAndroid) {
        // Use smaller buffer sizes
        const audioContext = new AudioContext();
        const bufferSize = 1024; // Smaller buffer for lower latency
-       
+
        // Enable low-latency mode
        if ('audioWorklet' in audioContext) {
          audioContext.audioWorklet.addModule('/low-latency-processor.js');
@@ -545,8 +574,8 @@ Before diving into specific issues, try these quick fixes:
          audio: {
            sampleRate: 22050, // Lower sample rate for Android
            channelCount: 1,
-           echoCancellation: true
-         }
+           echoCancellation: true,
+         },
        });
        return stream;
      } catch (error) {
@@ -564,34 +593,36 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Optimize Animation Performance**
+
    ```javascript
    // Use requestAnimationFrame for animations
    const optimizeAnimations = () => {
      let animationId;
-     
+
      const animate = () => {
        // Limit animation updates
        if (Date.now() % 2 === 0) {
          updateVisualizations();
        }
-       
+
        animationId = requestAnimationFrame(animate);
      };
-     
+
      return () => cancelAnimationFrame(animationId);
    };
    ```
 
 2. **Reduce Audio Processing**
+
    ```javascript
    // Optimize audio analysis
    const optimizeAudioProcessing = (audioContext) => {
      const analyser = audioContext.createAnalyser();
-     
+
      // Reduce FFT size for better performance
      analyser.fftSize = 1024; // Instead of 2048
      analyser.smoothingTimeConstant = 0.8;
-     
+
      return analyser;
    };
    ```
@@ -601,12 +632,13 @@ Before diving into specific issues, try these quick fixes:
    const monitorPerformance = () => {
      const observer = new PerformanceObserver((list) => {
        for (const entry of list.getEntries()) {
-         if (entry.duration > 16) { // > 16ms indicates dropped frame
+         if (entry.duration > 16) {
+           // > 16ms indicates dropped frame
            console.warn('Performance issue detected:', entry);
          }
        }
      });
-     
+
      observer.observe({ entryTypes: ['measure'] });
    };
    ```
@@ -618,35 +650,37 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Clean Up Audio Resources**
+
    ```javascript
    const cleanupAudioResources = () => {
      // Stop all audio tracks
      if (audioStream) {
-       audioStream.getTracks().forEach(track => track.stop());
+       audioStream.getTracks().forEach((track) => track.stop());
      }
-     
+
      // Close audio context
      if (audioContext) {
        audioContext.close();
      }
-     
+
      // Remove event listeners
      document.removeEventListener('visibilitychange', handleVisibilityChange);
    };
-   
+
    // Cleanup on page unload
    window.addEventListener('beforeunload', cleanupAudioResources);
    ```
 
 2. **Use Memory-Efficient Patterns**
+
    ```javascript
    // Use weak references where possible
    const audioBuffers = new WeakMap();
-   
+
    // Clear intervals and timeouts
    const intervals = [];
    const timeouts = [];
-   
+
    const cleanup = () => {
      intervals.forEach(clearInterval);
      timeouts.forEach(clearTimeout);
@@ -662,31 +696,35 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Check Node.js Version**
+
    ```bash
    node --version  # Should be 16.x or higher
    npm --version   # Should be 7.x or higher
    ```
 
 2. **Clear Dependencies and Reinstall**
+
    ```bash
    rm -rf node_modules package-lock.json
    npm install
    ```
 
 3. **Check for Port Conflicts**
+
    ```bash
    # Check what's using port 5173
    lsof -i :5173
-   
+
    # Kill process if needed
    kill -9 <PID>
    ```
 
 4. **Environment Variables**
+
    ```bash
    # Check if .env file exists and has correct variables
    cat .env
-   
+
    # Required variables:
    # VITE_ELEVENLABS_API_KEY=your_key_here
    # VITE_ELEVENLABS_AGENT_ID=your_agent_id_here
@@ -699,28 +737,31 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **TypeScript Errors**
+
    ```bash
    # Check for TypeScript errors
    npm run type-check
-   
+
    # Fix common issues
    npm run lint:fix
    ```
 
 2. **Missing Dependencies**
+
    ```bash
    # Check for missing peer dependencies
    npm ls
-   
+
    # Install missing dependencies
    npm install missing-package
    ```
 
 3. **Clear Build Cache**
+
    ```bash
    # Clear Vite cache
    rm -rf node_modules/.vite
-   
+
    # Clear build directory
    rm -rf dist
    ```
@@ -734,11 +775,12 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Check Network Connectivity**
+
    ```javascript
    const testAPIConnectivity = async () => {
      try {
        const response = await fetch('https://api.elevenlabs.io/v1/user', {
-         method: 'HEAD'
+         method: 'HEAD',
        });
        console.log('API reachable:', response.ok);
      } catch (error) {
@@ -748,10 +790,11 @@ Before diving into specific issues, try these quick fixes:
    ```
 
 2. **Check Corporate Firewall**
+
    ```bash
    # Test from command line
    curl -I https://api.elevenlabs.io/v1/user
-   
+
    # Check for proxy requirements
    echo $HTTP_PROXY
    echo $HTTPS_PROXY
@@ -766,9 +809,9 @@ Before diving into specific issues, try these quick fixes:
        port: 8080,
        auth: {
          username: 'username',
-         password: 'password'
-       }
-     }
+         password: 'password',
+       },
+     },
    };
    ```
 
@@ -777,28 +820,30 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Increase Timeout Values**
+
    ```javascript
    const apiConfig = {
      timeout: 45000, // 45 seconds
      retries: 3,
-     retryDelay: 2000
+     retryDelay: 2000,
    };
    ```
 
 2. **Implement Request Caching**
+
    ```javascript
    const cache = new Map();
-   
+
    const cachedRequest = async (url, options) => {
      const cacheKey = `${url}-${JSON.stringify(options)}`;
-     
+
      if (cache.has(cacheKey)) {
        return cache.get(cacheKey);
      }
-     
+
      const response = await fetch(url, options);
      cache.set(cacheKey, response);
-     
+
      return response;
    };
    ```
@@ -808,6 +853,7 @@ Before diving into specific issues, try these quick fixes:
 ### Common Error Codes
 
 #### API Errors
+
 - **401 Unauthorized**: Invalid API key or expired session
 - **403 Forbidden**: Insufficient permissions or blocked request
 - **404 Not Found**: Agent ID not found or invalid endpoint
@@ -817,6 +863,7 @@ Before diving into specific issues, try these quick fixes:
 - **503 Service Unavailable**: ElevenLabs service temporarily down
 
 #### Browser Errors
+
 - **NotAllowedError**: Microphone permission denied
 - **NotFoundError**: No microphone device found
 - **NotSupportedError**: Feature not supported in browser
@@ -824,6 +871,7 @@ Before diving into specific issues, try these quick fixes:
 - **InvalidStateError**: Audio context in invalid state
 
 #### Application Errors
+
 - **Configuration Error**: Missing environment variables
 - **Network Error**: Internet connectivity issues
 - **Timeout Error**: Request took too long
@@ -836,19 +884,19 @@ const handleError = (error) => {
   switch (error.name) {
     case 'NotAllowedError':
       return 'Microphone access denied. Please allow microphone permissions.';
-    
+
     case 'NotFoundError':
       return 'No microphone found. Please connect a microphone.';
-    
+
     case 'NotSupportedError':
       return 'Your browser does not support this feature. Please update your browser.';
-    
+
     case 'SecurityError':
       return 'HTTPS is required for voice features. Please access the site securely.';
-    
+
     case 'NetworkError':
       return 'Network connection failed. Please check your internet connection.';
-    
+
     default:
       return `An unexpected error occurred: ${error.message}`;
   }
@@ -892,7 +940,7 @@ const runComprehensiveDiagnostics = async () => {
       port: location.port
     }
   };
-  
+
   console.log('Comprehensive Diagnostics Report:', report);
   return report;
 };
@@ -919,10 +967,10 @@ const checkMediaDevicesSupport = async () => {
     if (!navigator.mediaDevices) {
       return { available: false, reason: 'MediaDevices not supported' };
     }
-    
+
     const devices = await navigator.mediaDevices.enumerateDevices();
     const audioInputs = devices.filter(device => device.kind === 'audioinput');
-    
+
     return {
       available: true,
       deviceCount: devices.length,
@@ -942,33 +990,35 @@ const profilePerformance = () => {
   const startTime = performance.now();
   let frameCount = 0;
   let totalFrameTime = 0;
-  
+
   const measureFrame = () => {
     const frameStart = performance.now();
-    
+
     // Simulate frame work
     requestAnimationFrame(() => {
       const frameEnd = performance.now();
       const frameTime = frameEnd - frameStart;
-      
+
       frameCount++;
       totalFrameTime += frameTime;
-      
+
       if (frameCount % 60 === 0) {
         const avgFrameTime = totalFrameTime / frameCount;
         const fps = 1000 / avgFrameTime;
-        
-        console.log(`Performance: ${fps.toFixed(1)} FPS, ${avgFrameTime.toFixed(2)}ms avg frame time`);
-        
+
+        console.log(
+          `Performance: ${fps.toFixed(1)} FPS, ${avgFrameTime.toFixed(2)}ms avg frame time`
+        );
+
         if (fps < 30) {
           console.warn('Low FPS detected - consider reducing visual complexity');
         }
       }
-      
+
       measureFrame();
     });
   };
-  
+
   measureFrame();
 };
 ```
@@ -978,6 +1028,7 @@ const profilePerformance = () => {
 ### Before Seeking Help
 
 1. **Gather Information**
+
    ```javascript
    // Run this to get system info for support
    const supportInfo = {
@@ -985,9 +1036,9 @@ const profilePerformance = () => {
      userAgent: navigator.userAgent,
      url: window.location.href,
      timestamp: new Date().toISOString(),
-     error: 'Describe your specific error here'
+     error: 'Describe your specific error here',
    };
-   
+
    console.log('Support Information:', JSON.stringify(supportInfo, null, 2));
    ```
 
@@ -1006,14 +1057,14 @@ const profilePerformance = () => {
 ### Support Channels
 
 1. **GitHub Issues** (Primary Support)
-   - Create a new issue: [GitHub Issues](https://github.com/yourusername/elevenlabs-voice-agent/issues)
+   - Create a new issue: [GitHub Issues](https://github.com/moshehbenavraham/Voice-Agent-PuPuPlatter/issues)
    - Use appropriate issue templates
    - Include system diagnostics output
    - Provide steps to reproduce
 
 2. **Community Discussion**
    - GitHub Discussions for general questions
-   - Stack Overflow with tag `elevenlabs-voice-agent`
+   - Stack Overflow with tag `voice-agent-pupuplatter`
    - Reddit communities for voice AI
 
 3. **Professional Support**
@@ -1023,32 +1074,40 @@ const profilePerformance = () => {
 
 ### Creating Effective Bug Reports
 
-```markdown
+````markdown
 **Bug Report Template:**
 
 ## Issue Description
+
 Brief description of the issue
 
 ## Steps to Reproduce
+
 1. Go to...
 2. Click on...
 3. Observe...
 
 ## Expected Behavior
+
 What should happen
 
 ## Actual Behavior
+
 What actually happens
 
 ## System Information
+
 ```javascript
 // Paste output from runSystemDiagnostics() here
 ```
+````
 
 ## Additional Context
+
 - Screenshots or recordings
 - Error messages from console
 - Any workarounds found
+
 ```
 
 ---
@@ -1057,3 +1116,4 @@ What actually happens
 **Next Review**: April 8, 2025
 
 This troubleshooting guide is regularly updated based on user feedback and common issues. If you can't find a solution here, please create an issue or reach out through our support channels. 🔧✨
+```

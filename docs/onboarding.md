@@ -81,7 +81,7 @@ npm run dev
 ## Project Structure
 
 ```
-Elevenlabs-Voice-Agent/
+Voice-Agent-PuPuPlatter/
 ├── src/
 │   ├── components/
 │   │   ├── tabs/           # Provider tab navigation

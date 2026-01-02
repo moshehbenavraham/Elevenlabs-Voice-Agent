@@ -17,8 +17,8 @@ Welcome to the ElevenLabs Voice Agent support resources! We're here to help you 
 
 **Best for**: Bug reports, feature requests, technical questions
 
-- **Create an Issue**: [New Issue](https://github.com/yourusername/elevenlabs-voice-agent/issues/new/choose)
-- **Browse Existing Issues**: [All Issues](https://github.com/yourusername/elevenlabs-voice-agent/issues)
+- **Create an Issue**: [New Issue](https://github.com/moshehbenavraham/Voice-Agent-PuPuPlatter/issues/new/choose)
+- **Browse Existing Issues**: [All Issues](https://github.com/moshehbenavraham/Voice-Agent-PuPuPlatter/issues)
 - **Response Time**: 24-48 hours for most issues
 - **Issue Templates**: Use our templates for faster resolution
 
@@ -66,7 +66,7 @@ Welcome to the ElevenLabs Voice Agent support resources! We're here to help you 
 
 ### Code Examples
 
-- **[Examples Repository](https://github.com/yourusername/elevenlabs-voice-agent-examples)**: Code examples and demos
+- **[Examples Repository](https://github.com/moshehbenavraham/Voice-Agent-PuPuPlatter-examples)**: Code examples and demos
 - **Component Examples**: Usage examples for each component
 - **Integration Examples**: ElevenLabs API integration examples
 - **Mobile Examples**: Mobile-specific implementation examples

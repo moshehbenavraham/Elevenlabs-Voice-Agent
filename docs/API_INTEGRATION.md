@@ -23,12 +23,14 @@ The ElevenLabs Voice Agent uses the ElevenLabs Conversational AI API to provide 
 ## 🚀 Quick Start
 
 ### 1. Get API Access
+
 1. Sign up at [ElevenLabs](https://elevenlabs.io)
 2. Navigate to your dashboard
 3. Create a new Conversational AI agent
 4. Copy your API key and Agent ID
 
 ### 2. Environment Setup
+
 ```bash
 # Create .env file
 VITE_ELEVENLABS_API_KEY=your_api_key_here
@@ -36,6 +38,7 @@ VITE_ELEVENLABS_AGENT_ID=your_agent_id_here
 ```
 
 ### 3. Basic Integration
+
 ```typescript
 import { useConversation } from '@elevenlabs/react';
 
@@ -49,7 +52,7 @@ const MyComponent = () => {
 
   const startConversation = async () => {
     await conversation.startSession({
-      agentId: process.env.VITE_ELEVENLABS_AGENT_ID
+      agentId: process.env.VITE_ELEVENLABS_AGENT_ID,
     });
   };
 };
@@ -58,12 +61,14 @@ const MyComponent = () => {
 ## 🔧 API Setup
 
 ### Account Requirements
+
 - **ElevenLabs Account**: Active subscription
 - **API Key**: Generated from dashboard
 - **Agent Configuration**: Properly configured conversational agent
 - **Quota**: Sufficient API quota for expected usage
 
 ### Subscription Tiers
+
 - **Free Tier**: 10,000 characters/month
 - **Starter**: 30,000 characters/month
 - **Creator**: 100,000 characters/month
@@ -71,6 +76,7 @@ const MyComponent = () => {
 - **Enterprise**: Custom limits
 
 ### API Endpoints
+
 ```typescript
 const API_ENDPOINTS = {
   BASE_URL: 'https://api.elevenlabs.io/v1',
@@ -79,18 +85,20 @@ const API_ENDPOINTS = {
   CONVERSATION_END: '/conversation/end',
   USER_INFO: '/user',
   VOICES: '/voices',
-  MODELS: '/models'
+  MODELS: '/models',
 };
 ```
 
 ## ⚙️ SDK Configuration
 
 ### Installation
+
 ```bash
 npm install @elevenlabs/react
 ```
 
 ### Basic React SDK Setup
+
 ```typescript
 import { useConversation } from '@elevenlabs/react';
 
@@ -124,6 +132,7 @@ const VoiceComponent = () => {
 ```
 
 ### Advanced Hook Configuration
+
 ```typescript
 import { useConversation } from '@elevenlabs/react';
 import { useState, useCallback } from 'react';
@@ -139,14 +148,14 @@ const useElevenLabsConversation = () => {
 
   const conversation = useConversation({
     onConnect: () => {
-      setState(prev => ({ ...prev, isConnected: true, isLoading: false, error: null }));
+      setState((prev) => ({ ...prev, isConnected: true, isLoading: false, error: null }));
     },
     onDisconnect: () => {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isConnected: false,
         isLoading: false,
-        conversationId: null
+        conversationId: null,
       }));
     },
     onMessage: (message) => {
@@ -154,27 +163,30 @@ const useElevenLabsConversation = () => {
       console.log('Message received:', message);
     },
     onError: (error) => {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         error: 'Connection error occurred',
-        isLoading: false
+        isLoading: false,
       }));
     },
   });
 
-  const startConversation = useCallback(async (agentId: string) => {
-    try {
-      setState(prev => ({ ...prev, isLoading: true, error: null }));
-      const conversationId = await conversation.startSession({ agentId });
-      setState(prev => ({ ...prev, conversationId, isLoading: false }));
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        error: 'Failed to start conversation',
-        isLoading: false
-      }));
-    }
-  }, [conversation]);
+  const startConversation = useCallback(
+    async (agentId: string) => {
+      try {
+        setState((prev) => ({ ...prev, isLoading: true, error: null }));
+        const conversationId = await conversation.startSession({ agentId });
+        setState((prev) => ({ ...prev, conversationId, isLoading: false }));
+      } catch (error) {
+        setState((prev) => ({
+          ...prev,
+          error: 'Failed to start conversation',
+          isLoading: false,
+        }));
+      }
+    },
+    [conversation]
+  );
 
   return {
     ...state,
@@ -190,6 +202,7 @@ const useElevenLabsConversation = () => {
 ## 🔐 Authentication
 
 ### API Key Management
+
 ```typescript
 // Environment-based configuration
 const getApiKey = (): string => {
@@ -207,25 +220,24 @@ const validateApiKey = (apiKey: string): boolean => {
 ```
 
 ### Authentication Headers
+
 ```typescript
-const authenticatedRequest = async (
-  url: string, 
-  options: RequestInit = {}
-): Promise<Response> => {
+const authenticatedRequest = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const apiKey = getApiKey();
-  
+
   return fetch(url, {
     ...options,
     headers: {
       ...options.headers,
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    }
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
   });
 };
 ```
 
 ### Session Validation
+
 ```typescript
 const validateSession = async (conversation: any): Promise<boolean> => {
   try {
@@ -242,6 +254,7 @@ const validateSession = async (conversation: any): Promise<boolean> => {
 ## 💬 Conversation Management
 
 ### Starting a Conversation with React SDK
+
 ```typescript
 import { useConversation } from '@elevenlabs/react';
 
@@ -298,16 +311,19 @@ const VoiceChat = ({ agentId }: { agentId: string }) => {
 ```
 
 ### Real-time Message Handling
+
 ```typescript
 const useMessageHandler = () => {
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>(
+    []
+  );
 
   const conversation = useConversation({
     onMessage: (message) => {
       // ElevenLabs React SDK provides message with source and content
       if (message.message && message.source) {
         const role = message.source === 'user' ? 'user' : 'assistant';
-        setMessages(prev => [...prev, { role, content: message.message }]);
+        setMessages((prev) => [...prev, { role, content: message.message }]);
       }
     },
     onError: (error) => {
@@ -320,6 +336,7 @@ const useMessageHandler = () => {
 ```
 
 ### Advanced Conversation State Management
+
 ```typescript
 import { useConversation } from '@elevenlabs/react';
 import { useState, useCallback, useEffect } from 'react';
@@ -341,53 +358,58 @@ const useElevenLabsConversation = () => {
     conversationId: null,
   });
 
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>(
+    []
+  );
 
   const conversation = useConversation({
     onConnect: () => {
-      setState(prev => ({ ...prev, isConnected: true, isLoading: false, error: null }));
+      setState((prev) => ({ ...prev, isConnected: true, isLoading: false, error: null }));
     },
     onDisconnect: () => {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isConnected: false,
         isLoading: false,
-        conversationId: null
+        conversationId: null,
       }));
     },
     onMessage: (message) => {
       if (message.message && message.source) {
         const role = message.source === 'user' ? 'user' : 'assistant';
-        setMessages(prev => [...prev, { role, content: message.message }]);
+        setMessages((prev) => [...prev, { role, content: message.message }]);
       }
     },
     onError: (error) => {
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         error: 'Connection error occurred',
-        isLoading: false
+        isLoading: false,
       }));
     },
   });
 
   // Track speaking state
   useEffect(() => {
-    setState(prev => ({ ...prev, isSpeaking: conversation.isSpeaking }));
+    setState((prev) => ({ ...prev, isSpeaking: conversation.isSpeaking }));
   }, [conversation.isSpeaking]);
 
-  const startConversation = useCallback(async (agentId: string) => {
-    try {
-      setState(prev => ({ ...prev, isLoading: true, error: null }));
-      const conversationId = await conversation.startSession({ agentId });
-      setState(prev => ({ ...prev, conversationId, isLoading: false }));
-    } catch (error: any) {
-      setState(prev => ({
-        ...prev,
-        error: error.message || 'Failed to start conversation',
-        isLoading: false
-      }));
-    }
-  }, [conversation]);
+  const startConversation = useCallback(
+    async (agentId: string) => {
+      try {
+        setState((prev) => ({ ...prev, isLoading: true, error: null }));
+        const conversationId = await conversation.startSession({ agentId });
+        setState((prev) => ({ ...prev, conversationId, isLoading: false }));
+      } catch (error: any) {
+        setState((prev) => ({
+          ...prev,
+          error: error.message || 'Failed to start conversation',
+          isLoading: false,
+        }));
+      }
+    },
+    [conversation]
+  );
 
   const endConversation = useCallback(async () => {
     try {
@@ -398,13 +420,16 @@ const useElevenLabsConversation = () => {
     }
   }, [conversation]);
 
-  const setVolume = useCallback(async (volume: number) => {
-    try {
-      await conversation.setVolume({ volume: Math.max(0, Math.min(1, volume)) });
-    } catch (error: any) {
-      console.error('Failed to set volume:', error);
-    }
-  }, [conversation]);
+  const setVolume = useCallback(
+    async (volume: number) => {
+      try {
+        await conversation.setVolume({ volume: Math.max(0, Math.min(1, volume)) });
+      } catch (error: any) {
+        console.error('Failed to set volume:', error);
+      }
+    },
+    [conversation]
+  );
 
   return {
     ...state,
@@ -420,6 +445,7 @@ const useElevenLabsConversation = () => {
 ## 🎵 Audio Processing
 
 ### Audio Input Configuration
+
 ```typescript
 interface AudioConfig {
   sampleRate: number;
@@ -432,7 +458,7 @@ const defaultAudioConfig: AudioConfig = {
   sampleRate: 44100,
   channels: 1,
   bitDepth: 16,
-  format: 'wav'
+  format: 'wav',
 };
 
 const configureAudioInput = (config: AudioConfig = defaultAudioConfig) => {
@@ -442,49 +468,50 @@ const configureAudioInput = (config: AudioConfig = defaultAudioConfig) => {
       channelCount: config.channels,
       echoCancellation: true,
       noiseSuppression: true,
-      autoGainControl: true
-    }
+      autoGainControl: true,
+    },
   };
-  
+
   return navigator.mediaDevices.getUserMedia(constraints);
 };
 ```
 
 ### Audio Recording
+
 ```typescript
 class AudioRecorder {
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
-  
+
   async startRecording(stream: MediaStream): Promise<void> {
     this.audioChunks = [];
     this.mediaRecorder = new MediaRecorder(stream, {
-      mimeType: 'audio/webm;codecs=opus'
+      mimeType: 'audio/webm;codecs=opus',
     });
-    
+
     this.mediaRecorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
         this.audioChunks.push(event.data);
       }
     };
-    
+
     this.mediaRecorder.start(100); // Collect data every 100ms
   }
-  
+
   async stopRecording(): Promise<Blob> {
     return new Promise((resolve, reject) => {
       if (!this.mediaRecorder) {
         reject(new Error('No active recording'));
         return;
       }
-      
+
       this.mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(this.audioChunks, { 
-          type: 'audio/webm;codecs=opus' 
+        const audioBlob = new Blob(this.audioChunks, {
+          type: 'audio/webm;codecs=opus',
         });
         resolve(audioBlob);
       };
-      
+
       this.mediaRecorder.stop();
     });
   }
@@ -492,42 +519,43 @@ class AudioRecorder {
 ```
 
 ### Audio Playback
+
 ```typescript
 class AudioPlayer {
   private audioElement: HTMLAudioElement;
   private audioContext: AudioContext;
   private gainNode: GainNode;
-  
+
   constructor() {
     this.audioElement = new Audio();
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
     this.gainNode = this.audioContext.createGain();
-    
+
     // Connect audio graph
     const source = this.audioContext.createMediaElementSource(this.audioElement);
     source.connect(this.gainNode);
     this.gainNode.connect(this.audioContext.destination);
   }
-  
+
   async playAudio(audioData: Blob): Promise<void> {
     const audioUrl = URL.createObjectURL(audioData);
     this.audioElement.src = audioUrl;
-    
+
     return new Promise((resolve, reject) => {
       this.audioElement.onended = () => {
         URL.revokeObjectURL(audioUrl);
         resolve();
       };
-      
+
       this.audioElement.onerror = (error) => {
         URL.revokeObjectURL(audioUrl);
         reject(error);
       };
-      
+
       this.audioElement.play();
     });
   }
-  
+
   setVolume(volume: number): void {
     this.gainNode.gain.value = Math.max(0, Math.min(1, volume));
   }
@@ -537,6 +565,7 @@ class AudioPlayer {
 ## 🚫 Error Handling
 
 ### Error Types
+
 ```typescript
 interface ElevenLabsError {
   code: string;
@@ -552,54 +581,56 @@ const ErrorCodes = {
   AGENT_NOT_FOUND: 'AGENT_NOT_FOUND',
   CONVERSATION_ENDED: 'CONVERSATION_ENDED',
   AUDIO_PROCESSING_ERROR: 'AUDIO_PROCESSING_ERROR',
-  NETWORK_ERROR: 'NETWORK_ERROR'
+  NETWORK_ERROR: 'NETWORK_ERROR',
 };
 ```
 
 ### Error Handling Strategies
+
 ```typescript
 const handleApiError = (error: any): ElevenLabsError => {
   if (error.response) {
     const { status, data } = error.response;
-    
+
     switch (status) {
       case 401:
         return {
           code: ErrorCodes.INVALID_API_KEY,
           message: 'Invalid API key',
-          retryable: false
+          retryable: false,
         };
       case 429:
         return {
           code: ErrorCodes.RATE_LIMIT_EXCEEDED,
           message: 'Rate limit exceeded',
           retryable: true,
-          details: data.retry_after
+          details: data.retry_after,
         };
       case 402:
         return {
           code: ErrorCodes.QUOTA_EXCEEDED,
           message: 'API quota exceeded',
-          retryable: false
+          retryable: false,
         };
       default:
         return {
           code: 'API_ERROR',
           message: data.message || 'Unknown API error',
-          retryable: status >= 500
+          retryable: status >= 500,
         };
     }
   }
-  
+
   return {
     code: ErrorCodes.NETWORK_ERROR,
     message: 'Network connection error',
-    retryable: true
+    retryable: true,
   };
 };
 ```
 
 ### Retry Logic
+
 ```typescript
 const withRetry = async <T>(
   fn: () => Promise<T>,
@@ -607,25 +638,25 @@ const withRetry = async <T>(
   delay: number = 1000
 ): Promise<T> => {
   let lastError: Error;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error as Error;
-      
+
       const elevenLabsError = handleApiError(error);
-      
+
       if (!elevenLabsError.retryable || attempt === maxRetries) {
         throw elevenLabsError;
       }
-      
+
       // Exponential backoff
       const backoffDelay = delay * Math.pow(2, attempt);
-      await new Promise(resolve => setTimeout(resolve, backoffDelay));
+      await new Promise((resolve) => setTimeout(resolve, backoffDelay));
     }
   }
-  
+
   throw lastError!;
 };
 ```
@@ -633,6 +664,7 @@ const withRetry = async <T>(
 ## ⏱️ Rate Limiting
 
 ### Rate Limit Configuration
+
 ```typescript
 interface RateLimitConfig {
   requests: number;
@@ -644,46 +676,47 @@ const rateLimits: Record<string, RateLimitConfig> = {
   conversation: {
     requests: 100,
     windowMs: 60000, // 1 minute
-    retryAfter: 1000
+    retryAfter: 1000,
   },
   message: {
     requests: 1000,
     windowMs: 60000,
-    retryAfter: 500
-  }
+    retryAfter: 500,
+  },
 };
 ```
 
 ### Rate Limiter Implementation
+
 ```typescript
 class RateLimiter {
   private requests: Map<string, number[]> = new Map();
-  
+
   canMakeRequest(key: string, config: RateLimitConfig): boolean {
     const now = Date.now();
     const windowStart = now - config.windowMs;
-    
+
     const requestTimes = this.requests.get(key) || [];
-    const recentRequests = requestTimes.filter(time => time > windowStart);
-    
+    const recentRequests = requestTimes.filter((time) => time > windowStart);
+
     this.requests.set(key, recentRequests);
-    
+
     return recentRequests.length < config.requests;
   }
-  
+
   recordRequest(key: string): void {
     const requestTimes = this.requests.get(key) || [];
     requestTimes.push(Date.now());
     this.requests.set(key, requestTimes);
   }
-  
+
   getRetryAfter(key: string, config: RateLimitConfig): number {
     const requestTimes = this.requests.get(key) || [];
     if (requestTimes.length === 0) return 0;
-    
+
     const oldestRequest = Math.min(...requestTimes);
     const windowEnd = oldestRequest + config.windowMs;
-    
+
     return Math.max(0, windowEnd - Date.now());
   }
 }
@@ -692,6 +725,7 @@ class RateLimiter {
 ## 🧪 Testing
 
 ### Unit Testing React SDK
+
 ```typescript
 import { renderHook, act } from '@testing-library/react';
 import { useConversation } from '@elevenlabs/react';
@@ -703,7 +737,7 @@ jest.mock('@elevenlabs/react', () => ({
 
 describe('ElevenLabs React SDK Integration', () => {
   const mockUseConversation = useConversation as jest.MockedFunction<typeof useConversation>;
-  
+
   beforeEach(() => {
     mockUseConversation.mockReturnValue({
       startSession: jest.fn(),
@@ -713,20 +747,22 @@ describe('ElevenLabs React SDK Integration', () => {
       isSpeaking: false,
     });
   });
-  
+
   it('should initialize conversation hook', () => {
-    const { result } = renderHook(() => useConversation({
-      onConnect: jest.fn(),
-      onDisconnect: jest.fn(),
-      onMessage: jest.fn(),
-      onError: jest.fn(),
-    }));
-    
+    const { result } = renderHook(() =>
+      useConversation({
+        onConnect: jest.fn(),
+        onDisconnect: jest.fn(),
+        onMessage: jest.fn(),
+        onError: jest.fn(),
+      })
+    );
+
     expect(result.current).toBeDefined();
     expect(result.current.startSession).toBeDefined();
     expect(result.current.endSession).toBeDefined();
   });
-  
+
   it('should handle conversation start', async () => {
     const mockStartSession = jest.fn().mockResolvedValue('conversation-id');
     mockUseConversation.mockReturnValue({
@@ -736,24 +772,27 @@ describe('ElevenLabs React SDK Integration', () => {
       status: 'connected',
       isSpeaking: false,
     });
-    
-    const { result } = renderHook(() => useConversation({
-      onConnect: jest.fn(),
-      onDisconnect: jest.fn(),
-      onMessage: jest.fn(),
-      onError: jest.fn(),
-    }));
-    
+
+    const { result } = renderHook(() =>
+      useConversation({
+        onConnect: jest.fn(),
+        onDisconnect: jest.fn(),
+        onMessage: jest.fn(),
+        onError: jest.fn(),
+      })
+    );
+
     await act(async () => {
       await result.current.startSession({ agentId: 'test-agent' });
     });
-    
+
     expect(mockStartSession).toHaveBeenCalledWith({ agentId: 'test-agent' });
   });
 });
 ```
 
 ### Integration Testing with React SDK
+
 ```typescript
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useConversation } from '@elevenlabs/react';
@@ -783,26 +822,26 @@ const TestVoiceComponent = ({ agentId }: { agentId: string }) => {
 
 describe('Voice Component Integration', () => {
   const testAgentId = 'test-agent-id';
-  
+
   it('should render and handle conversation controls', async () => {
     render(<TestVoiceComponent agentId={testAgentId} />);
-    
+
     const startButton = screen.getByText('Start');
     const endButton = screen.getByText('End');
-    
+
     expect(startButton).toBeInTheDocument();
     expect(endButton).toBeInTheDocument();
-    
+
     // Test conversation start
     fireEvent.click(startButton);
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('status')).toHaveTextContent('connected');
     });
-    
+
     // Test conversation end
     fireEvent.click(endButton);
-    
+
     await waitFor(() => {
       expect(screen.getByTestId('status')).toHaveTextContent('disconnected');
     });
@@ -813,6 +852,7 @@ describe('Voice Component Integration', () => {
 ## 🏭 Production Considerations
 
 ### Environment Configuration for React SDK
+
 ```typescript
 // Production environment setup for React SDK
 const productionConfig = {
@@ -822,8 +862,8 @@ const productionConfig = {
   monitoring: {
     enabled: true,
     errorReporting: true,
-    performanceTracking: true
-  }
+    performanceTracking: true,
+  },
 };
 
 // Production-ready conversation hook
@@ -852,21 +892,22 @@ const useProductionConversation = () => {
 ```
 
 ### Security Best Practices for React SDK
+
 ```typescript
 // The React SDK handles authentication through signed URLs
 // This should be implemented server-side for security
 const getSecureAgentId = (): string => {
   const agentId = process.env.VITE_ELEVENLABS_AGENT_ID;
-  
+
   if (!agentId) {
     throw new Error('ElevenLabs Agent ID not configured');
   }
-  
+
   // Validate agent ID format
   if (!agentId.match(/^[a-zA-Z0-9-_]+$/)) {
     throw new Error('Invalid Agent ID format');
   }
-  
+
   return agentId;
 };
 
@@ -893,6 +934,7 @@ const useSecureConversation = () => {
 ```
 
 ### Performance Optimization for React SDK
+
 ```typescript
 // Optimized conversation hook with memoization
 import { useMemo, useCallback } from 'react';
@@ -924,11 +966,11 @@ const useOptimizedConversation = () => {
 // Component-level optimization
 const OptimizedVoiceComponent = React.memo(({ agentId }: { agentId: string }) => {
   const conversation = useOptimizedConversation();
-  
+
   const handleStart = useCallback(() => {
     conversation.startSession({ agentId });
   }, [conversation, agentId]);
-  
+
   const handleEnd = useCallback(() => {
     conversation.endSession();
   }, [conversation]);
@@ -947,14 +989,15 @@ const OptimizedVoiceComponent = React.memo(({ agentId }: { agentId: string }) =>
 ### Common Issues
 
 #### React SDK Connection Errors
+
 ```typescript
 // Debug React SDK connection
 const debugReactSDKConnection = () => {
   const agentId = process.env.VITE_ELEVENLABS_AGENT_ID;
-  
+
   console.log('Agent ID configured:', !!agentId);
   console.log('Agent ID format valid:', /^[a-zA-Z0-9-_]+$/.test(agentId || ''));
-  
+
   const conversation = useConversation({
     onConnect: () => {
       console.log('Debug: Connection successful');
@@ -977,6 +1020,7 @@ const debugReactSDKConnection = () => {
 ```
 
 #### Session Management Issues
+
 ```typescript
 // Debug session management
 const debugSession = async (conversation: any, agentId: string) => {
@@ -984,19 +1028,18 @@ const debugSession = async (conversation: any, agentId: string) => {
     console.log('Starting session debug...');
     console.log('Agent ID:', agentId);
     console.log('Conversation status:', conversation.status);
-    
+
     const sessionId = await conversation.startSession({ agentId });
     console.log('Session started successfully:', sessionId);
-    
+
     // Test session state
     setTimeout(() => {
       console.log('Session status after 2s:', conversation.status);
       console.log('Is speaking:', conversation.isSpeaking);
     }, 2000);
-    
   } catch (error) {
     console.error('Session debug failed:', error);
-    
+
     // Analyze error type
     if (error.message?.includes('agent')) {
       console.error('Issue: Invalid or missing agent ID');
@@ -1010,20 +1053,21 @@ const debugSession = async (conversation: any, agentId: string) => {
 ```
 
 #### Audio Issues
+
 ```typescript
 // Audio debugging
 const debugAudio = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     console.log('Microphone access granted');
-    
+
     const audioContext = new AudioContext();
     console.log('Audio context created:', audioContext.state);
-    
+
     const recorder = new MediaRecorder(stream);
     console.log('MediaRecorder created:', recorder.state);
-    
-    stream.getTracks().forEach(track => track.stop());
+
+    stream.getTracks().forEach((track) => track.stop());
   } catch (error) {
     console.error('Audio setup failed:', error);
   }
@@ -1031,6 +1075,7 @@ const debugAudio = async () => {
 ```
 
 ### Error Diagnostics
+
 ```typescript
 const diagnoseError = (error: any) => {
   const diagnosis = {
@@ -1038,16 +1083,16 @@ const diagnoseError = (error: any) => {
     message: error.message,
     stack: error.stack,
     apiError: handleApiError(error),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
-  
+
   console.error('Error diagnosis:', diagnosis);
-  
+
   // Report to monitoring service
   if (process.env.NODE_ENV === 'production') {
     // Send to error tracking service
   }
-  
+
   return diagnosis;
 };
 ```
@@ -1055,6 +1100,7 @@ const diagnoseError = (error: any) => {
 ## 📞 Support Resources
 
 ### ElevenLabs Resources
+
 - **[Official Documentation](https://elevenlabs.io/docs)**
 - **[API Reference](https://elevenlabs.io/docs/api-reference)**
 - **[React SDK Documentation](https://elevenlabs.io/docs/sdk/react)**
@@ -1062,12 +1108,14 @@ const diagnoseError = (error: any) => {
 - **[Community Discord](https://discord.gg/elevenlabs)**
 
 ### React SDK Specific Resources
+
 - **[React SDK GitHub](https://github.com/elevenlabs/elevenlabs-js/tree/main/packages/react)**
 - **[React SDK Examples](https://github.com/elevenlabs/elevenlabs-examples/tree/main/react)**
 - **[TypeScript Definitions](https://www.npmjs.com/package/@elevenlabs/react)**
 
 ### Development Resources
-- **[GitHub Issues](https://github.com/yourusername/elevenlabs-voice-agent/issues)**
+
+- **[GitHub Issues](https://github.com/moshehbenavraham/Voice-Agent-PuPuPlatter/issues)**
 - **[Contributing Guide](../CONTRIBUTING.md)**
 - **[Support Guide](../SUPPORT.md)**
 

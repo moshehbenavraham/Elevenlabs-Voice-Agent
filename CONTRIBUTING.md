@@ -39,23 +39,27 @@ Thank you for your interest in contributing to the ElevenLabs Voice Agent! This 
 ### Environment Setup
 
 1. **Clone the repository**
+
    ```bash
-   git clone https://github.com/yourusername/elevenlabs-voice-agent.git
-   cd elevenlabs-voice-agent
+   git clone https://github.com/moshehbenavraham/Voice-Agent-PuPuPlatter.git
+   cd Voice-Agent-PuPuPlatter
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Environment configuration**
+
    ```bash
    cp .env.example .env
    # Edit .env with your ElevenLabs API key and configuration
    ```
 
 4. **Start development server**
+
    ```bash
    npm run dev
    ```
@@ -91,7 +95,7 @@ interface VoiceConfig {
 }
 
 // ❌ Avoid
-const config: any = { agentId: "123", model: "test" };
+const config: any = { agentId: '123', model: 'test' };
 ```
 
 ### React Patterns
@@ -106,7 +110,7 @@ const config: any = { agentId: "123", model: "test" };
 const useVoiceRecording = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
-  
+
   // Hook logic here
   return { isRecording, audioStream, startRecording, stopRecording };
 };
@@ -145,24 +149,24 @@ import React from 'react';
 import { ComponentNameProps } from './types';
 import styles from './ComponentName.module.css';
 
-export const ComponentName: React.FC<ComponentNameProps> = ({ 
-  prop1, 
+export const ComponentName: React.FC<ComponentNameProps> = ({
+  prop1,
   prop2,
-  ...props 
+  ...props
 }) => {
   // Hooks at the top
   const [state, setState] = useState(initialState);
-  
+
   // Event handlers
   const handleEvent = useCallback(() => {
     // Handler logic
   }, [dependencies]);
-  
+
   // Effects
   useEffect(() => {
     // Effect logic
   }, [dependencies]);
-  
+
   // Render
   return (
     <div className={styles.container} {...props}>
@@ -180,15 +184,15 @@ export interface ComponentNameProps {
   // Required props
   id: string;
   title: string;
-  
+
   // Optional props
   className?: string;
   onAction?: (data: ActionData) => void;
-  
+
   // Voice-specific props
   voiceEnabled?: boolean;
   audioConfig?: AudioConfig;
-  
+
   // Accessibility props
   'aria-label'?: string;
   'aria-describedby'?: string;
@@ -218,12 +222,12 @@ describe('VoiceOrb', () => {
   it('should request microphone permission on activation', async () => {
     const mockGetUserMedia = jest.fn().mockResolvedValue(mockStream);
     global.navigator.mediaDevices = { getUserMedia: mockGetUserMedia };
-    
+
     render(<VoiceOrb />);
-    
+
     const activateButton = screen.getByRole('button', { name: /activate voice/i });
     fireEvent.click(activateButton);
-    
+
     expect(mockGetUserMedia).toHaveBeenCalledWith({ audio: true });
   });
 });
@@ -323,6 +327,7 @@ perf(audio): optimize real-time audio processing
 ### Before Submitting
 
 1. **Sync with main branch**
+
    ```bash
    git checkout main
    git pull origin main
@@ -331,6 +336,7 @@ perf(audio): optimize real-time audio processing
    ```
 
 2. **Run quality checks**
+
    ```bash
    npm run lint
    npm run type-check
@@ -386,6 +392,7 @@ perf(audio): optimize real-time audio processing
 ### Browser Testing
 
 Test voice features in:
+
 - **Chrome** (latest 2 versions)
 - **Firefox** (latest 2 versions)
 - **Safari** (latest 2 versions)
@@ -395,6 +402,7 @@ Test voice features in:
 ### Audio Device Testing
 
 Test with different audio devices:
+
 - **Built-in microphone** and speakers
 - **USB headsets**
 - **Bluetooth headphones**
@@ -404,6 +412,7 @@ Test with different audio devices:
 ### Performance Testing
 
 Monitor:
+
 - **CPU usage** during voice processing
 - **Memory usage** over extended use
 - **Battery drain** on mobile devices
@@ -415,6 +424,7 @@ Monitor:
 ### Device Testing
 
 Test on representative devices:
+
 - **iOS**: iPhone (latest 2 generations)
 - **Android**: Samsung, Google Pixel devices
 - **Tablets**: iPad, Android tablets
@@ -501,6 +511,7 @@ Test on representative devices:
 ### Recognition
 
 Contributors are recognized through:
+
 - **GitHub contributors** list
 - **Release notes** attribution
 - **Community highlights**

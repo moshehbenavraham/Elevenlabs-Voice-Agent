@@ -1,12 +1,10 @@
-# ElevenLabs Voice Agent
+# Voice-Agent-PuPuPlatter
 
 > **Project assembled by [AI with Apex](https://AIwithApex.com)**
-> [NEW] **[Remix this project on Lovable](https://elevenlabs-voice-agent.lovable.app/)**
-> [DEV] **Developed on [Lovable.dev](https://lovable.dev/)**
 
 ## [VIDEO] Video Tutorial Series
 
-Learn how to create and configure ElevenLabs agents for this application:
+Learn how to create and configure ElevenLabs agents (in general and) for this application:
 
 | Tutorial                                                                                        | Description                                                        |
 | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
@@ -18,59 +16,61 @@ Learn how to create and configure ElevenLabs agents for this application:
 
 ---
 
-A sophisticated voice AI web application built with React, TypeScript, and the ElevenLabs Conversational AI SDK. Experience real-time voice conversations with advanced AI featuring beautiful audio visualizations and a modern glassmorphism UI.
+A sophisticated multi-provider voice AI web application built with React 19, TypeScript, and support for 7 different voice AI providers. Experience real-time voice conversations with beautiful audio visualizations and a modern glassmorphism UI.
 
 ## [FEATURES] Features
 
 ### Core Features
 
-- **Real-time Voice Conversation**: Talk naturally with advanced AI using ElevenLabs technology
-- **Multi-Provider Support**: Switch between ElevenLabs, xAI Grok, OpenAI, Ultravox, Vapi, and Retell voice providers with smooth tab animations
+- **Real-time Voice Conversation**: Talk naturally with AI using multiple voice providers
+- **7 Voice Providers**: ElevenLabs (Widget + SDK), xAI Grok, OpenAI Realtime, Ultravox, Vapi, and Retell
 - **Audio Visualization**: Beautiful 60fps audio visualizer with real-time frequency analysis
 - **Glassmorphism Design**: Modern, premium UI with dark/light theme toggle
 - **Mobile-First**: Responsive design optimized for all devices (375px to 1920px)
 - **Accessibility**: Full keyboard navigation, ARIA support, and respects prefers-reduced-motion
 
-### Phase 02 Features (Advanced)
+### Advanced Features
 
-- **Voice Selection UI**: Choose from multiple voices per provider (8 OpenAI voices, 5 xAI voices)
+- **Voice Selection UI**: Choose from multiple voices per provider
 - **Real-time Transcript**: Live conversation transcript with user/AI message differentiation and auto-scroll
 - **Automatic Reconnection**: WebSocket reconnection with exponential backoff (1s, 2s, 4s, 8s, max 30s)
 - **Function Calling**: AI can execute tools like weather lookup, time queries, and calculations
 - **Connection Status**: Visual indicators for connecting, connected, reconnecting states
 - **Voice Persistence**: Selected voice saved to localStorage across sessions
+- **Docker Support**: Full containerization with Docker and docker-compose
 
-### Phase 03 Features (Testing & Configuration)
+### Testing Infrastructure
 
-- **E2E Testing Infrastructure**: Playwright-based end-to-end testing with multi-browser support
-- **Voice Flow E2E Tests**: Comprehensive voice connection, transcript, and function calling tests
-- **ElevenLabs Reconnection**: Enhanced reconnection resilience for ElevenLabs SDK provider
-- **Provider Configuration Modal**: Settings modal for configuring voice providers (accessible via UI)
-- **Enhanced Accessibility**: ARIA attributes for modals, error alerts, and loading states
-- **215+ Unit Tests**: Comprehensive test coverage including voice, contexts, and accessibility
+- **E2E Testing**: Playwright-based end-to-end testing with multi-browser support
+- **Voice Flow Tests**: Comprehensive voice connection, transcript, and function calling tests
+- **429+ Unit Tests**: Extensive test coverage including voice, contexts, hooks, and accessibility
+- **Configuration Modal**: Settings modal for configuring voice providers
 
 ## [MIC] Multi-Provider Voice System
 
-This application supports multiple voice AI providers through a tabbed interface:
+This application supports 7 voice AI providers through a tabbed interface:
 
 ### Supported Providers
 
-| Provider       | Status    | Description                                                 |
-| -------------- | --------- | ----------------------------------------------------------- |
-| **ElevenLabs** | Available | High-quality conversational AI with natural voice synthesis |
-| **xAI Grok**   | Available | Grok-powered voice assistant with realtime API              |
-| **OpenAI**     | Available | GPT-4o realtime voice conversations with server VAD         |
-| **Ultravox**   | Available | Low-latency voice AI with call-based WebSocket connections  |
-| **Vapi**       | Available | Voice AI platform with Daily.co WebRTC and public web token |
-| **Retell**     | Available | Retell AI with LiveKit WebRTC and agent dashboard config    |
+| Provider              | Status    | Backend Required | Description                                                 |
+| --------------------- | --------- | ---------------- | ----------------------------------------------------------- |
+| **ElevenLabs Widget** | Available | No               | Pre-built embed from ElevenLabs CDN with customizable UI    |
+| **ElevenLabs SDK**    | Available | No               | Custom React UI with @elevenlabs/react SDK                  |
+| **xAI Grok**          | Available | Yes              | Grok-powered voice assistant with realtime API              |
+| **OpenAI**            | Available | Yes              | GPT-4o realtime voice conversations with server VAD         |
+| **Ultravox**          | Available | Yes              | Low-latency voice AI with call-based WebSocket connections  |
+| **Vapi**              | Available | No               | Voice AI platform with Daily.co WebRTC and public web token |
+| **Retell**            | Available | Yes              | Retell AI with LiveKit WebRTC and agent dashboard config    |
 
 ### Configuration
 
 #### ElevenLabs Setup
 
 ```bash
-# Add to your .env file
+# Add to your .env file (used by both Widget and SDK tabs)
 VITE_ELEVENLABS_AGENT_ID=your_agent_id_here
+VITE_ELEVENLABS_ENABLED=true      # Enable Widget tab
+VITE_ELEVENLABS_SDK_ENABLED=true  # Enable SDK tab
 ```
 
 #### xAI Grok Setup
@@ -81,6 +81,7 @@ XAI_API_KEY=your_xai_api_key_here
 
 # Client-side (enable xAI in frontend)
 VITE_XAI_ENABLED=true
+VITE_XAI_VOICE=Ara  # Options: Ara, Eve, Leo, Rex, Sal
 VITE_API_BASE_URL=http://localhost:3001
 ```
 
@@ -92,6 +93,7 @@ OPENAI_API_KEY=sk-your_openai_api_key_here
 
 # Client-side (enable OpenAI in frontend)
 VITE_OPENAI_ENABLED=true
+VITE_OPENAI_VOICE=alloy  # Options: alloy, ash, ballad, coral, echo, sage, shimmer, verse
 VITE_API_BASE_URL=http://localhost:3001
 ```
 
@@ -119,6 +121,7 @@ VITE_VAPI_ENABLED=true
 VITE_VAPI_WEB_TOKEN=your_public_web_token_here
 VITE_VAPI_ASSISTANT_ID=your_assistant_id_here  # Optional
 VITE_VAPI_VOICE=paula  # Default voice
+VITE_VAPI_MODEL=gpt-3.5-turbo  # Model selection
 ```
 
 Vapi uses a frontend-only integration with a public web token. The @vapi-ai/web SDK handles all connection and audio via Daily.co WebRTC. No backend is required.
@@ -147,40 +150,38 @@ Retell uses a backend-generated access token for secure WebRTC connections via L
 
 ## [DOCS] Documentation
 
-This project includes comprehensive documentation to help you get started, contribute, and deploy successfully:
+This project includes comprehensive documentation:
 
-### [SETUP] **Getting Started**
+### Getting Started
 
 - **[Quick Start Guide](#-quick-start)** - Get up and running in minutes
 - **[Installation & Configuration](#configuration)** - Detailed setup instructions
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment for Vercel, Netlify, AWS, Firebase
 
-### [ARCH] **Technical Documentation**
+### Technical Documentation
 
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - System design, components, and data flow
-- **[API Integration Guide](docs/API_INTEGRATION.md)** - ElevenLabs React SDK integration and best practices
+- **[API Integration Guide](docs/API_INTEGRATION.md)** - Voice SDK integration and best practices
 - **[Voice Features Documentation](docs/VOICE_FEATURES.md)** - Voice orb, audio visualization, and voice interactions
 - **[Mobile Optimization Guide](docs/MOBILE_OPTIMIZATION.md)** - Touch interactions, PWA features, and mobile performance
 
-### [AI] **AI-Assistant Documentation**
+### AI-Assistant Documentation
 
 - **[Claude Code Integration Guide](CLAUDE.md)** - Development commands, architecture overview, and guidelines for Claude Code
 
-### [CONTRIB] **Community & Support**
+### Community & Support
 
 - **[Contributing Guidelines](CONTRIBUTING.md)** - Development setup, code style, and contribution process
-- **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community standards and guidelines
-- **[Support Guide](SUPPORT.md)** - Getting help, troubleshooting, and community resources
-- **[Security Policy](SECURITY.md)** - Vulnerability reporting and security best practices
+- **[Code of Conduct](docs/CODE_OF_CONDUCT.md)** - Community standards and guidelines
+- **[Support Guide](docs/SUPPORT.md)** - Getting help, troubleshooting, and community resources
+- **[Security Policy](docs/SECURITY.md)** - Vulnerability reporting and security best practices
 
-### [HELP] **Help & Troubleshooting**
+### Help & Troubleshooting
 
 - **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues, solutions, and diagnostic tools
-- **[Changelog](CHANGELOG.md)** - Version history and release notes
-- **[Issue Templates](.github/ISSUE_TEMPLATE/)** - Bug reports, feature requests, and voice integration issues
-- **[License](LICENSE)** - MIT License terms and conditions
+- **[Changelog](docs/CHANGELOG.md)** - Version history and release notes
 
-### [LINKS] **Quick Links**
+### Quick Links
 
 | Type      | Documentation                                   | Description                    |
 | --------- | ----------------------------------------------- | ------------------------------ |
@@ -188,19 +189,19 @@ This project includes comprehensive documentation to help you get started, contr
 | [ARCH]    | **[Architecture](docs/ARCHITECTURE.md)**        | Technical system design        |
 | [VOICE]   | **[Voice Features](docs/VOICE_FEATURES.md)**    | Voice AI functionality         |
 | [MOBILE]  | **[Mobile Guide](docs/MOBILE_OPTIMIZATION.md)** | Mobile optimization            |
-| [API]     | **[API Integration](docs/API_INTEGRATION.md)**  | ElevenLabs React SDK guide     |
+| [API]     | **[API Integration](docs/API_INTEGRATION.md)**  | Voice SDK integration guide    |
 | [HELP]    | **[Troubleshooting](docs/TROUBLESHOOTING.md)**  | Problem resolution             |
 | [AI]      | **[Claude Integration](CLAUDE.md)**             | AI assistant development guide |
 | [CONTRIB] | **[Contributing](CONTRIBUTING.md)**             | Development guidelines         |
-| [SECURE]  | **[Security](SECURITY.md)**                     | Security policies              |
+| [SECURE]  | **[Security](docs/SECURITY.md)**                | Security policies              |
 
 ## [START] Quick Start
 
 ### Prerequisites
 
-- Node.js 18+ and npm
-- ElevenLabs account and Agent ID (React SDK handles authentication)
+- Node.js 18+ and npm (or Bun)
 - Modern browser with microphone access
+- Voice provider credentials (see provider setup sections above)
 
 ### Installation
 
@@ -209,60 +210,52 @@ This project includes comprehensive documentation to help you get started, contr
 git clone <YOUR_GIT_URL>
 cd Voice-Agent-PuPuPlatter
 
-# Install dependencies (uses Bun for faster installation)
-bun install
-# or use npm
+# Install dependencies
 npm install
+# or with Bun
+bun install
 
-# Start development server
-bun dev
-# or use npm
+# Copy environment template
+cp .env.example .env
+# Edit .env with your provider credentials
+
+# Start development server (frontend only)
 npm run dev
+
+# Or start both frontend and backend
+npm run dev:all
 ```
 
-### Configuration
+### Development Server
 
-1. **ElevenLabs Setup**:
-   - Create an account at [ElevenLabs](https://elevenlabs.io)
-   - Navigate to the Conversational AI section in your dashboard
-   - Create a new conversational AI agent
-   - Copy your Agent ID from the agent settings
-   - Create a `.env` file from `.env.example`:
-     ```bash
-     cp .env.example .env
-     ```
-   - Add your Agent ID to the `.env` file:
-     ```
-     VITE_ELEVENLABS_AGENT_ID=your_actual_agent_id_here
-     ```
+The frontend runs on port **8082** by default. The backend API server runs on port **3001**.
 
-2. **Environment Configuration**:
-   - **Environment Variables**: Configure your Agent ID in `.env` file (see `.env.example`)
-   - **Production Requirements**:
-     - Implement server-side signed URL generation for security
-     - Set up proper authentication with ElevenLabs API
-     - Configure HTTPS for microphone access
-   - **Browser Permissions**: Microphone access will be requested on first use
+```bash
+# Frontend only
+npm run dev          # http://localhost:8082
 
-3. **Important Notes**:
-   - The app reads Agent ID from environment variables (not hardcoded)
-   - For production use, implement proper API key management on your backend
-   - The app uses the ElevenLabs React SDK for real-time conversation handling
+# Frontend + Backend (for xAI, OpenAI, Ultravox, Retell)
+npm run dev:all      # Frontend: 8082, Backend: 3001
+
+# Backend only
+npm run server       # http://localhost:3001
+```
 
 ## [TOOLS] Technologies
 
-- **Frontend**: React 18, TypeScript, Vite
-- **Build Tool**: Vite with SWC for fast compilation
-- **Styling**: Tailwind CSS, Framer Motion animations
-- **Voice AI**: @elevenlabs/react SDK v0.2.1
-- **Audio Processing**: Web Audio API, Canvas API for visualizations
+- **Framework**: React 19.2, TypeScript 5.9
+- **Build Tool**: Vite 7.2 with SWC for fast compilation
+- **Styling**: Tailwind CSS 4.1, Framer Motion animations
+- **Voice AI SDKs**:
+  - @elevenlabs/react v0.12.3
+  - @vapi-ai/web v2.5.2
+  - ultravox-client v0.5.0
+  - retell-client-js-sdk v2.0.7
 - **UI Components**: Radix UI primitives with shadcn/ui styling
-- **Routing**: React Router v6
-- **State Management**: React hooks with custom state management
-- **Icons**: Lucide React
-- **Theming**: next-themes for dark/light mode
-- **Notifications**: Sonner for toast notifications
-- **Package Manager**: Bun (with npm fallback support)
+- **State Management**: React Context, TanStack Query
+- **Testing**: Vitest, React Testing Library, Playwright
+- **Code Quality**: ESLint, Prettier, Husky, lint-staged
+- **Containerization**: Docker, docker-compose
 
 ## [MOBILE] Mobile Support
 
@@ -296,7 +289,7 @@ The app is built mobile-first with:
 
 ## [TEST] Testing
 
-The project includes a comprehensive test suite using Vitest and React Testing Library:
+The project includes a comprehensive test suite:
 
 ```bash
 # Run tests in watch mode
@@ -307,11 +300,18 @@ npm run test:run
 
 # Run tests with UI
 npm run test:ui
+
+# Run E2E tests
+npm run test:e2e
+
+# Run E2E tests with UI
+npm run test:e2e:ui
 ```
 
 ### Test Coverage
 
-- **215+ tests** covering components, contexts, hooks, and utilities
+- **429+ tests** covering components, contexts, hooks, and utilities
+- **22 test files** with comprehensive coverage
 - **Voice configuration tests** - Provider voice selection, persistence
 - **Reconnection tests** - Backoff logic, retry limits, connection recovery
 - **Conversation tests** - Message bubbles, transcript panel, auto-scroll
@@ -319,13 +319,13 @@ npm run test:ui
 - **ProviderContext tests** - Provider selection, localStorage persistence
 - **ProviderTabs tests** - Tab rendering, keyboard navigation, accessibility
 - **Audio utilities tests** - PCM encoding/decoding, base64 conversion
-- **Voice context tests** - State management, error handling
 
 ### Test Categories
 
 - **Unit Tests**: Component behavior, hooks, and utility functions
 - **Accessibility Tests**: ARIA labels, keyboard navigation (Arrow keys, Tab, Enter)
 - **Integration Tests**: Provider switching, voice connection flows
+- **E2E Tests**: Full user flows with Playwright (Chromium, Firefox, WebKit)
 
 ## [DEPLOY] Deployment
 
@@ -333,14 +333,23 @@ npm run test:ui
 
 ```bash
 # Build the application
-bun run build
-# or
 npm run build
 
 # Preview production build locally
-bun run preview
-# or
 npm run preview
+```
+
+### Docker Deployment
+
+```bash
+# Build Docker image
+npm run docker:build
+
+# Start with docker-compose
+npm run docker:up
+
+# Stop containers
+npm run docker:down
 ```
 
 ### Deployment Options
@@ -368,18 +377,11 @@ vercel --prod
 - Upload the `dist` folder contents to your web server
 - Ensure HTTPS is configured for microphone access
 
-### Production Considerations
-
-- **HTTPS Required**: Microphone access requires HTTPS in production
-- **ElevenLabs API**: Implement server-side signed URL generation
-- **Error Handling**: Add proper error boundaries and fallbacks
-- **Performance**: Enable gzip compression and CDN for static assets
-
-### Production Deployment Checklist
+### Production Checklist
 
 1. **Security**
    - Configure environment variables on your hosting platform (never commit `.env`)
-   - Use server-side API key proxy for xAI and OpenAI (ephemeral token pattern)
+   - Use server-side API key proxy for xAI, OpenAI, Ultravox, Retell
    - Enable HTTPS with valid SSL certificate
    - Set appropriate CORS origins in backend
 
@@ -388,19 +390,21 @@ vercel --prod
    - Configure `CORS_ORIGIN` to match your frontend URL
    - Ensure API keys are set in server environment variables
 
-3. **Environment Variables for Production**
+3. **Environment Variables**
 
    ```bash
    # Frontend (build-time)
    VITE_ELEVENLABS_AGENT_ID=your_agent_id
-   VITE_API_BASE_URL=https://your-backend-api.com
    VITE_ELEVENLABS_ENABLED=true
+   VITE_ELEVENLABS_SDK_ENABLED=true
    VITE_XAI_ENABLED=true
    VITE_OPENAI_ENABLED=true
    VITE_ULTRAVOX_ENABLED=true
    VITE_VAPI_ENABLED=true
+   VITE_VAPI_WEB_TOKEN=your_web_token
    VITE_RETELL_ENABLED=true
    VITE_RETELL_AGENT_ID=your_retell_agent_id
+   VITE_API_BASE_URL=https://your-backend-api.com
 
    # Backend (runtime)
    ELEVENLABS_API_KEY=sk_xxx
@@ -432,10 +436,11 @@ vercel --prod
 
 ## [SECURE] Privacy & Security
 
-- **Audio Data**: Processed locally and streamed securely to ElevenLabs
-- **No Storage**: Conversations are not stored locally
+- **Audio Data**: Processed locally and streamed securely to voice providers
+- **No Storage**: Conversations are not stored locally by default
 - **Permissions**: Explicit microphone permission requests
 - **HTTPS**: Required for microphone access in production
+- **API Keys**: Server-side only for providers requiring backend
 
 ## [CONTRIB] Contributing
 
@@ -460,90 +465,124 @@ vercel --prod
 ```
 src/
 |-- components/          # Reusable UI components
-|   |-- VoiceOrb.tsx    # Main voice interaction component
-|   |-- AudioVisualizer.tsx # Real-time audio visualization
-|   |-- ThemeToggle.tsx # Dark/light theme switcher
-|   |-- HeroSection.tsx # Landing page hero
-|   |-- BackgroundEffects.tsx # Dynamic background animations
-|   |-- VoiceEnvironment.tsx # Voice environment visualization
-|   |-- ParticleSystem.tsx # Particle effects
-|   |-- AnimatedText.tsx # Text animations
-|   |-- ThemeCustomizer.tsx # Theme customization
-|   \-- ui/             # shadcn/ui components
-|       |-- button.tsx  # Button component
-|       |-- card.tsx    # Card component
-|       |-- dialog.tsx  # Dialog component
-|       \-- ... (50+ UI components)
-|-- contexts/           # React contexts
-|   |-- ThemeContext.tsx # Theme management
-|   |-- VoiceContext.tsx # ElevenLabs voice state
-|   |-- XAIVoiceContext.tsx # xAI voice state with reconnection
-|   \-- OpenAIVoiceContext.tsx # OpenAI voice state with reconnection
-|-- hooks/              # Custom React hooks
-|   |-- useElevenLabsConversation.ts # ElevenLabs integration
-|   |-- useReconnection.ts # WebSocket reconnection with backoff
-|   |-- useVoiceAnimations.ts # Voice animation logic
-|   |-- usePerformanceOptimization.ts # Performance hooks
-|   |-- useMobileOptimization.ts # Mobile-specific optimizations
-|   |-- useAccessibility.ts # Accessibility features
-|   \-- use-toast.ts    # Toast notifications
-|-- lib/                # Utility functions
-|   |-- utils.ts        # Helper functions
-|   |-- audio/          # Audio processing utilities
-|   \-- tools/          # Function calling tool definitions
-\-- pages/              # Page components
-    |-- Index.tsx       # Main application page
-    \-- NotFound.tsx    # 404 page
+|   |-- voice/           # Voice interaction components
+|   |   |-- VoiceButton.tsx
+|   |   |-- VoiceStatus.tsx
+|   |   |-- VoiceVisualizer.tsx
+|   |   |-- VoiceSelector.tsx
+|   |   |-- VoiceWidget.tsx
+|   |   |-- FunctionCallIndicator.tsx
+|   |   \-- ReconnectionStatus.tsx
+|   |-- providers/       # Provider-specific components
+|   |   |-- ElevenLabsProvider.tsx
+|   |   |-- OpenAIProvider.tsx
+|   |   |-- XAIProvider.tsx
+|   |   |-- UltravoxProvider.tsx
+|   |   |-- VapiProvider.tsx
+|   |   \-- RetellProvider.tsx
+|   |-- conversation/    # Conversation UI components
+|   |   |-- ConversationPanel.tsx
+|   |   |-- MessageBubble.tsx
+|   |   |-- ElevenLabsConversationPanel.tsx
+|   |   |-- OpenAIConversationPanel.tsx
+|   |   |-- XAIConversationPanel.tsx
+|   |   |-- UltravoxConversationPanel.tsx
+|   |   \-- VapiConversationPanel.tsx
+|   |-- tabs/            # Tab navigation
+|   |   |-- ProviderTabs.tsx
+|   |   \-- ProviderTab.tsx
+|   |-- settings/        # Settings components
+|   |   |-- ConfigurationDialog.tsx
+|   |   |-- ProviderSettingsPanel.tsx
+|   |   \-- ConnectionDiagnostics.tsx
+|   |-- ui/              # shadcn/ui components
+|   |-- BackgroundEffects.tsx
+|   |-- HeroSection.tsx
+|   |-- VoiceEnvironment.tsx
+|   |-- ParticleSystem.tsx
+|   \-- ThemeToggle.tsx
+|-- contexts/            # React contexts
+|   |-- ThemeContext.tsx
+|   |-- VoiceContext.tsx       # ElevenLabs SDK state
+|   |-- XAIVoiceContext.tsx
+|   |-- OpenAIVoiceContext.tsx
+|   |-- UltravoxVoiceContext.tsx
+|   |-- VapiVoiceContext.tsx
+|   \-- ProviderContext.tsx    # Active provider selection
+|-- hooks/               # Custom React hooks
+|   |-- useReconnection.ts     # WebSocket reconnection with backoff
+|   |-- useVapiVoice.ts
+|   |-- useRetellVoice.ts
+|   |-- useUltravoxVoice.ts
+|   |-- useOpenAIVoice.ts
+|   |-- useXAIVoice.ts
+|   |-- useAccessibility.ts
+|   |-- useReducedMotion.ts
+|   \-- use-toast.ts
+|-- lib/                 # Utility functions
+|   |-- utils.ts
+|   |-- audio/           # Audio processing utilities
+|   |   \-- audioUtils.ts
+|   |-- tools/           # Function calling tool definitions
+|   |   \-- toolDefinitions.ts
+|   \-- vapi.ts          # Vapi utilities
+|-- pages/               # Page components
+|   |-- Index.tsx        # Main application page
+|   \-- NotFound.tsx     # 404 page
+|-- test/                # Test files (22 test files, 429+ tests)
+|-- types/               # TypeScript type definitions
+|   |-- ultravox.ts
+|   |-- vapi.ts
+|   |-- retell.ts
+|   \-- voice-provider.ts
+\-- server/              # Backend API server
+    |-- index.js         # Express server
+    \-- routes/          # API routes
 ```
 
 ### Key Components
 
-#### VoiceOrb Component
+#### Provider System
 
-- Central voice interaction interface
-- Real-time audio visualization
-- Connection status indicators
-- Touch and click interactions
+Each voice provider has:
 
-#### ElevenLabs Integration
+- **Provider Component** (`*Provider.tsx`): UI wrapper with buttons, status, visualizer
+- **Voice Hook** (`use*Voice.ts`): Connection logic, state management, events
+- **Voice Context** (`*VoiceContext.tsx`): Global state for the provider
+- **Conversation Panel** (`*ConversationPanel.tsx`): Real-time transcript display
 
-- Real-time conversation handling via [`useElevenLabsConversation.ts`](src/hooks/useElevenLabsConversation.ts)
-- Message transcription and history
-- Connection state management
-- Error handling and recovery
+#### Tab Navigation
 
-#### Audio Visualization
-
-- 60fps Canvas-based audio visualization
-- Real-time frequency analysis
-- Dynamic particle effects
-- Performance-optimized rendering
+- `ProviderTabs.tsx` renders all enabled provider tabs
+- Tabs are controlled via environment variables (`VITE_*_ENABLED`)
+- Smooth Framer Motion transitions between providers
+- Keyboard navigation with arrow keys
 
 ## [ISSUES] Known Issues & Browser Compatibility
 
 ### Browser Compatibility
 
-- **Chrome/Edge**: Full feature support [x]
-- **Firefox**: Full support, some animation optimizations may vary [x]
-- **Safari**: WebAudio API requires user gesture for initialization [!]
-- **Mobile Browsers**: Optimized for mobile, background tab throttling may affect audio [!]
+- **Chrome/Edge**: Full feature support
+- **Firefox**: Full support, some animation optimizations may vary
+- **Safari**: WebAudio API requires user gesture for initialization
+- **Mobile Browsers**: Optimized for mobile, background tab throttling may affect audio
 
 ### Known Issues
 
-1. **Agent ID Configuration**: Must set `VITE_ELEVENLABS_AGENT_ID` in `.env` file
+1. **HTTPS Requirement**: Microphone access requires HTTPS in production
 2. **Safari WebAudio**: May require user interaction before audio processing starts
 3. **Mobile Chrome**: Background tab throttling affects audio visualization
-4. **HTTPS Requirement**: Microphone access requires HTTPS in production
-5. **Demo Implementation**: Current implementation is for demo purposes only
+4. **Provider Configuration**: Each provider requires specific setup (see Configuration section)
 
 ### Troubleshooting
 
 #### "Connection Failed" Error
 
-- Verify your ElevenLabs Agent ID is correctly configured
+- Verify your provider credentials are correctly configured
 - Check browser console for specific error messages
 - Ensure microphone permissions are granted
 - Verify HTTPS is used in production
+- For backend-requiring providers, ensure the backend is running
 
 #### Audio Visualization Not Working
 
@@ -554,7 +593,7 @@ src/
 
 #### Performance Issues
 
-- Reduce animation complexity in [`src/components/VoiceEnvironment.tsx`](src/components/VoiceEnvironment.tsx)
+- Reduce animation complexity in settings
 - Disable particle effects on lower-end devices
 - Check for browser-specific optimizations
 
@@ -562,33 +601,46 @@ src/
 
 ### Prerequisites
 
-- Node.js 18+
-- Bun (recommended) or npm
+- Node.js 18+ (or Bun)
 - Modern browser with microphone support
-- ElevenLabs account and Agent ID
+- Voice provider credentials
 
 ### Development Commands
 
 ```bash
 # Development server
-bun dev
+npm run dev           # Frontend only
+npm run dev:all       # Frontend + Backend
+npm run server        # Backend only
 
-# Build for production
-bun run build
+# Build
+npm run build         # Production build
+npm run build:dev     # Development build
+npm run preview       # Preview production build
 
-# Preview production build
-bun run preview
+# Code quality
+npm run lint          # Run ESLint
+npm run format        # Format with Prettier
+npm run format:check  # Check formatting
 
-# Lint code
-bun run lint
+# Testing
+npm run test          # Watch mode
+npm run test:run      # Single run
+npm run test:ui       # Visual UI
+npm run test:e2e      # Playwright E2E
+
+# Docker
+npm run docker:build  # Build image
+npm run docker:up     # Start containers
+npm run docker:down   # Stop containers
 ```
 
 ### Environment Setup
 
 1. Clone the repository
-2. Install dependencies with `bun install`
-3. Configure your ElevenLabs Agent ID in `.env` file (copy from `.env.example`)
-4. Start development server with `bun dev`
+2. Install dependencies with `npm install` or `bun install`
+3. Copy `.env.example` to `.env` and configure your credentials
+4. Start development server with `npm run dev` (or `npm run dev:all` for full stack)
 5. Open `http://localhost:8082` in your browser
 
 ## [LICENSE] License
@@ -598,6 +650,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## [THANKS] Acknowledgments
 
 - [ElevenLabs](https://elevenlabs.io) for conversational AI technology
+- [OpenAI](https://openai.com) for GPT-4o Realtime API
+- [xAI](https://x.ai) for Grok voice assistant
+- [Ultravox](https://ultravox.ai) for low-latency voice AI
+- [Vapi](https://vapi.ai) for voice AI platform
+- [Retell AI](https://retellai.com) for conversational AI
 - [Radix UI](https://radix-ui.com) for accessible UI primitives
 - [shadcn/ui](https://ui.shadcn.com) for beautiful UI components
 - [Framer Motion](https://framer.com/motion) for smooth animations
@@ -606,4 +663,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**[!] Important**: This is a demo implementation. For production use, implement proper API key management and server-side authentication with ElevenLabs.
+**Current Version**: v1.0.31
+
+**[!] Important**: For production use, implement proper API key management and server-side authentication for providers requiring backend support.

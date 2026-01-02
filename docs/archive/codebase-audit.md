@@ -55,7 +55,7 @@ This audit evaluates the codebase across three critical dimensions: project scaf
    ```
 
    - **Issue:** Placeholder name from template, not project-specific
-   - **Recommendation:** Rename to `elevenlabs-voice-agent`
+   - **Recommendation:** ~~Rename to `elevenlabs-voice-agent`~~ ✅ RESOLVED: Renamed to `voice-agent-pupuplatter`
 
 2. **Missing tailwind.config.ts** (referenced in `components.json:8`)
 
@@ -248,7 +248,6 @@ This audit evaluates the codebase across three critical dimensions: project scaf
    - **Recommendation:** Update with actual security contact
 
 4. **Hardcoded External URLs**
-   - OpenGraph images point to lovable.dev domain (`index.html:15-19`)
    - Could be replaced by attacker if domain changes hands
    - **Recommendation:** Host assets on owned domain
 

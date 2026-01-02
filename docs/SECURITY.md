@@ -22,8 +22,8 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 ### 📧 **Contact Methods**
 
-- **Email**: Send details to security@elevenlabs-voice-agent.dev
-- **Subject Line**: `[SECURITY] ElevenLabs Voice Agent - [Brief Description]`
+- **Email**: Send details to security@voice-agent-pupuplatter.dev
+- **Subject Line**: `[SECURITY] Voice-Agent-PuPuPlatter - [Brief Description]`
 - **Response Time**: We aim to respond within 48 hours
 
 ### 📋 **Information to Include**
@@ -195,9 +195,9 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 
 ### 📞 **Emergency Contacts**
 
-- **Security Team**: security@elevenlabs-voice-agent.dev
-- **Development Team**: dev@elevenlabs-voice-agent.dev
-- **Operations Team**: ops@elevenlabs-voice-agent.dev
+- **Security Team**: security@voice-agent-pupuplatter.dev
+- **Development Team**: dev@voice-agent-pupuplatter.dev
+- **Operations Team**: ops@voice-agent-pupuplatter.dev
 
 ## Security Updates
 
@@ -238,4 +238,4 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 **Last Updated**: January 8, 2025  
 **Next Review**: April 8, 2025
 
-For questions about this security policy, please contact security@elevenlabs-voice-agent.dev.
+For questions about this security policy, please contact security@voice-agent-pupuplatter.dev.
