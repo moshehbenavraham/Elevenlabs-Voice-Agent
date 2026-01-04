@@ -37,7 +37,7 @@ test.describe('ElevenLabs Provider', () => {
 
     test('should display voice widget when tab is active', async ({ page }) => {
       // ElevenLabs widget uses a custom element
-      const widget = page.locator('elevenlabs-convai');
+      const _widget = page.locator('elevenlabs-convai');
       // Widget may or may not be present depending on configuration
       // This test checks the tab is active and ready
       await expect(voicePage.providerTabElevenlabs).toHaveAttribute('data-state', 'active');
@@ -107,7 +107,7 @@ test.describe('ElevenLabs Provider', () => {
   test.describe('Configuration State', () => {
     test('should show configuration warning when agent ID is not set', async ({ page }) => {
       // Check for configuration warning
-      const configWarning = page.locator('text=Setup required');
+      const _configWarning = page.locator('text=Setup required');
       // This depends on whether VITE_ELEVENLABS_AGENT_ID is set
       // The test verifies the UI responds to configuration state
     });

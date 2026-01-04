@@ -89,7 +89,7 @@ test.describe('xAI Provider', () => {
       expect(hasXAIConnection).toBeTruthy();
     });
 
-    test('should receive session.created event after connection', async ({ page }) => {
+    test('should receive session.created event after connection', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -113,9 +113,9 @@ test.describe('xAI Provider', () => {
       expect(count).toBeGreaterThanOrEqual(5);
     });
 
-    test('should show sky-colored accent for xAI voice selector', async ({ page }) => {
+    test('should show sky-colored accent for xAI voice selector', async ({ _page }) => {
       // xAI uses sky color scheme
-      const selector = voicePage.voiceSelector;
+      const _selector = voicePage.voiceSelector;
       // Check for sky accent class on focus
     });
   });
@@ -183,7 +183,7 @@ test.describe('xAI Provider', () => {
   });
 
   test.describe('Provider-Specific Behavior', () => {
-    test('should use xAI-specific system prompt', async ({ page }) => {
+    test('should use xAI-specific system prompt', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -191,7 +191,7 @@ test.describe('xAI Provider', () => {
       // This is verified by the mock receiving the correct message types
     });
 
-    test('should handle xAI-specific response formats', async ({ page }) => {
+    test('should handle xAI-specific response formats', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 

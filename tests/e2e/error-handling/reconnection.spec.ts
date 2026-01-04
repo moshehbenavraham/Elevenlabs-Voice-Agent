@@ -61,7 +61,7 @@ test.describe('Reconnection Behavior', () => {
       await page.waitForTimeout(500);
 
       // Reconnection status may be visible
-      const isVisible = await voicePage.isReconnectionStatusVisible();
+      const _isVisible = await voicePage.isReconnectionStatusVisible();
       // Status visibility depends on reconnection implementation
     });
 
@@ -73,7 +73,7 @@ test.describe('Reconnection Behavior', () => {
       await page.waitForTimeout(1000);
 
       // Attempt counter should be visible
-      const attemptText = page.locator('text=/Attempt \\d+/');
+      const _attemptText = page.locator('text=/Attempt \\d+/');
       // May or may not be visible depending on timing
     });
 
@@ -85,7 +85,7 @@ test.describe('Reconnection Behavior', () => {
       await page.waitForTimeout(500);
 
       // Countdown timer may be visible
-      const countdown = page.locator('text=/Retrying in \\d+ seconds?/');
+      const _countdown = page.locator('text=/Retrying in \\d+ seconds?/');
       // Countdown shown during exponential backoff
     });
   });
@@ -96,10 +96,10 @@ test.describe('Reconnection Behavior', () => {
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
       // Track reconnection attempts
-      let attemptCount = 0;
+      let _attemptCount = 0;
       page.on('console', (msg) => {
         if (msg.text().includes('[E2E Mock] WebSocket connecting')) {
-          attemptCount++;
+          _attemptCount++;
         }
       });
 
@@ -112,14 +112,14 @@ test.describe('Reconnection Behavior', () => {
       // Should have made some reconnection attempts
     });
 
-    test('should cap delay at maximum value', async ({ page }) => {
+    test('should cap delay at maximum value', async ({ _page }) => {
       // Maximum delay is 30 seconds per spec
       // After several attempts, delay should not exceed 30s
     });
   });
 
   test.describe('Max Retries', () => {
-    test('should stop reconnecting after max attempts', async ({ page }) => {
+    test('should stop reconnecting after max attempts', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -131,7 +131,7 @@ test.describe('Reconnection Behavior', () => {
       // In practice, test should verify the max_retries status appears
     });
 
-    test('should show max retries message', async ({ page }) => {
+    test('should show max retries message', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -139,7 +139,7 @@ test.describe('Reconnection Behavior', () => {
       // This is a long-running test in reality
     });
 
-    test('should show manual retry button after max attempts', async ({ page }) => {
+    test('should show manual retry button after max attempts', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -149,12 +149,12 @@ test.describe('Reconnection Behavior', () => {
   });
 
   test.describe('Manual Reconnect', () => {
-    test('should allow manual reconnect after max retries', async ({ page }) => {
+    test('should allow manual reconnect after max retries', async ({ _page }) => {
       // When max retries exceeded, user can click retry button
       // This resets the attempt counter and tries again
     });
 
-    test('should reset attempt counter on manual reconnect', async ({ page }) => {
+    test('should reset attempt counter on manual reconnect', async ({ _page }) => {
       // Manual reconnect should start fresh with attempt 1
     });
   });
@@ -171,7 +171,7 @@ test.describe('Reconnection Behavior', () => {
       await page.waitForTimeout(1000);
 
       // Should show offline message
-      const offlineMessage = page.locator('text=/No internet|offline/i');
+      const _offlineMessage = page.locator('text=/No internet|offline/i');
       // May show offline indicator
     });
 
@@ -203,21 +203,21 @@ test.describe('Reconnection Behavior', () => {
       // Reconnection status uses amber for reconnecting
       const status = voicePage.reconnectionStatus;
       if (await status.isVisible()) {
-        const hasAmber = await status.evaluate((el) => {
+        const _hasAmber = await status.evaluate((el) => {
           return el.className.includes('amber');
         });
         // Amber styling during reconnection
       }
     });
 
-    test('should use red styling for max retries state', async ({ page }) => {
+    test('should use red styling for max retries state', async ({ _page }) => {
       // Max retries state uses red styling
       // border-red-500/30 bg-red-500/5
     });
   });
 
   test.describe('Provider-Specific Reconnection', () => {
-    test('should reconnect OpenAI provider correctly', async ({ page }) => {
+    test('should reconnect OpenAI provider correctly', async ({ _page }) => {
       await voicePage.selectProvider('openai');
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
@@ -227,7 +227,7 @@ test.describe('Reconnection Behavior', () => {
       // Should attempt OpenAI-specific reconnection
     });
 
-    test('should reconnect xAI provider correctly', async ({ page }) => {
+    test('should reconnect xAI provider correctly', async ({ _page }) => {
       await voicePage.selectProvider('xai');
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);

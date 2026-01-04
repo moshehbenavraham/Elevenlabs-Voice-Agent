@@ -37,7 +37,7 @@ test.describe('Voice Button Component', () => {
       expect(statusText?.toLowerCase()).toContain('ready');
     });
 
-    test('should have microphone icon in idle state', async ({ page }) => {
+    test('should have microphone icon in idle state', async ({ _page }) => {
       // Mic icon should be visible in idle state
       const micIcon = voicePage.voiceButton.locator('svg');
       await expect(micIcon).toBeVisible();
@@ -79,7 +79,7 @@ test.describe('Voice Button Component', () => {
   });
 
   test.describe('Loading State', () => {
-    test('should show spinner during loading', async ({ page }) => {
+    test('should show spinner during loading', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('loading', 5000);
 
@@ -188,7 +188,7 @@ test.describe('Voice Button Component', () => {
   });
 
   test.describe('Visual Feedback', () => {
-    test('should show glow effect when connected', async ({ page }) => {
+    test('should show glow effect when connected', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -206,7 +206,7 @@ test.describe('Voice Button Component', () => {
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
       // Concentric rings are rendered around the button
-      const rings = page.locator('.rounded-full.border').filter({
+      const _rings = page.locator('.rounded-full.border').filter({
         has: voicePage.voiceButton,
       });
       // Rings should be present in the parent container

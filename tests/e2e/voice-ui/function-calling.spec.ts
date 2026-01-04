@@ -58,7 +58,7 @@ test.describe('Function Calling Indicator', () => {
       await page.waitForTimeout(500);
 
       // Function name should be visible
-      const functionText = page.locator('text=/get_weather|weather/i');
+      const _functionText = page.locator('text=/get_weather|weather/i');
       // May or may not be visible depending on implementation
     });
 
@@ -76,20 +76,20 @@ test.describe('Function Calling Indicator', () => {
       await page.waitForTimeout(500);
 
       // Function message bubble should appear
-      const functionBubble = voicePage.getFunctionMessageBubbles();
+      const _functionBubble = voicePage.getFunctionMessageBubbles();
       // Check if function bubble is rendered
     });
   });
 
   test.describe('Status Transitions', () => {
-    test('should show pending status initially', async ({ page }) => {
+    test('should show pending status initially', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
       // The mock sends function call which starts in pending state
     });
 
-    test('should transition to executing status', async ({ page }) => {
+    test('should transition to executing status', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -101,7 +101,7 @@ test.describe('Function Calling Indicator', () => {
       );
 
       // Executing status should show briefly
-      const status = await voicePage.getFunctionCallStatus();
+      const _status = await voicePage.getFunctionCallStatus();
       // Status may be 'executing' or 'completed' depending on timing
     });
 
@@ -124,7 +124,7 @@ test.describe('Function Calling Indicator', () => {
   });
 
   test.describe('Status Indicators', () => {
-    test('should show spinner during execution', async ({ page }) => {
+    test('should show spinner during execution', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -148,7 +148,7 @@ test.describe('Function Calling Indicator', () => {
       // Check icon should be visible for completed status
     });
 
-    test('should show error icon on failure', async ({ page }) => {
+    test('should show error icon on failure', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -266,7 +266,7 @@ test.describe('Function Calling Indicator', () => {
       // Function messages use purple styling
       const functionBubble = voicePage.getFunctionMessageBubbles().first();
       if (await functionBubble.isVisible()) {
-        const hasPurple = await functionBubble.evaluate((el) => {
+        const _hasPurple = await functionBubble.evaluate((el) => {
           return el.className.includes('purple') || el.querySelector('.text-purple-400') !== null;
         });
         // Purple styling should be present
@@ -287,7 +287,7 @@ test.describe('Function Calling Indicator', () => {
       await page.waitForTimeout(500);
 
       // "Function Call" label should be visible
-      const label = page.locator('text=Function Call');
+      const _label = page.locator('text=Function Call');
       // May or may not be visible depending on implementation
     });
   });

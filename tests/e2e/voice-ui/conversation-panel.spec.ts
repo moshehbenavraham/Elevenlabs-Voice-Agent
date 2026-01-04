@@ -37,7 +37,7 @@ test.describe('Conversation Panel Component', () => {
       await expect(voicePage.conversationEmpty).toBeVisible();
     });
 
-    test('should display "Conversation" header', async ({ page }) => {
+    test('should display "Conversation" header', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -45,7 +45,7 @@ test.describe('Conversation Panel Component', () => {
       await expect(header).toBeVisible();
     });
 
-    test('should show message count', async ({ page }) => {
+    test('should show message count', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -129,7 +129,7 @@ test.describe('Conversation Panel Component', () => {
       }
     });
 
-    test('should style user and assistant messages differently', async ({ page }) => {
+    test('should style user and assistant messages differently', async ({ _page }) => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -168,7 +168,7 @@ test.describe('Conversation Panel Component', () => {
         await messageBubble.hover();
 
         // Copy button should become visible
-        const copyButton = messageBubble.getByRole('button', { name: /copy/i });
+        const _copyButton = messageBubble.getByRole('button', { name: /copy/i });
         // Copy button appears on hover with CSS transition
       }
     });
@@ -236,7 +236,7 @@ test.describe('Conversation Panel Component', () => {
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
       // Screen reader announcement element
-      const srAnnouncement = page.locator('.sr-only[aria-live="assertive"]');
+      const _srAnnouncement = page.locator('.sr-only[aria-live="assertive"]');
       // This element announces new messages
     });
   });
@@ -297,7 +297,7 @@ test.describe('Conversation Panel Component', () => {
       await page.waitForTimeout(500);
 
       // Should use singular form
-      const singularCount = voicePage.conversationPanel.locator('text=/1 message$/');
+      const _singularCount = voicePage.conversationPanel.locator('text=/1 message$/');
       // Grammar should be correct
     });
   });

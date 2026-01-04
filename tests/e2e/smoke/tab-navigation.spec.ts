@@ -52,7 +52,7 @@ test.describe('Tab Navigation', () => {
     await tabs.first().focus();
 
     // Get the initial focused tab
-    const initialFocusedText = await mockedPage.evaluate(() => {
+    const _initialFocusedText = await mockedPage.evaluate(() => {
       return document.activeElement?.textContent || '';
     });
 
@@ -60,7 +60,7 @@ test.describe('Tab Navigation', () => {
     await mockedPage.keyboard.press('ArrowRight');
 
     // Get the new focused element
-    const newFocusedText = await mockedPage.evaluate(() => {
+    const _newFocusedText = await mockedPage.evaluate(() => {
       return document.activeElement?.textContent || '';
     });
 
@@ -150,8 +150,8 @@ test.describe('Tab Navigation', () => {
     await mockedPage.keyboard.press('Space');
 
     // Verify second tab is now active
-    const activeTab = mockedPage.locator('[role="tab"][aria-selected="true"]');
-    const activeIndex = await tabs.evaluateAll((tabElements, activeEl) => {
+    const _activeTab = mockedPage.locator('[role="tab"][aria-selected="true"]');
+    const activeIndex = await tabs.evaluateAll((tabElements, _activeEl) => {
       return tabElements.findIndex((t) => t.getAttribute('aria-selected') === 'true');
     });
 
@@ -219,7 +219,7 @@ test.describe('Tab Navigation', () => {
       expect(ariaSelected).toMatch(/^(true|false)$/);
 
       // Each tab should have aria-controls or be associated with a panel
-      const ariaControls = await tab.getAttribute('aria-controls');
+      const _ariaControls = await tab.getAttribute('aria-controls');
       // Note: aria-controls is optional but recommended
     }
 

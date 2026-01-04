@@ -100,7 +100,7 @@ test.describe('Voice Selector Component', () => {
 
       // Check for violet accent on selected text
       const selectedOption = page.locator('[role="option"][data-state="checked"]');
-      const hasVioletClass = await selectedOption.evaluate((el) => {
+      const _hasVioletClass = await selectedOption.evaluate((el) => {
         return el.className.includes('violet');
       });
       // OpenAI uses violet accent
@@ -126,7 +126,7 @@ test.describe('Voice Selector Component', () => {
       expect(count).toBeGreaterThanOrEqual(5);
     });
 
-    test('should use sky accent color for xAI', async ({ page }) => {
+    test('should use sky accent color for xAI', async ({ _page }) => {
       await voicePage.voiceSelector.click();
 
       // xAI uses sky color scheme
@@ -135,7 +135,7 @@ test.describe('Voice Selector Component', () => {
   });
 
   test.describe('Disabled State', () => {
-    test('should disable selector when connected', async ({ page }) => {
+    test('should disable selector when connected', async ({ _page }) => {
       await voicePage.selectProvider('openai');
 
       // Connect
@@ -161,7 +161,7 @@ test.describe('Voice Selector Component', () => {
       await expect(disabledMessage).toBeVisible();
     });
 
-    test('should re-enable after disconnect', async ({ page }) => {
+    test('should re-enable after disconnect', async ({ _page }) => {
       await voicePage.selectProvider('openai');
 
       // Connect then disconnect
@@ -207,7 +207,7 @@ test.describe('Voice Selector Component', () => {
       await page.keyboard.press('ArrowDown');
 
       // An option should be highlighted
-      const highlightedOption = page.locator('[role="option"][data-highlighted]');
+      const _highlightedOption = page.locator('[role="option"][data-highlighted]');
       // Radix uses data-highlighted for focused options
     });
 
@@ -248,7 +248,7 @@ test.describe('Voice Selector Component', () => {
       await expect(label).toBeVisible();
     });
 
-    test('should announce selected value', async ({ page }) => {
+    test('should announce selected value', async ({ _page }) => {
       await voicePage.selectProvider('openai');
 
       // The trigger should show the selected voice name

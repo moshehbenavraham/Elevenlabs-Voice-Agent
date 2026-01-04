@@ -167,7 +167,7 @@ test.describe('OpenAI Provider', () => {
       await voicePage.waitForVoiceButtonState('idle', 5000);
 
       // Toast notification should appear
-      const toast = page.locator('[role="alert"]').filter({ hasText: /disconnected/i });
+      const _toast = page.locator('[role="alert"]').filter({ hasText: /disconnected/i });
       // Toast may appear briefly
     });
   });

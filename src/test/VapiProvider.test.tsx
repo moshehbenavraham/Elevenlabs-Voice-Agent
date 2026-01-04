@@ -21,12 +21,23 @@ import { VapiCallStatus } from '@/types/vapi';
 import { vapiMocks } from './setup';
 import { renderHook } from '@testing-library/react';
 
-// Mock the useVapiVoice hook
+// Mock the useVapiVoice hook (used by VapiVoiceProvider)
 const mockUseVapiVoice = vi.fn();
 
 vi.mock('@/hooks/useVapiVoice', () => ({
   useVapiVoice: () => mockUseVapiVoice(),
 }));
+
+// Mock useVapiVoiceContext for standalone component tests
+const mockUseVapiVoiceContext = vi.fn();
+
+vi.mock('@/contexts/VapiVoiceContext', async () => {
+  const actual = await vi.importActual('@/contexts/VapiVoiceContext');
+  return {
+    ...actual,
+    useVapiVoiceContext: () => mockUseVapiVoiceContext(),
+  };
+});
 
 // Mock the vapi module
 vi.mock('@/lib/vapi', () => ({
@@ -57,6 +68,7 @@ describe('VapiProvider Components', () => {
     vi.clearAllMocks();
     vapiMocks.reset();
     mockUseVapiVoice.mockReturnValue(createMockHookReturn());
+    mockUseVapiVoiceContext.mockReturnValue(createMockHookReturn());
   });
 
   afterEach(() => {
@@ -79,7 +91,7 @@ describe('VapiProvider Components', () => {
 
     it('calls stop on unmount', () => {
       const mockStop = vi.fn();
-      mockUseVapiVoice.mockReturnValue(createMockHookReturn({ stop: mockStop }));
+      mockUseVapiVoiceContext.mockReturnValue(createMockHookReturn({ stop: mockStop }));
 
       const { unmount } = render(
         <VapiProvider>
@@ -131,13 +143,13 @@ describe('VapiProvider Components', () => {
 
     describe('state transitions', () => {
       it('shows "Ready" label when idle', () => {
-        mockUseVapiVoice.mockReturnValue(createMockHookReturn());
+        mockUseVapiVoiceContext.mockReturnValue(createMockHookReturn());
         render(<VapiButton />);
         expect(screen.getByText('Ready')).toBeInTheDocument();
       });
 
       it('shows "Connecting" label when loading', () => {
-        mockUseVapiVoice.mockReturnValue(
+        mockUseVapiVoiceContext.mockReturnValue(
           createMockHookReturn({ callStatus: VapiCallStatus.LOADING })
         );
         render(<VapiButton />);
@@ -145,7 +157,7 @@ describe('VapiProvider Components', () => {
       });
 
       it('shows "Live" label when connected', () => {
-        mockUseVapiVoice.mockReturnValue(
+        mockUseVapiVoiceContext.mockReturnValue(
           createMockHookReturn({ callStatus: VapiCallStatus.ACTIVE })
         );
         render(<VapiButton />);
@@ -153,7 +165,7 @@ describe('VapiProvider Components', () => {
       });
 
       it('shows "Speaking" label when speaking', () => {
-        mockUseVapiVoice.mockReturnValue(
+        mockUseVapiVoiceContext.mockReturnValue(
           createMockHookReturn({
             callStatus: VapiCallStatus.ACTIVE,
             isSpeechActive: true,
@@ -164,13 +176,15 @@ describe('VapiProvider Components', () => {
       });
 
       it('shows "Error" label when error exists', () => {
-        mockUseVapiVoice.mockReturnValue(createMockHookReturn({ error: 'Connection failed' }));
+        mockUseVapiVoiceContext.mockReturnValue(
+          createMockHookReturn({ error: 'Connection failed' })
+        );
         render(<VapiButton />);
         expect(screen.getByText('Error')).toBeInTheDocument();
       });
 
       it('disables button when loading', () => {
-        mockUseVapiVoice.mockReturnValue(
+        mockUseVapiVoiceContext.mockReturnValue(
           createMockHookReturn({ callStatus: VapiCallStatus.LOADING })
         );
         render(<VapiButton />);
@@ -181,7 +195,7 @@ describe('VapiProvider Components', () => {
     describe('click handlers', () => {
       it('calls start when clicked while idle', async () => {
         const mockStart = vi.fn().mockResolvedValue(undefined);
-        mockUseVapiVoice.mockReturnValue(createMockHookReturn({ start: mockStart }));
+        mockUseVapiVoiceContext.mockReturnValue(createMockHookReturn({ start: mockStart }));
 
         render(<VapiButton />);
         fireEvent.click(screen.getByRole('button'));
@@ -193,7 +207,7 @@ describe('VapiProvider Components', () => {
 
       it('calls stop when clicked while connected', () => {
         const mockStop = vi.fn();
-        mockUseVapiVoice.mockReturnValue(
+        mockUseVapiVoiceContext.mockReturnValue(
           createMockHookReturn({
             callStatus: VapiCallStatus.ACTIVE,
             stop: mockStop,
@@ -209,7 +223,7 @@ describe('VapiProvider Components', () => {
       it('calls onConnect callback when connecting', async () => {
         const onConnect = vi.fn();
         const mockStart = vi.fn().mockResolvedValue(undefined);
-        mockUseVapiVoice.mockReturnValue(createMockHookReturn({ start: mockStart }));
+        mockUseVapiVoiceContext.mockReturnValue(createMockHookReturn({ start: mockStart }));
 
         render(<VapiButton onConnect={onConnect} />);
         fireEvent.click(screen.getByRole('button'));
@@ -222,7 +236,7 @@ describe('VapiProvider Components', () => {
       it('calls onDisconnect callback when disconnecting', () => {
         const onDisconnect = vi.fn();
         const mockStop = vi.fn();
-        mockUseVapiVoice.mockReturnValue(
+        mockUseVapiVoiceContext.mockReturnValue(
           createMockHookReturn({
             callStatus: VapiCallStatus.ACTIVE,
             stop: mockStop,
@@ -238,7 +252,7 @@ describe('VapiProvider Components', () => {
       it('does nothing when clicked while loading', () => {
         const mockStart = vi.fn();
         const mockStop = vi.fn();
-        mockUseVapiVoice.mockReturnValue(
+        mockUseVapiVoiceContext.mockReturnValue(
           createMockHookReturn({
             callStatus: VapiCallStatus.LOADING,
             start: mockStart,
@@ -256,7 +270,7 @@ describe('VapiProvider Components', () => {
 
     describe('accessibility', () => {
       it('has correct aria-label when idle', () => {
-        mockUseVapiVoice.mockReturnValue(createMockHookReturn());
+        mockUseVapiVoiceContext.mockReturnValue(createMockHookReturn());
         render(<VapiButton />);
         expect(screen.getByRole('button')).toHaveAttribute(
           'aria-label',
@@ -265,7 +279,7 @@ describe('VapiProvider Components', () => {
       });
 
       it('has correct aria-label when connecting', () => {
-        mockUseVapiVoice.mockReturnValue(
+        mockUseVapiVoiceContext.mockReturnValue(
           createMockHookReturn({ callStatus: VapiCallStatus.LOADING })
         );
         render(<VapiButton />);
@@ -273,7 +287,7 @@ describe('VapiProvider Components', () => {
       });
 
       it('has correct aria-label when connected', () => {
-        mockUseVapiVoice.mockReturnValue(
+        mockUseVapiVoiceContext.mockReturnValue(
           createMockHookReturn({ callStatus: VapiCallStatus.ACTIVE })
         );
         render(<VapiButton />);
@@ -284,7 +298,7 @@ describe('VapiProvider Components', () => {
       });
 
       it('has correct aria-label when speaking', () => {
-        mockUseVapiVoice.mockReturnValue(
+        mockUseVapiVoiceContext.mockReturnValue(
           createMockHookReturn({
             callStatus: VapiCallStatus.ACTIVE,
             isSpeechActive: true,
@@ -298,7 +312,9 @@ describe('VapiProvider Components', () => {
       });
 
       it('has correct aria-label when error', () => {
-        mockUseVapiVoice.mockReturnValue(createMockHookReturn({ error: 'Connection failed' }));
+        mockUseVapiVoiceContext.mockReturnValue(
+          createMockHookReturn({ error: 'Connection failed' })
+        );
         render(<VapiButton />);
         expect(screen.getByRole('button')).toHaveAttribute(
           'aria-label',
@@ -307,7 +323,7 @@ describe('VapiProvider Components', () => {
       });
 
       it('has aria-pressed attribute', () => {
-        mockUseVapiVoice.mockReturnValue(
+        mockUseVapiVoiceContext.mockReturnValue(
           createMockHookReturn({ callStatus: VapiCallStatus.ACTIVE })
         );
         render(<VapiButton />);
@@ -321,13 +337,13 @@ describe('VapiProvider Components', () => {
   // ===========================================
   describe('VapiVoiceStatus', () => {
     it('renders disconnected status', () => {
-      mockUseVapiVoice.mockReturnValue(createMockHookReturn());
+      mockUseVapiVoiceContext.mockReturnValue(createMockHookReturn());
       render(<VapiVoiceStatus />);
       expect(screen.getByText('Disconnected')).toBeInTheDocument();
     });
 
     it('renders connecting status', () => {
-      mockUseVapiVoice.mockReturnValue(
+      mockUseVapiVoiceContext.mockReturnValue(
         createMockHookReturn({ callStatus: VapiCallStatus.LOADING })
       );
       render(<VapiVoiceStatus />);
@@ -335,13 +351,15 @@ describe('VapiProvider Components', () => {
     });
 
     it('renders connected status', () => {
-      mockUseVapiVoice.mockReturnValue(createMockHookReturn({ callStatus: VapiCallStatus.ACTIVE }));
+      mockUseVapiVoiceContext.mockReturnValue(
+        createMockHookReturn({ callStatus: VapiCallStatus.ACTIVE })
+      );
       render(<VapiVoiceStatus />);
       expect(screen.getByText('Connected - Ready')).toBeInTheDocument();
     });
 
     it('renders speaking status', () => {
-      mockUseVapiVoice.mockReturnValue(
+      mockUseVapiVoiceContext.mockReturnValue(
         createMockHookReturn({
           callStatus: VapiCallStatus.ACTIVE,
           isSpeechActive: true,
@@ -352,25 +370,25 @@ describe('VapiProvider Components', () => {
     });
 
     it('renders error status', () => {
-      mockUseVapiVoice.mockReturnValue(createMockHookReturn({ error: 'Connection failed' }));
+      mockUseVapiVoiceContext.mockReturnValue(createMockHookReturn({ error: 'Connection failed' }));
       render(<VapiVoiceStatus />);
       expect(screen.getByText('Connection Error')).toBeInTheDocument();
     });
 
     it('displays error details', () => {
-      mockUseVapiVoice.mockReturnValue(createMockHookReturn({ error: 'API key invalid' }));
+      mockUseVapiVoiceContext.mockReturnValue(createMockHookReturn({ error: 'API key invalid' }));
       render(<VapiVoiceStatus />);
       expect(screen.getByText('API key invalid')).toBeInTheDocument();
     });
 
     it('applies custom className', () => {
-      mockUseVapiVoice.mockReturnValue(createMockHookReturn());
+      mockUseVapiVoiceContext.mockReturnValue(createMockHookReturn());
       const { container } = render(<VapiVoiceStatus className="custom-status" />);
       expect(container.firstChild).toHaveClass('custom-status');
     });
 
     it('shows speaking animation when isSpeechActive', () => {
-      mockUseVapiVoice.mockReturnValue(
+      mockUseVapiVoiceContext.mockReturnValue(
         createMockHookReturn({
           callStatus: VapiCallStatus.ACTIVE,
           isSpeechActive: true,

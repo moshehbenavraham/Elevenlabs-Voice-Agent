@@ -77,7 +77,7 @@ test.describe('ElevenLabs Reconnection Behavior', () => {
     test('should have manual reconnect button structure', async ({ page }) => {
       // Verify the button exists in the DOM structure (may not be visible without max retries)
       // This tests the component is properly rendered
-      const manualReconnectButton = page.locator('[data-testid="manual-reconnect-button"]');
+      const _manualReconnectButton = page.locator('[data-testid="manual-reconnect-button"]');
 
       // Button should exist but not be visible in normal state
       await page.waitForTimeout(500);
@@ -133,10 +133,10 @@ test.describe('ElevenLabs Reconnection Behavior', () => {
       await page.waitForTimeout(5000);
 
       // Check for error state styling (red border)
-      const voiceStatus = page.locator('[data-testid="voice-status"]');
+      const _voiceStatus = page.locator('[data-testid="voice-status"]');
 
       // May have error styling if connection failed
-      const hasError = await page
+      const _hasError = await page
         .locator('text=/Error|failed/i')
         .isVisible()
         .catch(() => false);
