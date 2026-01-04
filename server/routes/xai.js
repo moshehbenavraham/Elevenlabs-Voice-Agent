@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { sanitizeLogInput } from '../utils/sanitize.js';
 
 const router = Router();
 
@@ -39,7 +40,7 @@ async function createEphemeralToken(apiKey, expirySeconds = DEFAULT_EXPIRY_SECON
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    console.log(`[Server] Requesting xAI ephemeral token (expires in ${expirySeconds}s)`);
+    console.log(`[Server] Requesting xAI ephemeral token (expires in %ss)`, sanitizeLogInput(expirySeconds));
 
     const response = await fetch(XAI_API_URL, {
       method: 'POST',

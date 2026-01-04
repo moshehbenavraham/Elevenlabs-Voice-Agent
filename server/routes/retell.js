@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { sanitizeLogInput } from '../utils/sanitize.js';
 
 const router = Router();
 
@@ -61,7 +62,7 @@ async function createRetellWebCall(apiKey, options) {
 
   try {
     const { agentId, metadata, retellLlmDynamicVariables } = options;
-    console.log('[Server] Creating Retell web call for agent:', agentId);
+    console.log('[Server] Creating Retell web call for agent:', sanitizeLogInput(agentId));
 
     // Build request body - agent_id is required
     const requestBody = {

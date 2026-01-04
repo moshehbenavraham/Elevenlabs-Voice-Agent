@@ -18,6 +18,12 @@ Learn how to create and configure ElevenLabs agents (in general and) for this ap
 
 A sophisticated multi-provider voice AI web application built with React 19, TypeScript, and support for 7 different voice AI providers. Experience real-time voice conversations with beautiful audio visualizations and a modern glassmorphism UI.
 
+## Built With
+
+- The very first version featured just the Elevenlabs Widget and was built with Lovable.dev and Cursor
+- All revisions to the app since its initial launch were made with Claude Code Plugin Skill 'Apex Spec System':
+  https://github.com/moshehbenavraham/apex-spec-system
+
 ## [FEATURES] Features
 
 ### Core Features

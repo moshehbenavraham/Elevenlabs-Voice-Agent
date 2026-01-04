@@ -47,6 +47,19 @@ const tokenLimiter = rateLimit({
   },
 });
 
+// Rate limit for static file serving (SPA fallback)
+const staticLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500, // Higher limit for static file requests
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Too many requests',
+    message: 'Too many static file requests. Please try again later.',
+    retryAfter: '15 minutes',
+  },
+});
+
 const app = express();
 const PORT = process.env.SERVER_PORT || 3001;
 const startTime = Date.now();
@@ -206,7 +219,7 @@ app.get('/api/elevenlabs/signed-url', async (req, res) => {
 // This must come AFTER all API routes
 // Express 5 requires named wildcards - use {*path} syntax
 if (isProduction) {
-  app.get('{*path}', (req, res) => {
+  app.get('{*path}', staticLimiter, (req, res) => {
     // Only serve index.html for non-API routes
     if (!req.path.startsWith('/api')) {
       const indexPath = join(__dirname, '..', 'dist', 'index.html');

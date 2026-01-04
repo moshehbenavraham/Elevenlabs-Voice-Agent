@@ -30,13 +30,16 @@ test.describe('App Load', () => {
     await mockedPage.waitForLoadState('networkidle');
 
     // Filter out expected/benign errors
+    // Note: The .includes() checks below are for filtering test output, NOT security validation.
+    // These filter known benign errors (fonts, network) that occur during E2E testing.
+    // lgtm[js/incomplete-url-substring-sanitization]
     const criticalErrors = errors.filter(
       (error) =>
         !error.includes('favicon.ico') &&
         !error.includes('ERR_NETWORK') && // Network errors in mocked env
         !error.includes('[E2E Mock]') && // Our mock console logs
-        !error.includes('fonts.gstatic.com') && // Font loading in CI
-        !error.includes('fonts.googleapis.com') && // Font loading
+        !error.includes('fonts.gstatic.com') && // Font loading in CI - lgtm[js/incomplete-url-substring-sanitization]
+        !error.includes('fonts.googleapis.com') && // Font loading - lgtm[js/incomplete-url-substring-sanitization]
         !error.includes('FRAGMENT_SHADER') && // Firefox WebGL quirk
         !error.includes('is null') && // Firefox rendering quirk with refs
         !error.includes('Failed to load resource') // Generic resource loading

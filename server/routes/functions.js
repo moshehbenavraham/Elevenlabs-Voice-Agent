@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { sanitizeLogInput } from '../utils/sanitize.js';
 
 const router = Router();
 
@@ -178,7 +179,7 @@ router.post('/execute', async (req, res) => {
   const startTime = Date.now();
   const { name, arguments: args, callId } = req.body;
 
-  console.log(`[Functions] Executing function: ${name}`, { callId, args });
+  console.log(`[Functions] Executing function: %s`, sanitizeLogInput(name), { callId: sanitizeLogInput(callId), args: sanitizeLogInput(args) });
 
   // Validate function name
   if (!name || typeof name !== 'string') {
@@ -191,7 +192,7 @@ router.post('/execute', async (req, res) => {
 
   // Security check: validate against allowlist
   if (!isAllowedFunction(name)) {
-    console.warn(`[Functions] Blocked attempt to call non-allowed function: ${name}`);
+    console.warn(`[Functions] Blocked attempt to call non-allowed function: %s`, sanitizeLogInput(name));
     return res.status(403).json({
       success: false,
       error: `Function "${name}" is not allowed`,
