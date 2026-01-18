@@ -16,7 +16,7 @@ Learn how to create and configure ElevenLabs agents (in general and) for this ap
 
 ---
 
-A sophisticated multi-provider voice AI web application built with React 19, TypeScript, and support for 7 different voice AI providers. Experience real-time voice conversations with beautiful audio visualizations and a modern glassmorphism UI.
+A sophisticated multi-provider voice AI web application built with React 19, TypeScript, and support for 8 different voice AI providers. Experience real-time voice conversations with beautiful audio visualizations and a modern glassmorphism UI.
 
 ## Built With
 
@@ -29,7 +29,7 @@ A sophisticated multi-provider voice AI web application built with React 19, Typ
 ### Core Features
 
 - **Real-time Voice Conversation**: Talk naturally with AI using multiple voice providers
-- **7 Voice Providers**: ElevenLabs (Widget + SDK), xAI Grok, OpenAI Realtime, Ultravox, Vapi, and Retell
+- **8 Voice Providers**: ElevenLabs (Widget + SDK), xAI Grok, OpenAI Realtime, Ultravox, Vapi, Retell, and Google Gemini Live
 - **Audio Visualization**: Beautiful 60fps audio visualizer with real-time frequency analysis
 - **Glassmorphism Design**: Modern, premium UI with dark/light theme toggle
 - **Mobile-First**: Responsive design optimized for all devices (375px to 1920px)
@@ -54,7 +54,7 @@ A sophisticated multi-provider voice AI web application built with React 19, Typ
 
 ## [MIC] Multi-Provider Voice System
 
-This application supports 7 voice AI providers through a tabbed interface:
+This application supports 8 voice AI providers through a tabbed interface:
 
 ### Supported Providers
 
@@ -67,6 +67,7 @@ This application supports 7 voice AI providers through a tabbed interface:
 | **Ultravox**          | Available | Yes              | Low-latency voice AI with call-based WebSocket connections  |
 | **Vapi**              | Available | No               | Voice AI platform with Daily.co WebRTC and public web token |
 | **Retell**            | Available | Yes              | Retell AI with LiveKit WebRTC and agent dashboard config    |
+| **Gemini Live**       | Available | Yes              | Google Gemini Live with AudioWorklet and 30 HD voices       |
 
 ### Configuration
 
@@ -145,6 +146,20 @@ VITE_API_BASE_URL=http://localhost:3001
 ```
 
 Retell uses a backend-generated access token for secure WebRTC connections via LiveKit. The agent configuration (voice, LLM, prompts) is managed in the [Retell Dashboard](https://dashboard.retellai.com/). The `retell-client-js-sdk` handles audio streaming.
+
+#### Gemini Live Setup
+
+```bash
+# Server-side environment (Gemini requires backend for ephemeral tokens)
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Client-side (enable Gemini in frontend)
+VITE_GEMINI_ENABLED=true
+VITE_GEMINI_VOICE=Puck  # Options: Puck, Charon, Kore, Fenrir, Aoede, + 25 more HD voices
+VITE_API_BASE_URL=http://localhost:3001
+```
+
+Gemini Live uses ephemeral tokens from the backend for secure WebSocket connections. Features AudioWorklet-based audio capture (16kHz) and playback (24kHz), 30 HD voices, session timer with warnings, and thinking state visualization. Sessions are limited to 15 minutes.
 
 ### Provider Features
 
@@ -257,6 +272,7 @@ npm run server       # http://localhost:3001
   - @vapi-ai/web v2.5.2
   - ultravox-client v0.5.0
   - retell-client-js-sdk v2.0.7
+  - @google/genai v1.37.0 (Gemini Live)
 - **UI Components**: Radix UI primitives with shadcn/ui styling
 - **State Management**: React Context, TanStack Query
 - **Testing**: Vitest, React Testing Library, Playwright
@@ -316,8 +332,8 @@ npm run test:e2e:ui
 
 ### Test Coverage
 
-- **429+ tests** covering components, contexts, hooks, and utilities
-- **22 test files** with comprehensive coverage
+- **623+ tests** covering components, contexts, hooks, and utilities
+- **28 test files** with comprehensive coverage
 - **Voice configuration tests** - Provider voice selection, persistence
 - **Reconnection tests** - Backoff logic, retry limits, connection recovery
 - **Conversation tests** - Message bubbles, transcript panel, auto-scroll
@@ -410,6 +426,8 @@ vercel --prod
    VITE_VAPI_WEB_TOKEN=your_web_token
    VITE_RETELL_ENABLED=true
    VITE_RETELL_AGENT_ID=your_retell_agent_id
+   VITE_GEMINI_ENABLED=true
+   VITE_GEMINI_VOICE=Puck
    VITE_API_BASE_URL=https://your-backend-api.com
 
    # Backend (runtime)
@@ -418,6 +436,7 @@ vercel --prod
    OPENAI_API_KEY=sk-xxx
    ULTRAVOX_API_KEY=your_ultravox_key
    RETELL_API_KEY=key_xxx
+   GEMINI_API_KEY=your_gemini_key
    CORS_ORIGIN=https://your-frontend.com
    ```
 
@@ -485,7 +504,8 @@ src/
 |   |   |-- XAIProvider.tsx
 |   |   |-- UltravoxProvider.tsx
 |   |   |-- VapiProvider.tsx
-|   |   \-- RetellProvider.tsx
+|   |   |-- RetellProvider.tsx
+|   |   \-- GeminiProvider.tsx
 |   |-- conversation/    # Conversation UI components
 |   |   |-- ConversationPanel.tsx
 |   |   |-- MessageBubble.tsx
@@ -493,7 +513,8 @@ src/
 |   |   |-- OpenAIConversationPanel.tsx
 |   |   |-- XAIConversationPanel.tsx
 |   |   |-- UltravoxConversationPanel.tsx
-|   |   \-- VapiConversationPanel.tsx
+|   |   |-- VapiConversationPanel.tsx
+|   |   \-- GeminiConversationPanel.tsx
 |   |-- tabs/            # Tab navigation
 |   |   |-- ProviderTabs.tsx
 |   |   \-- ProviderTab.tsx
@@ -514,6 +535,7 @@ src/
 |   |-- OpenAIVoiceContext.tsx
 |   |-- UltravoxVoiceContext.tsx
 |   |-- VapiVoiceContext.tsx
+|   |-- GeminiVoiceContext.tsx # Gemini Live state
 |   \-- ProviderContext.tsx    # Active provider selection
 |-- hooks/               # Custom React hooks
 |   |-- useReconnection.ts     # WebSocket reconnection with backoff
@@ -522,6 +544,7 @@ src/
 |   |-- useUltravoxVoice.ts
 |   |-- useOpenAIVoice.ts
 |   |-- useXAIVoice.ts
+|   |-- useGeminiVoice.ts      # Gemini Live hook
 |   |-- useAccessibility.ts
 |   |-- useReducedMotion.ts
 |   \-- use-toast.ts
@@ -529,17 +552,27 @@ src/
 |   |-- utils.ts
 |   |-- audio/           # Audio processing utilities
 |   |   \-- audioUtils.ts
+|   |-- gemini/          # Gemini Live utilities
+|   |   |-- audioUtils.ts       # PCM encoding/decoding (16kHz/24kHz)
+|   |   |-- audio-recorder.ts   # Microphone capture (AudioWorklet)
+|   |   |-- audio-streamer.ts   # Audio playback
+|   |   |-- genai-live-client.ts # WebSocket client
+|   |   |-- config.ts           # Voice/model configuration
+|   |   \-- types.ts            # TypeScript interfaces
+|   |-- worklets/        # AudioWorklet processors
+|   |   \-- gemini-audio-worklet.ts
 |   |-- tools/           # Function calling tool definitions
 |   |   \-- toolDefinitions.ts
 |   \-- vapi.ts          # Vapi utilities
 |-- pages/               # Page components
 |   |-- Index.tsx        # Main application page
 |   \-- NotFound.tsx     # 404 page
-|-- test/                # Test files (22 test files, 429+ tests)
+|-- test/                # Test files (28 test files, 623+ tests)
 |-- types/               # TypeScript type definitions
 |   |-- ultravox.ts
 |   |-- vapi.ts
 |   |-- retell.ts
+|   |-- gemini.ts        # Gemini types
 |   \-- voice-provider.ts
 \-- server/              # Backend API server
     |-- index.js         # Express server
@@ -661,6 +694,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Ultravox](https://ultravox.ai) for low-latency voice AI
 - [Vapi](https://vapi.ai) for voice AI platform
 - [Retell AI](https://retellai.com) for conversational AI
+- [Google Gemini](https://ai.google.dev/gemini-api/docs/live) for Gemini Live API
 - [Radix UI](https://radix-ui.com) for accessible UI primitives
 - [shadcn/ui](https://ui.shadcn.com) for beautiful UI components
 - [Framer Motion](https://framer.com/motion) for smooth animations

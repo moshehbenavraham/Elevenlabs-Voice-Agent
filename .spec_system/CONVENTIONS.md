@@ -140,12 +140,46 @@ src/
 | Security     | configured | `.github/workflows/security.yml`                   |
 | Integration  | configured | `.github/workflows/e2e.yml`                        |
 | Operations   | configured | `.github/workflows/release.yml` + `dependabot.yml` |
+| Deploy       | configured | `.github/workflows/deploy.yml`                     |
 
 **Notes:**
 
 - Dependency Review requires Dependency Graph enabled in repo settings
 - E2E tests require WebSocket mocks for voice provider testing
 - Release workflow creates GitHub releases on version tags (v\*)
+- Deploy workflow triggers on push to main, supports webhook or SSH deployment
+
+## Infrastructure
+
+| Component     | Provider           | Details                                           |
+| ------------- | ------------------ | ------------------------------------------------- |
+| Container     | Docker             | Multi-stage build, non-root user                  |
+| Registry      | GitHub Container   | `ghcr.io` via deploy workflow                     |
+| Health        | Express endpoint   | `/api/health` - services, memory, uptime          |
+| Health Probe  | Docker             | HEALTHCHECK in Dockerfile + docker-compose        |
+| Rate Limiting | express-rate-limit | API: 100/15min, Tokens: 10/min, Static: 500/15min |
+| Backup        | N/A                | Stateless application - no database               |
+| Deploy        | GitHub Actions     | On push to main, webhook or SSH                   |
+
+**Deployment Configuration:**
+
+To enable automatic deployment, configure GitHub repository variables and secrets:
+
+**Option 1: Webhook (Coolify, Portainer, etc.)**
+
+- `DEPLOY_WEBHOOK_URL` (variable): Platform webhook URL
+- `DEPLOY_WEBHOOK_TOKEN` (secret): Authorization token
+
+**Option 2: SSH**
+
+- `DEPLOY_SSH_HOST` (variable): Server hostname
+- `DEPLOY_SSH_USER` (variable): SSH username
+- `DEPLOY_SSH_KEY` (secret): SSH private key
+- `DEPLOY_PATH` (variable, optional): Path on server (default: `/opt/voice-agent`)
+
+**Optional:**
+
+- `HEALTH_CHECK_URL` (variable): URL for post-deploy health verification
 
 ## When In Doubt
 

@@ -125,9 +125,10 @@ The primary value is providing a single application where users can compare voic
 
 This system delivers the product via phases. Each phase is implemented via multiple 2-4 hour sessions (12-25 tasks each).
 
-| Phase | Name                    | Sessions | Status   |
-| ----- | ----------------------- | -------- | -------- |
-| 00    | Gemini Live Integration | 5        | Complete |
+| Phase | Name                      | Sessions | Status      |
+| ----- | ------------------------- | -------- | ----------- |
+| 00    | Gemini Live Integration   | 5        | Complete    |
+| 01    | Production Infrastructure | 4        | Not Started |
 
 ## Phase 00: Gemini Live Integration
 
@@ -153,6 +154,26 @@ This system delivers the product via phases. Each phase is implemented via multi
 | 05      | Testing & Polish                    | ~12        |
 
 See `.spec_system/PRD/phase_00/` for detailed session specifications.
+
+## Phase 01: Production Infrastructure
+
+### Objectives
+
+1. Establish continuous integration with automated testing and quality checks
+2. Create production-ready Docker containerization with multi-stage builds
+3. Implement deployment automation for staging and production environments
+4. Add monitoring, logging, and error tracking for operational visibility
+
+### Sessions
+
+| Session | Name                        | Est. Tasks |
+| ------- | --------------------------- | ---------- |
+| 01      | CI Pipeline & Quality Gates | ~15        |
+| 02      | Containerization & Build    | ~14        |
+| 03      | Deployment & Environments   | ~16        |
+| 04      | Monitoring & Observability  | ~12        |
+
+See `.spec_system/PRD/phase_01/` for detailed session specifications.
 
 ## Technical Stack
 

@@ -4,7 +4,7 @@ This document outlines the technical architecture of the Conversational Voice AI
 
 ## Architecture Overview
 
-A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), OpenAI, Ultravox, Vapi, and Retell. The architecture emphasizes provider abstraction, performance, and accessibility.
+A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), OpenAI, Ultravox, Vapi, Retell, and Google Gemini Live. The architecture emphasizes provider abstraction, performance, and accessibility.
 
 ## Table of Contents
 
@@ -70,7 +70,8 @@ export type ProviderType =
   | 'openai'
   | 'ultravox'
   | 'vapi'
-  | 'retell';
+  | 'retell'
+  | 'gemini';
 
 export interface VoiceProvider {
   id: ProviderType;
@@ -90,7 +91,8 @@ ProviderContext (active provider selection)
     ├── OpenAIVoiceContext (WebSocket + ephemeral token)
     ├── UltravoxVoiceContext (SDK with joinUrl)
     ├── useVapiVoice (SDK with public web token)
-    └── useRetellVoice (SDK with backend access token)
+    ├── useRetellVoice (SDK with backend access token)
+    └── GeminiVoiceContext (WebSocket + ephemeral token + AudioWorklet)
 ```
 
 **Key Benefits**:
@@ -118,11 +120,16 @@ App
 │   │   │   ├── VoiceStatus
 │   │   │   ├── VoiceVisualizer
 │   │   │   └── ElevenLabsEmptyState
-│   │   ├── xAI Provider          # NEW: xAI voice integration
+│   │   ├── xAI Provider          # xAI voice integration
 │   │   │   ├── XAIVoiceButton
 │   │   │   ├── XAIVoiceStatus
 │   │   │   ├── XAIVoiceVisualizer
 │   │   │   └── XAIEmptyState
+│   │   ├── Gemini Provider       # Gemini Live voice integration
+│   │   │   ├── GeminiButton
+│   │   │   ├── GeminiVoiceStatus
+│   │   │   ├── GeminiVoiceSelector
+│   │   │   └── GeminiEmptyState
 │   │   ├── BackgroundEffects
 │   │   └── ConfigurationDialog   # Settings modal (Phase 03)
 │   └── NotFound
@@ -294,6 +301,7 @@ Used for global state that needs to be accessed across many components:
 - `XAIVoiceContext` - xAI voice state
 - `OpenAIVoiceContext` - OpenAI voice state
 - `UltravoxVoiceContext` - Ultravox voice state
+- `GeminiVoiceContext` - Gemini Live voice state
 
 #### **Custom Hooks**
 
@@ -306,6 +314,7 @@ Used for feature-specific state management:
 - `useUltravoxVoice` - Ultravox voice hook
 - `useVapiVoice` - Vapi voice hook
 - `useRetellVoice` - Retell voice hook
+- `useGeminiVoice` - Gemini Live voice hook
 - `useReconnection` - WebSocket reconnection with backoff
 - `useReducedMotion` - Accessibility preference detection
 - `useAccessibility` - Accessibility features
@@ -395,7 +404,8 @@ server/
     ├── xai.js            # xAI ephemeral token endpoint
     ├── openai.js         # OpenAI ephemeral token endpoint
     ├── ultravox.js       # Ultravox call creation endpoint
-    └── retell.js         # Retell web call creation endpoint
+    ├── retell.js         # Retell web call creation endpoint
+    └── gemini.js         # Gemini ephemeral token endpoint
 ```
 
 ### API Endpoints
@@ -408,6 +418,9 @@ server/
 | POST   | `/api/openai/session`         | Create OpenAI ephemeral token   |
 | POST   | `/api/ultravox/call`          | Create Ultravox call (joinUrl)  |
 | POST   | `/api/retell/create-web-call` | Create Retell call access token |
+| POST   | `/api/gemini/token`           | Create Gemini ephemeral token   |
+| GET    | `/api/gemini/health`          | Gemini service health check     |
+| GET    | `/api/gemini/voices`          | List available Gemini voices    |
 
 ### xAI Token Flow
 
@@ -758,7 +771,15 @@ src/test/
 ├── VapiProvider.test.tsx           # Vapi provider tests
 ├── useRetellVoice.test.ts          # Retell hook tests
 ├── RetellProvider.test.tsx         # Retell provider tests
-└── ... (429 tests total across 22 files)
+├── useGeminiVoice.test.tsx         # Gemini hook tests (41 tests)
+├── GeminiProvider.test.tsx         # Gemini provider tests (56 tests)
+├── GeminiEmptyState.test.tsx       # Gemini empty state tests (11 tests)
+└── ... (623 tests total across 28 files)
+
+src/lib/gemini/__tests__/
+├── audioUtils.test.ts              # PCM encoding/decoding tests (28 tests)
+├── genai-live-client.test.ts       # WebSocket client tests (26 tests)
+└── config.test.ts                  # Voice/model config tests (43 tests)
 ```
 
 ### E2E Tests (Playwright)
@@ -773,7 +794,8 @@ tests/e2e/
 ├── providers/                  # Provider-specific tests
 │   ├── elevenlabs.spec.ts
 │   ├── openai.spec.ts
-│   └── xai.spec.ts
+│   ├── xai.spec.ts
+│   └── gemini.spec.ts          # Gemini provider tests (19 tests)
 ├── voice-ui/                   # Voice UI component tests
 │   ├── voice-button.spec.ts
 │   ├── voice-selector.spec.ts
@@ -840,6 +862,6 @@ const { reconnect, cancelReconnect, reconnectionState } = useReconnection({
 
 ---
 
-**Last Updated**: December 31, 2025
+**Last Updated**: January 18, 2026
 
 This architecture is designed to be maintainable, scalable, and performant while providing excellent user experience for multi-provider voice AI interactions.

@@ -69,7 +69,7 @@ This session is the penultimate step in Phase 00, enabling users to interact wit
 ### Out of Scope (Deferred)
 
 - E2E tests - _Reason: Session 05 scope_
-- Additional tool implementations beyond existing get_weather/get_time - _Reason: Not required for MVP_
+- Additional tool implementations beyond existing get*weather/get_time - \_Reason: Not required for MVP*
 - Custom voice preview/playback in selector - _Reason: Future enhancement_
 
 ---

@@ -79,10 +79,18 @@ src/test/
 ├── VapiProvider.test.tsx           # Vapi provider tests (41 tests)
 ├── useRetellVoice.test.ts          # Retell hook tests (35 tests)
 ├── RetellProvider.test.tsx         # Retell provider tests (25 tests)
-└── ... (429 tests total across 22 files)
+├── useGeminiVoice.test.tsx         # Gemini hook tests (41 tests)
+├── GeminiProvider.test.tsx         # Gemini provider tests (56 tests)
+├── GeminiEmptyState.test.tsx       # Gemini empty state tests (11 tests)
+└── ... (623 tests total across 28 files)
 
 src/lib/audio/__tests__/
 └── audioUtils.test.ts          # Audio utility tests
+
+src/lib/gemini/__tests__/
+├── audioUtils.test.ts          # Gemini PCM encoding tests (28 tests)
+├── genai-live-client.test.ts   # WebSocket client tests (26 tests)
+└── config.test.ts              # Voice/model config tests (43 tests)
 ```
 
 ## E2E Testing (Playwright)
@@ -119,7 +127,8 @@ tests/e2e/
 ├── providers/                  # Provider-specific tests
 │   ├── elevenlabs.spec.ts      # ElevenLabs widget/SDK tests
 │   ├── openai.spec.ts          # OpenAI provider tests
-│   └── xai.spec.ts             # xAI provider tests
+│   ├── xai.spec.ts             # xAI provider tests
+│   └── gemini.spec.ts          # Gemini provider tests (19 tests)
 ├── voice-ui/                   # Voice UI component tests
 │   ├── voice-button.spec.ts
 │   ├── voice-selector.spec.ts

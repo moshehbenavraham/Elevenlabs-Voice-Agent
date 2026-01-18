@@ -15,6 +15,7 @@ Zero-to-hero checklist for new developers.
 - [ ] Ultravox account (for Ultravox provider)
 - [ ] Vapi account (for Vapi provider)
 - [ ] Retell account (for Retell provider)
+- [ ] Google AI account (for Gemini Live provider)
 
 ## Setup Steps
 
@@ -54,6 +55,8 @@ cp .env.example .env
 | `VITE_VAPI_WEB_TOKEN`      | [Vapi Dashboard](https://dashboard.vapi.ai/)                        | Public web token (frontend-safe) |
 | `RETELL_API_KEY`           | [Retell Dashboard](https://dashboard.retellai.com/)                 | Server-side API key for Retell   |
 | `VITE_RETELL_AGENT_ID`     | [Retell Dashboard](https://dashboard.retellai.com/)                 | Retell Agent ID                  |
+| `GEMINI_API_KEY`           | [Google AI Studio](https://aistudio.google.com/apikey)              | Server-side API key for Gemini   |
+| `VITE_GEMINI_VOICE`        | Default: Puck                                                       | Gemini voice selection (30 opts) |
 
 ### 5. Start Development
 
@@ -76,6 +79,7 @@ npm run dev
 - [ ] Ultravox tab shows (if `VITE_ULTRAVOX_ENABLED=true`)
 - [ ] Vapi tab shows (if `VITE_VAPI_ENABLED=true`)
 - [ ] Retell tab shows (if `VITE_RETELL_ENABLED=true`)
+- [ ] Gemini tab shows (if `VITE_GEMINI_ENABLED=true`)
 - [ ] Voice connection works when clicking "Start Conversation"
 
 ## Project Structure
@@ -91,7 +95,8 @@ Voice-Agent-PuPuPlatter/
 │   ├── contexts/           # React contexts (Provider, Voice, Theme)
 │   ├── hooks/              # Custom hooks
 │   ├── lib/
-│   │   └── audio/          # Audio processing utilities
+│   │   ├── audio/          # Audio processing utilities
+│   │   └── gemini/         # Gemini Live audio and client
 │   ├── types/              # TypeScript definitions
 │   └── pages/              # Route components
 ├── server/
@@ -137,6 +142,15 @@ rm -rf node_modules package-lock.json
 npm install
 npm run test:run
 ```
+
+### Gemini Connection Failed
+
+**Solution**:
+
+- Verify `GEMINI_API_KEY` is set in `.env`
+- Ensure backend is running on port 3001
+- Check that the API key has access to Gemini Live API
+- Sessions are limited to 15 minutes
 
 ## Next Steps
 
