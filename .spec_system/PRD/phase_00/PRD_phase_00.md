@@ -1,68 +1,132 @@
-# Phase 00: Multi-Provider Voice
+# PRD Phase 00: Gemini Live Integration
 
-**Status**: Complete
-**Progress**: 4/4 sessions (100%)
-**Completed**: 2025-12-28
+**Status**: In Progress
+**Sessions**: 5 (initial estimate)
+**Estimated Duration**: 2-3 days
+
+**Progress**: 1/5 sessions (20%)
+
+---
 
 ## Overview
 
-Implement a tabbed interface system that allows users to demo and interact with AI voice agents from multiple providers. The initial implementation adds xAI (Grok) voice agent alongside the existing ElevenLabs agent, with architecture designed for easy addition of future providers.
+Integrate Google Gemini Live as a new voice AI provider, following the established patterns from existing providers (ElevenLabs, OpenAI, xAI, Ultravox, Vapi, Retell). This includes backend token generation, AudioWorklet-based audio pipeline, EventEmitter WebSocket client, React hook/context, and provider component with full UI integration.
+
+---
 
 ## Progress Tracker
 
-| Session | Name                                     | Status   | Validated  |
-| ------- | ---------------------------------------- | -------- | ---------- |
-| 01      | Foundation - Provider Types & Tab System | Complete | 2025-12-28 |
-| 02      | xAI Backend Integration                  | Complete | 2025-12-28 |
-| 03      | xAI Frontend Integration                 | Complete | 2025-12-28 |
-| 04      | Polish & Testing                         | Complete | 2025-12-28 |
+| Session | Name                                | Status      | Est. Tasks | Validated  |
+| ------- | ----------------------------------- | ----------- | ---------- | ---------- |
+| 01      | Dependencies & Audio Infrastructure | Complete    | 20         | 2026-01-18 |
+| 02      | GenAI Client & Backend              | Not Started | ~18        | -          |
+| 03      | Voice Hook & Context                | Not Started | ~16        | -          |
+| 04      | Provider Component & UI             | Not Started | ~14        | -          |
+| 05      | Testing & Polish                    | Not Started | ~12        | -          |
+
+---
+
+## Completed Sessions
+
+### Session 01: Dependencies & Audio Infrastructure
+
+- **Completed**: 2026-01-18
+- **Tasks**: 20/20
+- **Key deliverables**: @google/genai SDK, eventemitter3, AudioWorklet processor, audio-recorder, audio-streamer, PCM utilities
+
+---
+
+## Upcoming Sessions
+
+- Session 02: GenAI Client & Backend
+
+---
 
 ## Objectives
 
-1. Create provider abstraction layer with unified TypeScript interfaces
-2. Implement tab-based navigation with glassmorphism styling
-3. Create ProviderContext for active provider state management
-4. Integrate xAI voice agent via backend ephemeral token pattern
-5. Ensure graceful disconnect when switching between providers
-6. Maintain mobile responsiveness and keyboard accessibility
+1. Add @google/genai and eventemitter3 dependencies
+2. Create backend token generation endpoint with proper security
+3. Implement AudioWorklet-based audio pipeline for 16kHz capture and 24kHz playback
+4. Build GenAILiveClient with EventEmitter pattern for WebSocket management
+5. Create useGeminiVoice hook following existing provider patterns
+6. Develop GeminiProvider component with full UI integration
+7. Add comprehensive tests for all new components
+8. Update CLAUDE.md documentation with Gemini integration details
 
-## Key Deliverables
+---
 
-### Foundation
+## Prerequisites
 
-- [x] `src/types/voice-provider.ts` - Unified provider interfaces
-- [x] `src/contexts/ProviderContext.tsx` - Active provider state
-- [x] `src/components/tabs/ProviderTabs.tsx` - Tab container
-- [x] `src/components/tabs/ProviderTab.tsx` - Individual tab component
+- Existing provider infrastructure (Context, Hook, Provider component patterns)
+- Backend Express server running at VITE_API_BASE_URL
+- GEMINI_API_KEY available in environment
 
-### xAI Integration
+---
 
-- [x] `server/routes/xai.js` - Backend ephemeral token endpoint
-- [x] `src/contexts/XAIVoiceContext.tsx` - xAI voice connection logic
-- [x] `src/components/providers/XAIProvider.tsx` - xAI provider wrapper
-- [x] Audio encoding/decoding for xAI (PCM 16-bit, 24kHz)
+## Technical Considerations
 
-### Polish
+### Architecture
 
-- [x] Tab transition animations
-- [x] "Not configured" state for missing API keys
-- [x] Mobile-responsive tab design
-- [x] Keyboard navigation (arrow keys, Enter)
+- Follow established provider pattern: Context + Hook + Provider component
+- GenAILiveClient uses EventEmitter pattern for loose coupling
+- AudioWorklet for non-blocking audio capture (no ScriptProcessorNode fallback)
+- Session resumption handles WebSocket timeout (~10 min) transparently
 
-## Technical Constraints
+### Technologies
 
-- Backend required for xAI (API key cannot be exposed to browser)
-- Use existing `server/index.js` Express setup
-- xAI uses WebSocket with ephemeral token pattern
-- Audio format: PCM 16-bit, 24kHz sample rate for xAI
+- @google/genai SDK ^1.34.0 for Live API support
+- eventemitter3 ^5.0.1 for client event handling
+- AudioWorklet for microphone capture at 16kHz
+- GainNode for playback volume control at 24kHz
 
-## Sessions
+### Risks
 
-- [Session 01: Foundation](sessions/phase00-session01-foundation.md)
-- [Session 02: xAI Backend](sessions/phase00-session02-xai-backend.md)
-- [Session 03: xAI Frontend](sessions/phase00-session03-xai-frontend.md)
-- [Session 04: Polish & Testing](sessions/phase00-session04-polish.md)
+- **AudioWorklet browser support**: Safari may have limitations; verify during implementation
+- **Sample rate support**: Not all browsers support 16kHz/24kHz AudioContext; test early
+- **SDK stability**: @google/genai Live API is preview; monitor for breaking changes
+- **Session limits**: 15 minute audio sessions; token context 128k
 
-## Next Steps
+### Relevant Considerations
 
-Phase 00 is complete. Run `/audit` to review the codebase before starting Phase 01.
+<!-- From CONSIDERATIONS.md -->
+
+- **API Key Security**: All provider keys must stay server-side; use ephemeral tokens for WebSocket auth
+- **Provider Pattern**: Each provider follows Context + Hook + Provider component architecture
+- **Tab System**: New providers must integrate with ProviderTabs.tsx and ProviderContext.tsx
+- **Ephemeral token pattern**: Backend generates short-lived tokens for WebSocket auth (proven with OpenAI, xAI)
+- **Component composition**: VoiceButton, VoiceStatus, VoiceVisualizer reused across providers
+
+---
+
+## Success Criteria
+
+Phase complete when:
+
+- [ ] All 5 sessions completed
+- [ ] Gemini Live provider connects and streams bidirectional audio
+- [ ] Voice input captured at 16kHz via AudioWorklet (non-blocking)
+- [ ] Voice output plays at 24kHz with smooth scheduling
+- [ ] Transcriptions display in ConversationPanel (both user and AI)
+- [ ] Function calling works (get_weather, get_time demo tools)
+- [ ] Barge-in (interruption) clears audio queue immediately
+- [ ] All 30 HD voices selectable via VoiceSelector (Puck default)
+- [ ] VITE_GEMINI_ENABLED toggle shows/hides tab correctly
+- [ ] No API keys exposed in client code or network requests
+- [ ] Session timer shows at 12+ minutes with warning at 14 minutes
+- [ ] Unit tests pass for audio utilities, GenAILiveClient, useGeminiVoice
+- [ ] E2E tests pass for Gemini voice flow
+- [ ] CLAUDE.md updated with Gemini integration documentation
+- [ ] TypeScript compilation succeeds with no errors
+- [ ] ESLint passes with no warnings
+
+---
+
+## Dependencies
+
+### Depends On
+
+- None (first phase in Gemini integration)
+
+### Enables
+
+- Future phases: Session resumption improvements, thinking mode visualization, Google Search grounding

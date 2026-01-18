@@ -6,74 +6,112 @@
 - Code is written once, read many times
 - Consistency beats personal preference
 - If it can be automated, automate it
-
-## TypeScript & React
-
-- Use TypeScript interfaces for all props (`interface FooProps {}`)
-- Prefer `function` components over arrow functions for top-level components
-- Use descriptive names: `isConnected`, `hasError`, `shouldRetry`
-- Keep components focused on one responsibility
-- Extract hooks for reusable stateful logic
+- When writing code: Make NO assumptions. Do not be lazy. Pattern match precisely. Do not skim when you need detailed info from documents. Validate systematically.
 
 ## Naming
 
-- Components: PascalCase (`VoiceButton.tsx`)
-- Hooks: camelCase with `use` prefix (`useVoiceProvider.ts`)
-- Contexts: PascalCase with `Context` suffix (`VoiceContext.tsx`)
-- Types/Interfaces: PascalCase (`VoiceProviderState`)
-- Constants: SCREAMING_SNAKE_CASE (`DEFAULT_TIMEOUT`)
-- Match domain language--use the same terms as product/design
+- Be descriptive over concise: `getUserById` > `getUser` > `fetch`
+- Booleans read as questions: `isActive`, `hasPermission`, `shouldRetry`
+- Functions describe actions: `calculateTotal`, `validateInput`, `sendNotification`
+- Avoid abbreviations unless universally understood (`id`, `url`, `config` are fine)
+- Match domain language--use the same terms as product/design/stakeholders
+
+### Project-Specific Naming
+
+- Provider hooks: `use{Provider}Voice.ts` (e.g., `useVapiVoice.ts`, `useRetellVoice.ts`)
+- Provider contexts: `{Provider}VoiceContext.tsx` (e.g., `XAIVoiceContext.tsx`)
+- Provider components: `{Provider}Provider.tsx` (e.g., `VapiProvider.tsx`)
+- Voice components: `{Provider}Button`, `{Provider}VoiceStatus`, `{Provider}EmptyState`
 
 ## Files & Structure
 
-- One component per file
-- File names match their primary export
-- Group by feature/domain, not by type (prefer `voice/VoiceButton.tsx` over `buttons/Voice.tsx`)
+- One concept per file where practical
+- File names reflect their primary export or purpose
+- Group by feature/domain, not by type (prefer `/orders/api.ts` over `/api/orders.ts`)
 - Keep nesting shallow--if you're 4+ levels deep, reconsider
 
-## Styling (Tailwind)
+### Project Structure
 
-- Tailwind utilities first, custom CSS only for complex animations
-- Use glassmorphism patterns: `backdrop-blur-lg`, `bg-white/10`
-- Respect `prefers-reduced-motion` for animations
-- Touch targets minimum 44px for mobile
-- Responsive breakpoints: 375px, 768px, 1024px
+```
+src/
+  components/
+    voice/          # Shared voice components
+    providers/      # Provider-specific UI components
+    tabs/           # Tab navigation
+    ui/             # shadcn/ui components
+  hooks/            # Custom React hooks
+  contexts/         # React contexts for state
+  lib/              # Utilities and helpers
+  pages/            # Route components
+  test/             # Test files and setup
+```
 
-## State Management
+## Functions & Modules
 
-- Theme: Context API (`ThemeContext`)
-- Server data: Tanstack Query
-- Local component state: `useState`/`useReducer`
-- Shared UI state: Custom hooks or Context
-- Provider-specific state: Separate contexts (e.g., `VoiceContext`, `XAIVoiceContext`, `OpenAIVoiceContext`)
+- Functions do one thing
+- If a function needs a comment explaining what it does, consider renaming it
+- Keep functions short enough to read without scrolling
+- Avoid side effects where possible; be explicit when they exist
 
-## Error Handling
+## React Hooks
 
-- Fail fast in development, gracefully in production
-- Errors should be actionable--include context for debugging
-- Use toast notifications for user-facing errors
-- Log errors with enough context to reproduce
+- Custom hooks start with `use` and return object with named properties
+- Use refs for values that change frequently but don't need re-renders (turn tracking, audio buffers)
+- Memoize callbacks with useCallback when passed to child components or event emitters
+- Cleanup subscriptions and listeners in useEffect return function
+- Batch state updates to minimize re-renders during voice conversations
 
-## Testing
+## Audio & WebSocket
 
-- Test behavior, not implementation
-- Use React Testing Library patterns
-- Mock external APIs and browser APIs (Web Audio, etc.)
-- Test file: `ComponentName.test.tsx` alongside component
-
-## Git & Version Control
-
-- Commit messages: imperative mood, concise (`Add user validation`)
-- One logical change per commit
-- Branch names: `type/short-description` (e.g., `feat/xai-integration`)
-- Keep commits atomic enough to revert safely
+- AudioWorklet for capture (never ScriptProcessorNode - deprecated and blocks main thread)
+- Separate AudioContext instances for capture (16kHz) and playback (24kHz)
+- Fire-and-forget for non-critical operations (analytics, logging) - never block audio pipeline
+- Clear audio queues immediately on interruption (barge-in)
+- EventEmitter pattern for WebSocket clients - loose coupling with React components
 
 ## Comments
 
 - Explain _why_, not _what_
-- TODOs include context: `// TODO(name): reason`
-- Update or remove comments when code changes
 - Delete commented-out code--that's what git is for
+- TODOs include context: `// TODO(name): reason, ticket if applicable`
+- Update or remove comments when code changes
+
+## Error Handling
+
+- Fail fast and loud in development
+- Fail gracefully in production
+- Errors should be actionable--include context for debugging
+- Don't swallow errors silently
+- Voice providers should show connection errors via VoiceStatus components
+
+## Testing
+
+- Test behavior, not implementation
+- A test's name should describe the scenario and expectation
+- If it's hard to test, the design might need rethinking
+- Flaky tests get fixed or deleted--never ignored
+- Mock Web Audio API and WebSocket connections in voice tests
+
+## Git & Version Control
+
+- Commit messages: imperative mood, concise (`Add user validation` not `Added some validation stuff`)
+- One logical change per commit
+- Branch names: `type/short-description` (e.g., `feat/user-auth`, `fix/cart-total`)
+- Keep commits atomic enough to revert safely
+
+## Pull Requests
+
+- Small PRs get better reviews
+- Description explains the _what_ and _why_--reviewers can see the _how_
+- Link relevant tickets/context
+- Review your own PR before requesting others
+
+## Code Review
+
+- Critique code, not people
+- Ask questions rather than make demands
+- Approve when it's good enough, not perfect
+- Nitpicks are labeled as such
 
 ## Dependencies
 
@@ -81,97 +119,16 @@
 - Justify additions; prefer well-maintained, focused libraries
 - Pin versions; update intentionally
 
-## Security
-
-- Never expose API keys in browser code
-- Use backend proxy for sensitive credentials (ephemeral token pattern)
-- Validate at system boundaries (user input, external APIs)
-- HTTPS required for microphone access in production
-
-## Performance
-
-- Audio visualizations throttled to 60fps
-- Lazy loading for heavy components
-- Mobile optimizations via `use-mobile` hook
-- Monitor bundle size when adding dependencies
-
 ## Local Dev Tools
 
-| Category     | Tool                | Config                                     |
-| ------------ | ------------------- | ------------------------------------------ |
-| Formatter    | Prettier            | `.prettierrc`                              |
-| Linter       | ESLint              | `eslint.config.js`                         |
-| Type Checker | TypeScript (strict) | `tsconfig.json`                            |
-| Testing      | Vitest + Playwright | `vitest.config.ts`, `playwright.config.ts` |
-| Git Hooks    | Husky + lint-staged | `.husky/pre-commit`                        |
-
-## CI/CD
-
-Platform: GitHub Actions
-
-| Bundle       | Status     | Workflow                                                  |
-| ------------ | ---------- | --------------------------------------------------------- |
-| Code Quality | configured | `.github/workflows/quality.yml`                           |
-| Build & Test | configured | `.github/workflows/test.yml`                              |
-| Security     | configured | `.github/workflows/security.yml`                          |
-| Integration  | configured | `.github/workflows/e2e.yml`                               |
-| Operations   | configured | `.github/workflows/release.yml`, `.github/dependabot.yml` |
-
-## Development Environment
-
-**Primary Use Case**: Local Development & Self-Hosted Deployment
-
-This project is designed to run locally during development and deploy to self-hosted infrastructure via Coolify. It is NOT optimized for serverless platforms (Vercel, Netlify) without modification.
-
-### Local Development
-
-| Component  | Port | Command           | Notes                         |
-| ---------- | ---- | ----------------- | ----------------------------- |
-| Frontend   | 8082 | `npm run dev`     | Vite dev server with HMR      |
-| Backend    | 3001 | `node server/`    | Express API server            |
-| Full Stack | both | `npm run dev:all` | Concurrent frontend + backend |
-
-### Required for Local Development
-
-- Node.js 18+ / Bun
-- `.env` file with API keys (see `.env.example`)
-- Modern browser with microphone access
-
-## Infrastructure
-
-Platform: Express.js (Node.js) + Self-Hosted (Coolify)
-
-| Bundle   | Status     | Details                                                                            |
-| -------- | ---------- | ---------------------------------------------------------------------------------- |
-| Health   | configured | `/api/health` - uptime, memory, service status, security info                      |
-| Security | configured | CORS + rate limiting (100 req/15min API, 10 req/min tokens) via express-rate-limit |
-| Backup   | N/A        | No database in project                                                             |
-| Deploy   | configured | Coolify self-hosted deployment (Docker-based)                                      |
-
-### Coolify Deployment
-
-**Platform**: [Coolify](https://coolify.io) - Self-hosted PaaS alternative to Heroku/Vercel
-
-| Component   | Type         | Details                                          |
-| ----------- | ------------ | ------------------------------------------------ |
-| Frontend    | Static Build | Vite production build served via Nginx/Caddy     |
-| Backend API | Docker       | Node.js Express server with env vars             |
-| SSL/HTTPS   | Auto         | Coolify handles Let's Encrypt certificates       |
-| Networking  | Internal     | Frontend/Backend communicate via Coolify network |
-
-### Deployment Requirements
-
-1. **Coolify Instance**: Self-hosted or managed Coolify installation
-2. **Docker Support**: Coolify uses Docker for container orchestration
-3. **Environment Variables**: Configure via Coolify UI (secrets managed securely)
-4. **Domain**: Custom domain with DNS pointed to Coolify server
-5. **SSL**: Automatic via Coolify (HTTPS required for microphone access)
-
-### NOT Recommended Platforms (without modification)
-
-- **Vercel**: Frontend-only focus, requires separate backend hosting
-- **Netlify**: Same issues as Vercel for full-stack apps
-- **AWS Lambda/Serverless**: WebSocket connections need persistent servers
+| Category    | Tool                      | Config                                     |
+| ----------- | ------------------------- | ------------------------------------------ |
+| Formatter   | Prettier                  | `.prettierrc`                              |
+| Linter      | ESLint                    | `eslint.config.js`                         |
+| Type Safety | TypeScript                | `tsconfig.json`                            |
+| Testing     | Vitest + RTL + Playwright | `vitest.config.ts`, `playwright.config.ts` |
+| Build       | Vite + SWC                | `vite.config.ts`                           |
+| Git Hooks   | not configured            | -                                          |
 
 ## When In Doubt
 

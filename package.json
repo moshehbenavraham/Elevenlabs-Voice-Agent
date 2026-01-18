@@ -1,7 +1,7 @@
 {
   "name": "voice-agent-pupuplatter",
   "private": true,
-  "version": "1.0.34",
+  "version": "1.0.35",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@elevenlabs/react": "^0.12.3",
+    "@google/genai": "^1.37.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-scroll-area": "^1.2.10",
@@ -51,6 +52,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "compression": "^1.8.1",
+    "eventemitter3": "^5.0.1",
     "framer-motion": "^12.23.25",
     "lucide-react": "^0.556.0",
     "next-themes": "^0.4.6",
