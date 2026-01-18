@@ -6,9 +6,8 @@ import { useOpenAIVoice } from '@/hooks/useOpenAIVoice';
 import { VoiceSelector } from '@/components/voice/VoiceSelector';
 import { ReconnectionStatus } from '@/components/voice/ReconnectionStatus';
 import { cn } from '@/lib/utils';
+import { getApiBaseUrl } from '@/lib/apiConfig';
 import type { ReactNode } from 'react';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 /**
  * Check if OpenAI backend is configured
@@ -17,7 +16,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001
 // eslint-disable-next-line react-refresh/only-export-components
 export async function checkOpenAIConfiguration(): Promise<boolean> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/openai/health`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/openai/health`, {
       method: 'GET',
       credentials: 'include',
     });

@@ -3,9 +3,9 @@ import type { ReactNode } from 'react';
 import { useConversation } from '@elevenlabs/react';
 import { trackError, trackWarning } from '@/lib/errorTracking';
 import { useReconnection, type ReconnectionState } from '@/hooks/useReconnection';
+import { getApiBaseUrl } from '@/lib/apiConfig';
 
 const DEBUG = import.meta.env.DEV;
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 function debugLog(context: string, message: string, data?: unknown) {
   if (DEBUG) {
@@ -19,7 +19,7 @@ function debugLog(context: string, message: string, data?: unknown) {
 async function getSignedUrl(): Promise<string> {
   debugLog('getSignedUrl', 'Requesting signed URL from server...');
 
-  const response = await fetch(`${API_BASE_URL}/api/elevenlabs/signed-url`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/elevenlabs/signed-url`, {
     method: 'GET',
     credentials: 'include',
   });

@@ -33,6 +33,37 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck disable=SC2034
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 
+# Load environment variables from .env file
+# This exports NGROK_AUTHTOKEN and other required variables
+load_env() {
+    local env_file="${PROJECT_ROOT}/.env"
+    if [[ -f "$env_file" ]]; then
+        # Export only NGROK_* variables to avoid issues with multi-word values
+        while IFS='=' read -r key value; do
+            # Skip comments and empty lines
+            [[ -z "$key" || "$key" =~ ^# ]] && continue
+            # Export NGROK_* variables (includes NGROK_BACKEND_DOMAIN)
+            if [[ "$key" =~ ^NGROK_ ]]; then
+                # Remove surrounding quotes if present
+                value="${value%\"}"
+                value="${value#\"}"
+                value="${value%\'}"
+                value="${value#\'}"
+                # Remove inline comments (everything after # including preceding spaces)
+                value="${value%%#*}"
+                # Trim all trailing whitespace using extglob
+                shopt -s extglob
+                value="${value%%+([[:space:]])}"
+                shopt -u extglob
+                export "$key=$value"
+            fi
+        done < "$env_file"
+    fi
+}
+
+# Load env vars immediately
+load_env
+
 # Colors for output (disabled if not a terminal)
 if [ -t 1 ]; then
     RED='\033[0;31m'
@@ -120,6 +151,27 @@ check_ngrok() {
     fi
 }
 
+# Generate ngrok config from template
+generate_config() {
+    local generate_script="${SCRIPT_DIR}/generate-ngrok-config.sh"
+
+    if [[ -x "$generate_script" ]]; then
+        print_info "Generating ngrok config from template..."
+        if ! "$generate_script" --output "$NGROK_CONFIG"; then
+            print_error "Failed to generate ngrok config"
+            exit 1
+        fi
+    else
+        # Fallback: check if static config exists
+        if [[ ! -f "$NGROK_CONFIG" ]]; then
+            print_error "Config generator not found and no static config exists"
+            print_info "Expected: ${generate_script}"
+            exit 1
+        fi
+        print_warning "Using existing config (generator script not found)"
+    fi
+}
+
 # Start ngrok in background and capture PID
 start_ngrok() {
     print_info "Starting ngrok tunnels..."
@@ -131,20 +183,41 @@ start_ngrok() {
         exit 1
     fi
 
-    # Start ngrok in background
-    # Use --all to start all tunnels defined in config
-    ngrok start --all --config "$NGROK_CONFIG" >/dev/null 2>&1 &
+    # Verify NGROK_AUTHTOKEN is set
+    if [[ -z "${NGROK_AUTHTOKEN:-}" ]]; then
+        print_error "NGROK_AUTHTOKEN not set"
+        print_info "Set NGROK_AUTHTOKEN in .env or run: ngrok config add-authtoken <token>"
+        print_info "Get your authtoken at: https://dashboard.ngrok.com/get-started/your-authtoken"
+        exit 2
+    fi
+    print_info "Auth token: ${NGROK_AUTHTOKEN:0:8}...${NGROK_AUTHTOKEN: -4} (masked)"
+
+    # Create temp file for error output
+    local ngrok_log
+    ngrok_log=$(mktemp)
+
+    # Start ngrok in background, capturing stderr
+    ngrok start --all --config "$NGROK_CONFIG" >"$ngrok_log" 2>&1 &
     NGROK_PID=$!
 
-    # Give ngrok a moment to start
-    sleep 1
+    # Give ngrok a moment to start (increase to 2s for slower connections)
+    sleep 2
 
     # Verify process is running
     if ! kill -0 "$NGROK_PID" 2>/dev/null; then
         print_error "ngrok failed to start"
+        # Show the actual error from ngrok
+        if [[ -s "$ngrok_log" ]]; then
+            print_info "ngrok output:"
+            while IFS= read -r line; do
+                print_info "  $line"
+            done < "$ngrok_log"
+        fi
+        rm -f "$ngrok_log"
         exit 1
     fi
 
+    rm -f "$ngrok_log"
     print_success "ngrok started (PID: ${NGROK_PID})"
 }
 
@@ -185,6 +258,9 @@ main() {
 
     # Verify ngrok is available
     check_ngrok
+
+    # Generate config from template (substitutes env vars)
+    generate_config
 
     # Start ngrok
     start_ngrok

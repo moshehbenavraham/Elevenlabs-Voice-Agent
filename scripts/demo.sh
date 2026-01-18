@@ -78,31 +78,60 @@ check_port() {
     return 1
 }
 
-# Check all required ports for conflicts
-check_port_conflicts() {
-    local has_conflict=0
+# Kill process on a specific port
+kill_port() {
+    local port="$1"
+    local pids
 
+    if command -v lsof >/dev/null 2>&1; then
+        pids=$(lsof -ti :"$port" 2>/dev/null)
+        if [[ -n "$pids" ]]; then
+            echo "$pids" | xargs kill -9 2>/dev/null || true
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# Clear required ports by killing any processes using them
+clear_ports() {
     print_info "Checking port availability..."
 
     if check_port "$FRONTEND_PORT"; then
-        print_error "Port ${FRONTEND_PORT} is already in use (frontend)"
-        has_conflict=1
+        print_warning "Port ${FRONTEND_PORT} in use - killing process..."
+        kill_port "$FRONTEND_PORT"
+        sleep 0.5
     fi
 
     if check_port "$BACKEND_PORT"; then
-        print_error "Port ${BACKEND_PORT} is already in use (backend)"
-        has_conflict=1
+        print_warning "Port ${BACKEND_PORT} in use - killing process..."
+        kill_port "$BACKEND_PORT"
+        sleep 0.5
     fi
 
     if check_port "$NGROK_API_PORT"; then
-        print_error "Port ${NGROK_API_PORT} is already in use (ngrok API)"
-        has_conflict=1
+        print_warning "Port ${NGROK_API_PORT} in use - killing process..."
+        kill_port "$NGROK_API_PORT"
+        sleep 0.5
     fi
 
-    if [[ $has_conflict -eq 1 ]]; then
-        echo ""
-        print_error "Please free the conflicting ports and try again"
-        print_info "You can find processes using: lsof -i :PORT"
+    # Verify ports are now free
+    local still_blocked=0
+    if check_port "$FRONTEND_PORT"; then
+        print_error "Failed to free port ${FRONTEND_PORT}"
+        still_blocked=1
+    fi
+    if check_port "$BACKEND_PORT"; then
+        print_error "Failed to free port ${BACKEND_PORT}"
+        still_blocked=1
+    fi
+    if check_port "$NGROK_API_PORT"; then
+        print_error "Failed to free port ${NGROK_API_PORT}"
+        still_blocked=1
+    fi
+
+    if [[ $still_blocked -eq 1 ]]; then
+        print_error "Could not free all required ports"
         exit 3
     fi
 
@@ -379,8 +408,8 @@ main() {
     # Set up signal handlers first
     setup_traps
 
-    # Check prerequisites
-    check_port_conflicts
+    # Clear ports and check prerequisites
+    clear_ports
     check_ngrok_prereqs
     echo ""
 

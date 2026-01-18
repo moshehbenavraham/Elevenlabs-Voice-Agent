@@ -22,7 +22,7 @@ version: "2"
 
 # Web inspector configuration
 # Port 4041 avoids conflicts with default 4040 if running multiple ngrok instances
-web_addr: localhost:4041
+web_addr: localhost:__NGROK_INSPECTOR_PORT__
 
 tunnels:
   # Frontend tunnel - Vite dev server
@@ -30,10 +30,13 @@ tunnels:
   frontend:
     proto: http
     addr: 8082
-    domain: voiceai.ngrok.io
+__FRONTEND_DOMAIN__
+__FRONTEND_BASIC_AUTH__
+
   # Backend tunnel - Express API server
   # Exposes the backend API at localhost:3001
   backend:
     proto: http
     addr: 3001
-    domain: voiceaibackend.ngrok.io
+__BACKEND_DOMAIN__
+__BACKEND_BASIC_AUTH__

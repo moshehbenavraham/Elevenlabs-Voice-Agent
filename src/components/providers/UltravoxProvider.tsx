@@ -4,9 +4,8 @@ import { Mic, MicOff, Loader2, Phone, AlertCircle, Wifi, WifiOff, Settings } fro
 import { UltravoxVoiceProvider } from '@/contexts/UltravoxVoiceContext';
 import { useUltravoxVoice } from '@/hooks/useUltravoxVoice';
 import { cn } from '@/lib/utils';
+import { getApiBaseUrl } from '@/lib/apiConfig';
 import type { ReactNode } from 'react';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 /**
  * Check if Ultravox backend is configured
@@ -15,7 +14,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001
 // eslint-disable-next-line react-refresh/only-export-components
 export async function checkUltravoxConfiguration(): Promise<boolean> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/ultravox/health`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/ultravox/health`, {
       method: 'GET',
       credentials: 'include',
     });
