@@ -126,16 +126,13 @@ test.describe('Voice Selector Component', () => {
       expect(count).toBeGreaterThanOrEqual(5);
     });
 
-    test('should use sky accent color for xAI', async ({ _page }) => {
-      await voicePage.voiceSelector.click();
-
-      // xAI uses sky color scheme
-      // Verify sky accent is present
+    test.skip('should use sky accent color for xAI', async () => {
+      // TODO: Implement xAI sky color verification
     });
   });
 
   test.describe('Disabled State', () => {
-    test('should disable selector when connected', async ({ _page }) => {
+    test('should disable selector when connected', async () => {
       await voicePage.selectProvider('openai');
 
       // Connect
@@ -161,7 +158,7 @@ test.describe('Voice Selector Component', () => {
       await expect(disabledMessage).toBeVisible();
     });
 
-    test('should re-enable after disconnect', async ({ _page }) => {
+    test('should re-enable after disconnect', async () => {
       await voicePage.selectProvider('openai');
 
       // Connect then disconnect
@@ -248,7 +245,7 @@ test.describe('Voice Selector Component', () => {
       await expect(label).toBeVisible();
     });
 
-    test('should announce selected value', async ({ _page }) => {
+    test('should announce selected value', async () => {
       await voicePage.selectProvider('openai');
 
       // The trigger should show the selected voice name

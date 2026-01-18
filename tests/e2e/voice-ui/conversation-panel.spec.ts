@@ -37,7 +37,7 @@ test.describe('Conversation Panel Component', () => {
       await expect(voicePage.conversationEmpty).toBeVisible();
     });
 
-    test('should display "Conversation" header', async ({ _page }) => {
+    test('should display "Conversation" header', async () => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -45,7 +45,7 @@ test.describe('Conversation Panel Component', () => {
       await expect(header).toBeVisible();
     });
 
-    test('should show message count', async ({ _page }) => {
+    test('should show message count', async () => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -129,12 +129,8 @@ test.describe('Conversation Panel Component', () => {
       }
     });
 
-    test('should style user and assistant messages differently', async ({ _page }) => {
-      await voicePage.clickVoiceButton();
-      await voicePage.waitForVoiceButtonState('connected', 10000);
-
-      // User messages use blue styling
-      // Assistant messages use neutral styling
+    test.skip('should style user and assistant messages differently', async () => {
+      // TODO: Implement message styling verification
     });
   });
 

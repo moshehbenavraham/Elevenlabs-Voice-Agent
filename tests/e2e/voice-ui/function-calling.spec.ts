@@ -82,14 +82,11 @@ test.describe('Function Calling Indicator', () => {
   });
 
   test.describe('Status Transitions', () => {
-    test('should show pending status initially', async ({ _page }) => {
-      await voicePage.clickVoiceButton();
-      await voicePage.waitForVoiceButtonState('connected', 10000);
-
-      // The mock sends function call which starts in pending state
+    test.skip('should show pending status initially', async () => {
+      // TODO: Implement pending status verification
     });
 
-    test('should transition to executing status', async ({ _page }) => {
+    test('should transition to executing status', async () => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
@@ -124,12 +121,8 @@ test.describe('Function Calling Indicator', () => {
   });
 
   test.describe('Status Indicators', () => {
-    test('should show spinner during execution', async ({ _page }) => {
-      await voicePage.clickVoiceButton();
-      await voicePage.waitForVoiceButtonState('connected', 10000);
-
-      // During execution, spinner should be visible
-      // This is a brief state, hard to catch in tests
+    test.skip('should show spinner during execution', async () => {
+      // TODO: Implement spinner verification (brief state, hard to catch)
     });
 
     test('should show check icon on completion', async ({ page }) => {
@@ -148,12 +141,8 @@ test.describe('Function Calling Indicator', () => {
       // Check icon should be visible for completed status
     });
 
-    test('should show error icon on failure', async ({ _page }) => {
-      await voicePage.clickVoiceButton();
-      await voicePage.waitForVoiceButtonState('connected', 10000);
-
-      // Simulate error case - would need mock support
-      // Error icon shows for error status
+    test.skip('should show error icon on failure', async () => {
+      // TODO: Implement error icon verification (needs mock support)
     });
   });
 
