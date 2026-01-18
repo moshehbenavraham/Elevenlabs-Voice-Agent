@@ -13,6 +13,7 @@ export class VoicePage {
   readonly providerTabElevenlabsSdk: Locator;
   readonly providerTabOpenai: Locator;
   readonly providerTabXai: Locator;
+  readonly providerTabGemini: Locator;
 
   // Voice button and status
   readonly voiceButton: Locator;
@@ -42,6 +43,7 @@ export class VoicePage {
     this.providerTabElevenlabsSdk = page.getByTestId('provider-tab-elevenlabs-sdk');
     this.providerTabOpenai = page.getByTestId('provider-tab-openai');
     this.providerTabXai = page.getByTestId('provider-tab-xai');
+    this.providerTabGemini = page.getByTestId('provider-tab-gemini');
 
     // Voice button and status
     this.voiceButton = page.getByTestId('voice-button');
@@ -76,7 +78,7 @@ export class VoicePage {
    * Select a provider tab
    */
   async selectProvider(
-    provider: 'elevenlabs' | 'elevenlabs-sdk' | 'openai' | 'xai'
+    provider: 'elevenlabs' | 'elevenlabs-sdk' | 'openai' | 'xai' | 'gemini'
   ): Promise<void> {
     const tab = this.page.getByTestId(`provider-tab-${provider}`);
     await tab.click();
@@ -101,7 +103,7 @@ export class VoicePage {
    * Wait for voice button to reach a specific state
    */
   async waitForVoiceButtonState(
-    state: 'idle' | 'loading' | 'connected' | 'speaking' | 'error',
+    state: 'idle' | 'loading' | 'connected' | 'speaking' | 'listening' | 'thinking' | 'error',
     timeout = 10000
   ): Promise<void> {
     await this.voiceButton.waitFor({ state: 'visible', timeout });

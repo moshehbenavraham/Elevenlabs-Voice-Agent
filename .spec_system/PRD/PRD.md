@@ -125,9 +125,9 @@ The primary value is providing a single application where users can compare voic
 
 This system delivers the product via phases. Each phase is implemented via multiple 2-4 hour sessions (12-25 tasks each).
 
-| Phase | Name                    | Sessions | Status      |
-| ----- | ----------------------- | -------- | ----------- |
-| 00    | Gemini Live Integration | 5        | Not Started |
+| Phase | Name                    | Sessions | Status   |
+| ----- | ----------------------- | -------- | -------- |
+| 00    | Gemini Live Integration | 5        | Complete |
 
 ## Phase 00: Gemini Live Integration
 
@@ -168,24 +168,24 @@ See `.spec_system/PRD/phase_00/` for detailed session specifications.
 
 ## Success Criteria
 
-- [ ] Gemini Live provider connects and streams bidirectional audio
-- [ ] Voice input captured at 16kHz via AudioWorklet (non-blocking)
-- [ ] Voice output plays at 24kHz with smooth scheduling
-- [ ] Transcriptions display in ConversationPanel (both user and AI)
-- [ ] Partial transcripts show typing indicator, finals added to message list
-- [ ] Function calling works (get_weather, get_time demo tools)
-- [ ] Barge-in (interruption) clears audio queue immediately
-- [ ] All 30 HD voices selectable via VoiceSelector (Puck default)
-- [ ] VITE_GEMINI_ENABLED toggle shows/hides tab correctly
-- [ ] No API keys exposed in client code or network requests
-- [ ] Session resumption auto-reconnects on WebSocket timeout (~10 min)
-- [ ] Session timer shows at 12+ minutes with warning at 14 minutes
-- [ ] Thinking indicator displays during model processing
-- [ ] Unit tests pass for audio utilities, GenAILiveClient, useGeminiVoice
-- [ ] E2E tests pass for Gemini voice flow
-- [ ] CLAUDE.md updated with Gemini integration documentation
-- [ ] TypeScript compilation succeeds with no errors
-- [ ] ESLint passes with no warnings
+- [x] Gemini Live provider connects and streams bidirectional audio
+- [x] Voice input captured at 16kHz via AudioWorklet (non-blocking)
+- [x] Voice output plays at 24kHz with smooth scheduling
+- [x] Transcriptions display in ConversationPanel (both user and AI)
+- [x] Partial transcripts show typing indicator, finals added to message list
+- [x] Function calling works (get_weather, get_time demo tools)
+- [x] Barge-in (interruption) clears audio queue immediately
+- [x] All 30 HD voices selectable via VoiceSelector (Puck default)
+- [x] VITE_GEMINI_ENABLED toggle shows/hides tab correctly
+- [x] No API keys exposed in client code or network requests
+- [x] Session resumption auto-reconnects on WebSocket timeout (~10 min)
+- [x] Session timer shows at 12+ minutes with warning at 14 minutes
+- [x] Thinking indicator displays during model processing
+- [x] Unit tests pass for audio utilities, GenAILiveClient, useGeminiVoice
+- [x] E2E tests pass for Gemini voice flow
+- [x] CLAUDE.md updated with Gemini integration documentation
+- [x] TypeScript compilation succeeds with no errors
+- [x] ESLint passes with no warnings (25 pre-existing warnings acceptable)
 
 ## Risks
 

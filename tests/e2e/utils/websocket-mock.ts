@@ -1,6 +1,6 @@
 /**
  * WebSocket mocking utilities for E2E tests
- * Simulates realtime API connections for OpenAI, xAI, and ElevenLabs
+ * Simulates realtime API connections for OpenAI, xAI, ElevenLabs, and Gemini
  */
 
 /**
@@ -57,6 +57,7 @@ export const websocketMockScript = `
       if (url.includes('api.openai.com')) return 'openai';
       if (url.includes('api.x.ai')) return 'xai';
       if (url.includes('elevenlabs')) return 'elevenlabs';
+      if (url.includes('generativelanguage.googleapis.com')) return 'gemini';
       return 'unknown';
     }
 
@@ -79,6 +80,15 @@ export const websocketMockScript = `
               model: this._provider === 'openai' ? 'gpt-4o-realtime-preview' : 'grok-2-public',
               voice: 'alloy'
             }
+          });
+        }, 100);
+      }
+
+      // Send initial setup complete for Gemini
+      if (this._provider === 'gemini') {
+        setTimeout(() => {
+          this._sendMockMessage({
+            setupComplete: {}
           });
         }, 100);
       }

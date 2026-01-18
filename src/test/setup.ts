@@ -296,3 +296,36 @@ vi.mock('ultravox-client', () => {
     },
   };
 });
+
+// Mock Gemini SDK and related modules
+// NOTE: These mocks are exported for use in component tests (src/test/).
+// The library unit tests (src/lib/gemini/__tests__/) test real implementations.
+// Follows same pattern as other provider mocks with event emitter support
+export const geminiMocks = {
+  connect: vi.fn().mockResolvedValue(undefined),
+  disconnect: vi.fn().mockResolvedValue(undefined),
+  sendRealtimeInput: vi.fn(),
+  isConnected: false,
+  // Track registered event handlers for testing
+  eventHandlers: new Map<string, Set<(...args: unknown[]) => void>>(),
+  // Helper to emit events in tests
+  emit: (event: string, ...args: unknown[]) => {
+    const handlers = geminiMocks.eventHandlers.get(event);
+    if (handlers) {
+      handlers.forEach((handler) => handler(...args));
+    }
+  },
+  // Reset all mocks and event handlers
+  reset: () => {
+    geminiMocks.connect.mockClear();
+    geminiMocks.disconnect.mockClear();
+    geminiMocks.sendRealtimeInput.mockClear();
+    geminiMocks.isConnected = false;
+    geminiMocks.eventHandlers.clear();
+  },
+};
+
+// NOTE: Gemini library modules are NOT mocked at setup level to allow
+// src/lib/gemini/__tests__/ to test real implementations.
+// Component tests that need mocks should define them locally.
+// See GeminiProvider.test.tsx for example of local mocking.

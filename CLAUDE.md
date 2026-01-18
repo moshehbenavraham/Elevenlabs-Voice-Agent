@@ -30,7 +30,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build Tool**: Vite with SWC for fast compilation
 - **Styling**: Tailwind CSS with custom glassmorphism design system
 - **UI Components**: Radix UI primitives wrapped in shadcn/ui pattern
-- **Voice AI**: @elevenlabs/react SDK v0.12.1, OpenAI Realtime API, xAI Realtime API, Ultravox SDK, Vapi SDK, Retell SDK
+- **Voice AI**: @elevenlabs/react SDK v0.12.1, OpenAI Realtime API, xAI Realtime API, Ultravox SDK, Vapi SDK, Retell SDK, Google Gemini Live API
 - **Animations**: Framer Motion for smooth transitions
 - **State**: React Context (theme), Tanstack Query (server state), custom hooks
 
@@ -53,7 +53,9 @@ src/
 |   |   |-- XAIProvider.tsx # xAI Grok interface
 |   |   |-- UltravoxProvider.tsx # Ultravox voice interface (Phase 04)
 |   |   |-- VapiProvider.tsx # Vapi voice interface (Phase 05)
-|   |   `-- RetellProvider.tsx # Retell voice interface (Phase 06)
+|   |   |-- RetellProvider.tsx # Retell voice interface (Phase 06)
+|   |   |-- GeminiProvider.tsx # Gemini Live voice interface (Phase 00-Session 04)
+|   |   `-- GeminiEmptyState.tsx # Gemini empty state component
 |   |-- tabs/           # Tab navigation
 |   |   |-- ProviderTabs.tsx # Provider tab container
 |   |   `-- ProviderTab.tsx # Individual tab component
@@ -67,6 +69,7 @@ src/
 |   |-- useReconnection.ts # WebSocket reconnection with backoff (Phase 02)
 |   |-- useVapiVoice.ts # Vapi voice hook (Phase 05)
 |   |-- useRetellVoice.ts # Retell voice hook (Phase 06)
+|   |-- useGeminiVoice.ts # Gemini Live voice hook (Phase 00-Session 04)
 |   |-- use-mobile.tsx  # Mobile detection hook
 |   `-- use-toast.ts    # Toast notifications
 |-- pages/              # Route components
@@ -84,11 +87,17 @@ src/
 |   |-- XAIVoiceContext.tsx # xAI voice state with reconnection (Phase 02)
 |   |-- OpenAIVoiceContext.tsx # OpenAI voice state with reconnection (Phase 02)
 |   |-- UltravoxVoiceContext.tsx # Ultravox voice state (Phase 04)
+|   |-- GeminiVoiceContext.tsx # Gemini Live voice state (Phase 00-Session 04)
 |   `-- ProviderContext.tsx # Active provider selection
 `-- lib/                # Utilities
     |-- utils.ts        # Helper functions
     |-- audio/          # Audio processing (Phase 02)
     |   `-- audioUtils.ts # PCM encoding, base64 conversion
+    |-- gemini/          # Gemini Live infrastructure (Phase 00-Session 04)
+    |   |-- genai-live-client.ts # WebSocket client for Gemini Live API
+    |   |-- audio-recorder.ts # PCM audio capture for Gemini
+    |   |-- audio-streamer.ts # PCM audio playback for Gemini
+    |   `-- config.ts # Gemini configuration constants
     `-- tools/          # Function calling (Phase 02)
         `-- toolDefinitions.ts # Weather, time, calculator tools
 ```
@@ -110,6 +119,8 @@ src/
   - `VITE_VAPI_VOICE` - Vapi voice ID (default: paula)
   - `VITE_RETELL_ENABLED` - Enable Retell provider tab (true/false)
   - `VITE_RETELL_AGENT_ID` - Retell Agent ID (from Retell dashboard)
+  - `VITE_GEMINI_ENABLED` - Enable Gemini Live provider tab (true/false)
+  - `VITE_GEMINI_VOICE` - Gemini voice (default: Aoede)
   - `VITE_API_BASE_URL` - Backend API URL (default: http://localhost:3001)
   - `VITE_OPENAI_VOICE` / `VITE_XAI_VOICE` / `VITE_ULTRAVOX_VOICE` - Default voice selection
 - **Backend Variables** (server-side only):
@@ -118,6 +129,7 @@ src/
   - `OPENAI_API_KEY` - OpenAI API key for Realtime API
   - `ULTRAVOX_API_KEY` - Ultravox API key
   - `RETELL_API_KEY` - Retell API key for creating web call tokens
+  - `GEMINI_API_KEY` - Google Gemini API key for Live API
   - `CORS_ORIGIN` - Allowed frontend origin
 
 ### Key Integration Points
@@ -173,37 +185,53 @@ src/
    - Local transcript accumulation (SDK only provides last 5 sentences)
    - Teal/cyan color scheme to distinguish from other providers
 
-7. **Reconnection with Backoff** (Phase 02):
+7. **Gemini Live API** (Phase 00-Session 04):
+   - Uses ephemeral tokens from backend for secure WebSocket connections
+   - WebSocket connection at `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`
+   - `GenAILiveClient` handles WebSocket messaging with typed event system
+   - `GeminiAudioRecorder` captures PCM audio at 16kHz mono
+   - `GeminiAudioStreamer` plays 24kHz PCM audio responses
+   - `GeminiVoiceContext.tsx` manages connection state, transcripts, session timer
+   - `useGeminiVoice.ts` hook provides type-safe access to context
+   - 5 voices available: Puck, Charon, Kore, Fenrir, Aoede
+   - 15-minute session limit with warnings at 12min/14min
+   - Barge-in support with immediate audio queue clearing
+   - Thinking state detection (300ms after user speech ends)
+   - Voice Activity Detection (VAD) for automatic turn-taking
+   - Emerald/green color scheme to distinguish from other providers
+
+8. **Reconnection with Backoff** (Phase 02):
    - Automatic reconnection on WebSocket disconnect
    - Exponential backoff: 1s, 2s, 4s, 8s, up to 30s max
    - Maximum 10 retry attempts
    - `useReconnection.ts` hook handles logic
 
-8. **Function Calling** (Phase 02):
+9. **Function Calling** (Phase 02):
    - Tool definitions in `lib/tools/toolDefinitions.ts`
    - Demo tools: weather, time, calculator
    - Results displayed via `FunctionCallIndicator.tsx`
    - AI incorporates function results into responses
 
-9. **Audio Visualization**:
-   - `VoiceVisualizer.tsx` uses Web Audio API for real-time frequency analysis
-   - Canvas-based rendering optimized for 60fps
-   - Integrates with voice state from conversation events
+10. **Audio Visualization**:
 
-10. **Theme System**:
+- `VoiceVisualizer.tsx` uses Web Audio API for real-time frequency analysis
+- Canvas-based rendering optimized for 60fps
+- Integrates with voice state from conversation events
+
+11. **Theme System**:
 
 - Glassmorphism design with backdrop-filter effects
 - Theme toggle persists to localStorage
 - CSS variables defined in Tailwind config
 
-11. **Configuration Modal** (Phase 03):
+12. **Configuration Modal** (Phase 03):
 
 - Provider settings accessible via ConfigurationModal.tsx
 - Uses ConfigurationDialog.tsx (Radix UI Dialog) for advanced settings
 - Proper ARIA attributes (role="dialog", aria-modal, aria-labelledby)
 - Settings persistence via settingsStorage.ts
 
-12. **E2E Testing Infrastructure** (Phase 03):
+13. **E2E Testing Infrastructure** (Phase 03):
 
 - Playwright-based end-to-end tests in `tests/e2e/`
 - Multi-browser support (Chromium, Firefox, WebKit)
@@ -226,7 +254,7 @@ src/
    - Theme: Context API (`ThemeContext`)
    - Server data: Tanstack Query
    - Local state: Custom hooks pattern
-   - Voice state: Provider-specific contexts (`VoiceContext`, `XAIVoiceContext`, `OpenAIVoiceContext`, `UltravoxVoiceContext`)
+   - Voice state: Provider-specific contexts (`VoiceContext`, `XAIVoiceContext`, `OpenAIVoiceContext`, `UltravoxVoiceContext`, `GeminiVoiceContext`)
    - Provider selection: `ProviderContext` with localStorage persistence
    - Reconnection state: `useReconnection` hook (Phase 02)
    - Conversation history: Stored in provider contexts (Phase 02)

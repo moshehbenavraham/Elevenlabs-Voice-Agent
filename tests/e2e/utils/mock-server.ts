@@ -25,6 +25,9 @@ export const mockResponses = {
     signed_url:
       'wss://api.elevenlabs.io/v1/convai/conversation?agent_id=mock-agent&signature=mock-sig',
   },
+  gemini: {
+    token: 'mock-gemini-ephemeral-token-' + Date.now(),
+  },
 };
 
 /**
@@ -34,6 +37,7 @@ export const apiRoutes = {
   openai: '**/api/openai/session',
   xai: '**/api/xai/session',
   elevenlabs: '**/api/elevenlabs/signed-url',
+  gemini: '**/api/gemini/session',
 };
 
 /**
@@ -50,9 +54,10 @@ export async function setupMockServer(
     failOpenAI?: boolean;
     failXAI?: boolean;
     failElevenLabs?: boolean;
+    failGemini?: boolean;
   } = {}
 ): Promise<void> {
-  const { latency = 100, failOpenAI, failXAI, failElevenLabs } = options;
+  const { latency = 100, failOpenAI, failXAI, failElevenLabs, failGemini } = options;
 
   // Mock OpenAI session endpoint
   await page.route(apiRoutes.openai, async (route: Route) => {
@@ -113,6 +118,26 @@ export async function setupMockServer(
       body: JSON.stringify(mockResponses.elevenlabs),
     });
   });
+
+  // Mock Gemini session endpoint
+  await page.route(apiRoutes.gemini, async (route: Route) => {
+    await simulateLatency(latency);
+
+    if (failGemini) {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Mock server error' }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(mockResponses.gemini),
+    });
+  });
 }
 
 /**
@@ -129,6 +154,7 @@ export async function clearMockServer(page: Page): Promise<void> {
   await page.unroute(apiRoutes.openai);
   await page.unroute(apiRoutes.xai);
   await page.unroute(apiRoutes.elevenlabs);
+  await page.unroute(apiRoutes.gemini);
 }
 
 /**

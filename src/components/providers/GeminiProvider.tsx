@@ -360,6 +360,8 @@ export function GeminiButton({
         aria-label={getAriaLabel()}
         aria-pressed={isConnected}
         role="button"
+        data-testid="voice-button"
+        data-state={state}
       >
         {/* Inner gradient */}
         <div
@@ -439,6 +441,7 @@ export function GeminiButton({
         initial={{ opacity: 0, y: -5 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
+        data-testid="voice-button-status"
       >
         <span
           className={cn('font-mono text-xs tracking-wide uppercase', {
@@ -783,6 +786,7 @@ export function GeminiVoiceSelector({ className }: GeminiVoiceSelectorProps) {
             'hover:border-zinc-600'
           )}
           aria-label="Select voice"
+          data-testid="voice-selector"
         >
           <div className="flex items-center gap-2">
             <span>{currentVoice?.name || 'Select voice'}</span>
