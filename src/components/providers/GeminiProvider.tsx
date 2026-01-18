@@ -25,6 +25,7 @@ import type { ReactNode } from 'react';
  * Check if Gemini is configured (frontend-only check)
  * Returns true if VITE_GEMINI_ENABLED is set to 'true'
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function checkGeminiConfiguration(): boolean {
   const enabled = import.meta.env.VITE_GEMINI_ENABLED;
   return enabled === 'true' || enabled === true;
@@ -33,6 +34,7 @@ export function checkGeminiConfiguration(): boolean {
 /**
  * Hook to check Gemini configuration status
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useGeminiConfigured(): { isConfigured: boolean; isChecking: boolean } {
   const isConfigured = checkGeminiConfiguration();
   return { isConfigured, isChecking: false };
@@ -50,6 +52,12 @@ interface GeminiProviderProps {
 function GeminiProviderInner({ children, onDisconnect }: GeminiProviderProps) {
   const { disconnect, status } = useGeminiVoice();
   const wasConnectedRef = useRef(false);
+  const disconnectRef = useRef(disconnect);
+
+  // Keep disconnectRef in sync (for stable cleanup reference)
+  useEffect(() => {
+    disconnectRef.current = disconnect;
+  }, [disconnect]);
 
   // Handle disconnect callback when connection ends
   useEffect(() => {
@@ -67,12 +75,12 @@ function GeminiProviderInner({ children, onDisconnect }: GeminiProviderProps) {
     }
   }, [status, onDisconnect]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount - use ref to avoid dependency on disconnect
   useEffect(() => {
     return () => {
-      disconnect();
+      disconnectRef.current();
     };
-  }, [disconnect]);
+  }, []);
 
   return <>{children}</>;
 }
@@ -105,12 +113,11 @@ export function GeminiButton({
   className,
   size = 'lg',
   onConnect,
-  onDisconnect,
+  // onDisconnect is handled by GeminiProviderInner to avoid duplicate callbacks
 }: GeminiButtonProps) {
   const { status, isSpeaking, isListening, isThinking, connect, disconnect, error } =
     useGeminiVoice();
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const wasConnectedRef = useRef(false);
 
   const isConnected =
     status === 'connected' ||
@@ -132,22 +139,12 @@ export function GeminiButton({
 
     if (isConnected) {
       await disconnect();
-      onDisconnect?.();
+      // Note: onDisconnect is handled by GeminiProviderInner to avoid duplicate callbacks
     } else {
       await connect();
       onConnect?.();
     }
-  }, [isLoading, isConnected, connect, disconnect, onConnect, onDisconnect]);
-
-  // Track connection state for disconnect callback
-  useEffect(() => {
-    if (isConnected) {
-      wasConnectedRef.current = true;
-    } else if (wasConnectedRef.current && !isConnected && !isLoading) {
-      wasConnectedRef.current = false;
-      onDisconnect?.();
-    }
-  }, [isConnected, isLoading, onDisconnect]);
+  }, [isLoading, isConnected, connect, disconnect, onConnect]);
 
   useEffect(() => {
     if (error && buttonRef.current) {

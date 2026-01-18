@@ -128,7 +128,7 @@ router.get('/health', (req, res) => {
 });
 
 /**
- * POST /api/gemini/token
+ * POST /api/gemini/session
  * Creates an ephemeral token for Gemini Live WebSocket connection.
  * The token is used as a query parameter in the WebSocket URL.
  *
@@ -139,7 +139,7 @@ router.get('/health', (req, res) => {
  *   - Success: { token: string, expiresAt: string, model: string }
  *   - Error: { error: string, message: string }
  */
-router.post('/token', async (req, res) => {
+router.post('/session', async (req, res) => {
   // Validate API key configuration
   const validation = validateApiKey();
   if (!validation.valid) {

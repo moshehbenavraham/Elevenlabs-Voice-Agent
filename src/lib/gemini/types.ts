@@ -84,14 +84,10 @@ export interface SetupMessage {
     tools?: Array<{
       functionDeclarations?: GeminiFunctionDeclaration[];
     }>;
-    /** Input transcription settings */
-    inputAudioTranscription?: {
-      enabled: boolean;
-    };
-    /** Output transcription settings */
-    outputAudioTranscription?: {
-      enabled: boolean;
-    };
+    /** Input transcription settings - empty object enables it */
+    inputAudioTranscription?: Record<string, never>;
+    /** Output transcription settings - empty object enables it */
+    outputAudioTranscription?: Record<string, never>;
   };
 }
 

@@ -107,6 +107,7 @@ async function createUltravoxCall(): Promise<{ joinUrl: string; callId?: string 
   return data;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const UltravoxVoiceContext = createContext<UltravoxVoiceContextValue | null>(null);
 
 interface UltravoxVoiceProviderProps {

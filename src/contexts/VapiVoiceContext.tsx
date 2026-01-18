@@ -317,6 +317,7 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
  *
  * @returns VapiVoiceHookReturn - State and control functions for voice calls
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useVapiVoiceContext(): VapiVoiceHookReturn {
   const context = useContext(VapiVoiceContext);
 

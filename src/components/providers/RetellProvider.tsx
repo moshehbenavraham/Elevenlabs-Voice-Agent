@@ -11,6 +11,7 @@ import type { ReactNode } from 'react';
  * Check if Retell is configured (frontend-only check)
  * Returns true if VITE_RETELL_AGENT_ID is set
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function checkRetellConfiguration(): boolean {
   const agentId = import.meta.env.VITE_RETELL_AGENT_ID;
   return !!agentId && agentId !== 'your-retell-agent-id';
@@ -19,6 +20,7 @@ export function checkRetellConfiguration(): boolean {
 /**
  * Hook to check Retell configuration status
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useRetellConfigured(): { isConfigured: boolean; isChecking: boolean } {
   // Synchronous frontend-only check - initialize directly
   const isConfigured = checkRetellConfiguration();

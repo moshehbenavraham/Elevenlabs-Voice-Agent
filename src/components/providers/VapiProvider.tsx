@@ -19,6 +19,7 @@ import type { ReactNode } from 'react';
  * Check if Vapi is configured (frontend-only check)
  * Returns true if VITE_VAPI_WEB_TOKEN is set
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function checkVapiConfiguration(): boolean {
   const webToken = import.meta.env.VITE_VAPI_WEB_TOKEN;
   return !!webToken && webToken !== 'your-vapi-web-token';
@@ -27,6 +28,7 @@ export function checkVapiConfiguration(): boolean {
 /**
  * Hook to check Vapi configuration status
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useVapiConfigured(): { isConfigured: boolean; isChecking: boolean } {
   // Synchronous frontend-only check - initialize directly
   const isConfigured = checkVapiConfiguration();

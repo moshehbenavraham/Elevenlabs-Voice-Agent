@@ -204,6 +204,7 @@ function parseOpenAIError(error: unknown): string {
   return 'An unexpected error occurred.';
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const OpenAIVoiceContext = createContext<OpenAIVoiceContextValue | null>(null);
 
 interface OpenAIVoiceProviderProps {

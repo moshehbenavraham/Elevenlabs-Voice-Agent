@@ -14,6 +14,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001
  * Check if xAI backend is configured
  * Returns true if the server has xAI API key configured
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export async function checkXAIConfiguration(): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/xai/health`, {
@@ -33,6 +34,7 @@ export async function checkXAIConfiguration(): Promise<boolean> {
 /**
  * Hook to check xAI configuration status
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useXAIConfigured(): { isConfigured: boolean | null; isChecking: boolean } {
   const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
   const [isChecking, setIsChecking] = useState(true);

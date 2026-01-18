@@ -357,6 +357,7 @@ export function RetellVoiceProvider({ children }: RetellVoiceProviderProps) {
  *
  * @returns RetellVoiceHookReturn - State and control functions for voice calls
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useRetellVoiceContext(): RetellVoiceHookReturn {
   const context = useContext(RetellVoiceContext);
 

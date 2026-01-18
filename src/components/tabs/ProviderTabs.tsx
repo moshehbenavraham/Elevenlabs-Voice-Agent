@@ -12,6 +12,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
  * Animation variants for tab content transitions
  * Uses opacity + subtle slide for smooth tab switching
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const contentVariants: Variants = {
   enter: {
     opacity: 0,
@@ -32,6 +33,7 @@ export const contentVariants: Variants = {
 /**
  * Reduced motion variants (opacity only, no movement)
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const reducedMotionContentVariants: Variants = {
   enter: { opacity: 0 },
   center: { opacity: 1, transition: { duration: 0.15 } },

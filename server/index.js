@@ -91,7 +91,7 @@ app.use('/api/openai/token', tokenLimiter);
 app.use('/api/elevenlabs/signed-url', tokenLimiter);
 app.use('/api/ultravox/call', tokenLimiter);
 app.use('/api/retell/create-web-call', tokenLimiter);
-app.use('/api/gemini/token', tokenLimiter);
+app.use('/api/gemini/session', tokenLimiter);
 
 // API Routes
 app.use('/api/xai', xaiRoutes);

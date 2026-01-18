@@ -182,6 +182,7 @@ function parseElevenLabsError(error: unknown): string {
   return 'An unexpected error occurred. Please try again.';
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const VoiceContext = createContext<VoiceContextType | null>(null);
 
 interface VoiceProviderProps {

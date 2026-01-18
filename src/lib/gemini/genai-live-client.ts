@@ -250,12 +250,10 @@ export class GenAILiveClient extends EventEmitter<GenAILiveClientEvents> {
         systemInstruction: {
           parts: [{ text: this.systemInstruction }],
         },
-        inputAudioTranscription: {
-          enabled: this.inputAudioTranscription,
-        },
-        outputAudioTranscription: {
-          enabled: this.outputAudioTranscription,
-        },
+        // Enable transcription by providing empty config objects
+        // The presence of the field enables it; no "enabled" property needed
+        ...(this.inputAudioTranscription && { inputAudioTranscription: {} }),
+        ...(this.outputAudioTranscription && { outputAudioTranscription: {} }),
       },
     };
 

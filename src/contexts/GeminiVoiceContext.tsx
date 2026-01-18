@@ -246,6 +246,7 @@ function saveGeminiPrompt(prompt: string): void {
 // CONTEXT
 // =============================================================================
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const GeminiVoiceContext = createContext<GeminiVoiceContextValue | null>(null);
 
 interface GeminiVoiceProviderProps {
@@ -722,6 +723,12 @@ export function GeminiVoiceProvider({ children, onDisconnect }: GeminiVoiceProvi
     debugLog('disconnect', 'Disconnected');
   }, [onDisconnect, reconnectionHook, clearThinkingTimeout, clearSessionTimer]);
 
+  // Ref for stable disconnect reference in effects
+  const disconnectRef = useRef(disconnect);
+  useEffect(() => {
+    disconnectRef.current = disconnect;
+  }, [disconnect]);
+
   /**
    * Toggle mute state
    */
@@ -781,13 +788,13 @@ export function GeminiVoiceProvider({ children, onDisconnect }: GeminiVoiceProvi
     return analyserRef.current;
   }, []);
 
-  // Auto-disconnect at session limit
+  // Auto-disconnect at session limit - use ref to avoid dependency on disconnect
   useEffect(() => {
     if (state.sessionDuration >= GEMINI_SESSION_TIMERS.DISCONNECT_SECONDS && state.isConnected) {
       debugLog('sessionTimer', 'Session limit reached, auto-disconnecting');
-      disconnect();
+      disconnectRef.current();
     }
-  }, [state.sessionDuration, state.isConnected, disconnect]);
+  }, [state.sessionDuration, state.isConnected]);
 
   // Cleanup on unmount
   useEffect(() => {

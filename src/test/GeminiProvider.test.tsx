@@ -281,8 +281,8 @@ describe('GeminiProvider Components', () => {
         });
       });
 
-      it('calls onDisconnect callback when disconnecting', async () => {
-        const onDisconnect = vi.fn();
+      it('calls disconnect when button is clicked while connected', async () => {
+        // Note: onDisconnect callback is now handled by GeminiProviderInner to avoid duplicate callbacks
         const mockDisconnect = vi.fn().mockResolvedValue(undefined);
         mockUseGeminiVoice.mockReturnValue(
           createMockGeminiHookReturn({
@@ -292,11 +292,11 @@ describe('GeminiProvider Components', () => {
           })
         );
 
-        render(<GeminiButton onDisconnect={onDisconnect} />);
+        render(<GeminiButton />);
         fireEvent.click(screen.getByRole('button'));
 
         await waitFor(() => {
-          expect(onDisconnect).toHaveBeenCalled();
+          expect(mockDisconnect).toHaveBeenCalled();
         });
       });
 

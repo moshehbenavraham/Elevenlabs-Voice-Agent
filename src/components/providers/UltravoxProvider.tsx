@@ -12,6 +12,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001
  * Check if Ultravox backend is configured
  * Returns true if the server has ULTRAVOX_API_KEY configured
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export async function checkUltravoxConfiguration(): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/ultravox/health`, {
@@ -31,6 +32,7 @@ export async function checkUltravoxConfiguration(): Promise<boolean> {
 /**
  * Hook to check Ultravox configuration status
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useUltravoxConfigured(): { isConfigured: boolean | null; isChecking: boolean } {
   const [isConfigured, setIsConfigured] = useState<boolean | null>(null);
   const [isChecking, setIsChecking] = useState(true);

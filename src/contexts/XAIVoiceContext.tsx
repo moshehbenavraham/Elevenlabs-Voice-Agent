@@ -199,6 +199,7 @@ function parseXAIError(error: unknown): string {
   return 'An unexpected error occurred.';
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const XAIVoiceContext = createContext<XAIVoiceContextValue | null>(null);
 
 interface XAIVoiceProviderProps {

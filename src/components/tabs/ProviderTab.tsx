@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
  * Animation variants for tab state transitions
  * Respects prefers-reduced-motion via useReducedMotion hook integration
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const tabVariants: Variants = {
   inactive: {
     scale: 1,
@@ -39,6 +40,7 @@ export const tabVariants: Variants = {
 /**
  * Animation variants for the active tab indicator
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export const indicatorVariants: Variants = {
   hidden: {
     opacity: 0,

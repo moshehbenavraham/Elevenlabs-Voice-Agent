@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
  * Check if ElevenLabs is configured
  * Checks for VITE_ELEVENLABS_AGENT_ID environment variable
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function checkElevenLabsConfiguration(): boolean {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
   return Boolean(agentId && agentId !== 'your_agent_id_here');
@@ -15,6 +16,7 @@ export function checkElevenLabsConfiguration(): boolean {
  * Hook to check ElevenLabs configuration status
  * Uses lazy initialization to avoid effect-based setState
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export function useElevenLabsConfigured(): { isConfigured: boolean } {
   // Check configuration synchronously - env vars don't change at runtime
   const isConfigured = checkElevenLabsConfiguration();
