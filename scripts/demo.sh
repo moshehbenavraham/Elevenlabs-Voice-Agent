@@ -27,40 +27,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# Colors for output (disabled if not a terminal)
-if [ -t 1 ]; then
-    RED='\033[0;31m'
-    GREEN='\033[0;32m'
-    YELLOW='\033[1;33m'
-    BLUE='\033[0;34m'
-    NC='\033[0m' # No Color
-else
-    RED=''
-    GREEN=''
-    YELLOW=''
-    BLUE=''
-    NC=''
-fi
-
-# Function to print success message
-print_success() {
-    printf "%b[OK]%b %s\n" "${GREEN}" "${NC}" "$1"
-}
-
-# Function to print error message
-print_error() {
-    printf "%b[ERROR]%b %s\n" "${RED}" "${NC}" "$1" >&2
-}
-
-# Function to print warning message
-print_warning() {
-    printf "%b[WARN]%b %s\n" "${YELLOW}" "${NC}" "$1"
-}
-
-# Function to print info message
-print_info() {
-    printf "%b[INFO]%b %s\n" "${BLUE}" "${NC}" "$1"
-}
+# Source the shared output formatter library for consistent terminal styling
+# shellcheck source=ngrok/output-formatter.sh
+source "${SCRIPT_DIR}/ngrok/output-formatter.sh"
 
 # Process tracking
 declare -a PIDS=()
@@ -352,23 +321,32 @@ start_backend() {
     print_success "Backend started (port ${BACKEND_PORT})"
 }
 
-# Display demo URLs
+# Display demo URLs using the demo card generator
 display_urls() {
-    echo ""
-    echo "========================================"
-    echo "  Demo Mode Active"
-    echo "========================================"
-    echo ""
-    echo "  Frontend: ${FRONTEND_URL}"
-    echo "  Backend:  ${BACKEND_URL}"
-    echo ""
-    echo "  Local frontend: http://localhost:${FRONTEND_PORT}"
-    echo "  Local backend:  http://localhost:${BACKEND_PORT}"
-    echo ""
-    echo "========================================"
-    echo "  Press Ctrl+C to stop"
-    echo "========================================"
-    echo ""
+    local demo_card_script="${SCRIPT_DIR}/ngrok/demo-card.sh"
+
+    if [[ -x "$demo_card_script" ]]; then
+        # Use the demo card generator for formatted output
+        "$demo_card_script" \
+            --frontend-url "$FRONTEND_URL" \
+            --backend-url "$BACKEND_URL" \
+            --frontend-port "$FRONTEND_PORT" \
+            --backend-port "$BACKEND_PORT"
+    else
+        # Fallback to simple display if demo-card.sh not available
+        print_header "Demo Mode Active"
+        print_divider 40
+        echo ""
+        echo "  Frontend: ${FRONTEND_URL}"
+        echo "  Backend:  ${BACKEND_URL}"
+        echo ""
+        echo "  Local frontend: http://localhost:${FRONTEND_PORT}"
+        echo "  Local backend:  http://localhost:${BACKEND_PORT}"
+        echo ""
+        print_divider 40
+        echo "  Press Ctrl+C to stop"
+        echo ""
+    fi
 }
 
 # Wait for all processes

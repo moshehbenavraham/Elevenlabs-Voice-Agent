@@ -8,14 +8,15 @@
     "0": {
       "name": "Ngrok Demo Mode Integration",
       "description": "Add ngrok tunnel support for quick external access to demos with HTTPS, dynamic CORS, password protection, and shareable demo cards",
-      "status": "in_progress",
+      "status": "complete",
       "session_count": 4
     }
   },
   "completed_sessions": [
     "phase00-session01-ngrok-configuration-detection",
     "phase00-session02-demo-startup-orchestration",
-    "phase00-session03-dynamic-url-configuration"
+    "phase00-session03-dynamic-url-configuration",
+    "phase00-session04-terminal-output-demo-card"
   ],
   "next_session_history": [
     {
@@ -31,6 +32,11 @@
     {
       "date": "2026-01-18",
       "session": "phase00-session03-dynamic-url-configuration",
+      "status": "completed"
+    },
+    {
+      "date": "2026-01-18",
+      "session": "phase00-session04-terminal-output-demo-card",
       "status": "completed"
     }
   ]

@@ -78,9 +78,9 @@ This phase focuses on adding ngrok tunnel support to enable quick external acces
 
 This system delivers the product via phases. Each phase is implemented via multiple 2-4 hour sessions (12-25 tasks each).
 
-| Phase | Name                        | Sessions | Status      |
-| ----- | --------------------------- | -------- | ----------- |
-| 00    | Ngrok Demo Mode Integration | 4        | Not Started |
+| Phase | Name                        | Sessions | Status   | Completed  |
+| ----- | --------------------------- | -------- | -------- | ---------- |
+| 00    | Ngrok Demo Mode Integration | 4        | Complete | 2026-01-18 |
 
 ## Phase 00: Ngrok Demo Mode Integration
 
@@ -94,14 +94,14 @@ This system delivers the product via phases. Each phase is implemented via multi
 
 ### Sessions
 
-| Session | Name                            | Status      | Est. Tasks |
-| ------- | ------------------------------- | ----------- | ---------- |
-| 01      | Ngrok Configuration & Detection | Not Started | ~15        |
-| 02      | Demo Startup Orchestration      | Not Started | ~18        |
-| 03      | Dynamic URL Configuration       | Not Started | ~14        |
-| 04      | Terminal Output & Demo Card     | Not Started | ~12        |
+| Session | Name                            | Status   | Tasks | Validated  |
+| ------- | ------------------------------- | -------- | ----- | ---------- |
+| 01      | Ngrok Configuration & Detection | Complete | 16    | 2026-01-18 |
+| 02      | Demo Startup Orchestration      | Complete | 18    | 2026-01-18 |
+| 03      | Dynamic URL Configuration       | Complete | 24    | 2026-01-18 |
+| 04      | Terminal Output & Demo Card     | Complete | 20    | 2026-01-18 |
 
-Session details in `.spec_system/PRD/phase_00/session_NN_*.md`.
+Session details in `.spec_system/archive/phases/phase_00/`.
 
 ## Technical Stack
 
@@ -114,17 +114,17 @@ Session details in `.spec_system/PRD/phase_00/session_NN_*.md`.
 
 ## Success Criteria
 
-- [ ] `npm run demo` starts all services and ngrok tunnels successfully
-- [ ] Frontend accessible via ngrok HTTPS URL with working microphone permissions
-- [ ] All voice providers connect and function through the tunnel
-- [ ] Backend API accessible via separate ngrok tunnel with proper CORS
-- [ ] Terminal displays all URLs clearly with copy-paste friendly format
-- [ ] Ctrl+C gracefully shuts down all processes (no orphaned ngrok tunnels)
-- [ ] Custom domain works when NGROK_DOMAIN is configured
-- [ ] Inspector UI accessible at configured port (default 4041)
-- [ ] ngrok installation detected with instructions always displayed
-- [ ] Password protection active on tunnels (configured via NGROK_AUTH_USER/NGROK_AUTH_PASS)
-- [ ] Demo card generated with shareable URLs, credentials, and quick-start instructions
+- [x] `npm run demo` starts all services and ngrok tunnels successfully
+- [x] Frontend accessible via ngrok HTTPS URL with working microphone permissions
+- [x] All voice providers connect and function through the tunnel
+- [x] Backend API accessible via separate ngrok tunnel with proper CORS
+- [x] Terminal displays all URLs clearly with copy-paste friendly format
+- [x] Ctrl+C gracefully shuts down all processes (no orphaned ngrok tunnels)
+- [x] Custom domain works when NGROK_DOMAIN is configured
+- [x] Inspector UI accessible at configured port (default 4041)
+- [x] ngrok installation detected with instructions always displayed
+- [x] Password protection active on tunnels (configured via NGROK_AUTH_USER/NGROK_AUTH_PASS)
+- [x] Demo card generated with shareable URLs, credentials, and quick-start instructions
 
 ## Risks
 

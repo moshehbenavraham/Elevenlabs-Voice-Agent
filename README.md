@@ -207,6 +207,7 @@ This project includes comprehensive documentation:
 | Type      | Documentation                                   | Description                    |
 | --------- | ----------------------------------------------- | ------------------------------ |
 | [DEPLOY]  | **[Deployment](docs/DEPLOYMENT.md)**            | Production deployment guides   |
+| [DEMO]    | **[Demo Mode](docs/DEMO_MODE.md)**              | ngrok demo mode setup          |
 | [ARCH]    | **[Architecture](docs/ARCHITECTURE.md)**        | Technical system design        |
 | [VOICE]   | **[Voice Features](docs/VOICE_FEATURES.md)**    | Voice AI functionality         |
 | [MOBILE]  | **[Mobile Guide](docs/MOBILE_OPTIMIZATION.md)** | Mobile optimization            |
@@ -261,6 +262,44 @@ npm run dev:all      # Frontend: 8082, Backend: 3001
 # Backend only
 npm run server       # http://localhost:3001
 ```
+
+### Demo Mode (ngrok)
+
+Demo mode exposes your local development environment via secure HTTPS tunnels for client demos, mobile testing, and team collaboration.
+
+```bash
+# Quick start
+npm run demo
+```
+
+This starts ngrok tunnels, the frontend, and backend with automatic CORS configuration. A shareable demo card is displayed:
+
+```
++--------------------------------------------------------------+
+|  Voice-Agent-PuPuPlatter - Demo Mode Active                  |
+|                                                              |
+|  Frontend: https://abc123.ngrok-free.app                     |
+|  Backend:  https://def456.ngrok-free.app                     |
+|                                                              |
+|  Press Ctrl+C to stop                                        |
++--------------------------------------------------------------+
+```
+
+**Prerequisites:**
+
+- Install ngrok: `./scripts/ngrok/install-instructions.sh`
+- Authenticate: `ngrok config add-authtoken YOUR_TOKEN`
+- Install jq: `sudo apt install jq` (or `brew install jq`)
+
+**Optional Configuration** (in `.env`):
+
+```bash
+NGROK_DOMAIN=myapp.ngrok.dev    # Custom domain (paid plans)
+NGROK_AUTH_USER=demo            # Basic auth username
+NGROK_AUTH_PASS=secretpass      # Basic auth password
+```
+
+See [docs/DEMO_MODE.md](docs/DEMO_MODE.md) for comprehensive documentation, troubleshooting, and provider-specific notes.
 
 ## [TOOLS] Technologies
 
