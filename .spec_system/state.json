@@ -1,0 +1,16 @@
+{
+  "version": "2.0",
+  "project_name": "Voice-Agent-PuPuPlatter",
+  "description": "A multi-provider voice AI demo platform showcasing integrations with ElevenLabs, OpenAI, xAI, Ultravox, Vapi, Retell, and Gemini Live APIs",
+  "current_phase": 0,
+  "current_session": null,
+  "phases": {
+    "0": {
+      "name": "Adding Ngrok Support for Easy Demoing",
+      "status": "not_started",
+      "session_count": 0
+    }
+  },
+  "completed_sessions": [],
+  "next_session_history": []
+}
