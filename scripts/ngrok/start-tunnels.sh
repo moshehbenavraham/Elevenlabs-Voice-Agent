@@ -39,7 +39,7 @@ load_env() {
     local env_file="${PROJECT_ROOT}/.env"
     if [[ -f "$env_file" ]]; then
         # Export only NGROK_* variables to avoid issues with multi-word values
-        while IFS='=' read -r key value; do
+        while IFS='=' read -r key value || [[ -n "$key" ]]; do
             # Skip comments and empty lines
             [[ -z "$key" || "$key" =~ ^# ]] && continue
             # Export NGROK_* variables (includes NGROK_BACKEND_DOMAIN)

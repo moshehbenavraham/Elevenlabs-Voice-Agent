@@ -45,3 +45,6 @@ VAPI_EXAMPLE/
 # Demo mode generated files (ephemeral, not committed)
 server/.env.demo
 public/config.js
+
+# Generated ngrok config (may contain credentials)
+scripts/ngrok/ngrok.yml
