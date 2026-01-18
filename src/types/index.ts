@@ -45,3 +45,13 @@ export type {
   VapiStartConfig,
   VapiVoiceHookReturn,
 } from './vapi';
+
+export type {
+  GeminiConnectionStatus,
+  GeminiVoiceState,
+  GeminiVoiceContextValue,
+  GeminiVoiceAction,
+  GeminiVoiceHookReturn,
+} from './gemini';
+
+export { GEMINI_SESSION_TIMERS, GEMINI_INITIAL_STATE } from './gemini';
