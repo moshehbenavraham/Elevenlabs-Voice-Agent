@@ -1,0 +1,46 @@
+# ngrok Configuration for Voice-Agent-PuPuPlatter
+# Config file version 2 (for ngrok CLI v3)
+#
+# Environment Variables Required:
+#   NGROK_AUTHTOKEN - Your ngrok auth token (required)
+#
+# Environment Variables Optional:
+#   NGROK_DOMAIN - Custom domain (paid plans only, e.g., myapp.ngrok.dev)
+#   NGROK_AUTH_USER - Basic auth username for password protection
+#   NGROK_AUTH_PASS - Basic auth password for password protection
+#   NGROK_INSPECTOR_PORT - Web inspector port (default: 4041)
+#
+# Usage:
+#   ngrok start --all --config scripts/ngrok/ngrok.yml
+#   ngrok start frontend --config scripts/ngrok/ngrok.yml
+#   ngrok start backend --config scripts/ngrok/ngrok.yml
+
+version: "2"
+
+# Web inspector configuration
+# Port 4041 avoids conflicts with default 4040 if running multiple ngrok instances
+# Set NGROK_INSPECTOR_PORT env var or it defaults to 4041 per .env.example
+web_addr: localhost:${NGROK_INSPECTOR_PORT}
+
+tunnels:
+  # Frontend tunnel - Vite dev server
+  # Exposes the React frontend at localhost:8082
+  frontend:
+    proto: http
+    addr: 8082
+    # Custom domain (optional, requires paid plan)
+    # When NGROK_DOMAIN is set, frontend gets the custom domain
+    domain: ${NGROK_DOMAIN}
+    # Basic auth (optional, for demo protection)
+    # Set NGROK_AUTH_USER and NGROK_AUTH_PASS for password protection
+    basic_auth:
+      - "${NGROK_AUTH_USER}:${NGROK_AUTH_PASS}"
+
+  # Backend tunnel - Express API server
+  # Exposes the backend API at localhost:3001
+  backend:
+    proto: http
+    addr: 3001
+    # Basic auth (optional, same credentials as frontend)
+    basic_auth:
+      - "${NGROK_AUTH_USER}:${NGROK_AUTH_PASS}"

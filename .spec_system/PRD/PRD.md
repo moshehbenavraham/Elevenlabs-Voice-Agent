@@ -80,7 +80,7 @@ This system delivers the product via phases. Each phase is implemented via multi
 
 | Phase | Name                        | Sessions | Status      |
 | ----- | --------------------------- | -------- | ----------- |
-| 00    | Ngrok Demo Mode Integration | TBD      | Not Started |
+| 00    | Ngrok Demo Mode Integration | 4        | Not Started |
 
 ## Phase 00: Ngrok Demo Mode Integration
 
@@ -92,11 +92,16 @@ This system delivers the product via phases. Each phase is implemented via multi
 4. Add environment variable support for ngrok customization (domain, auth, ports)
 5. Provide comprehensive terminal output with shareable demo card
 
-### Sessions (To Be Defined)
+### Sessions
 
-Sessions are defined via `/phasebuild` as `session_NN_name.md` stubs under `.spec_system/PRD/phase_00/`.
+| Session | Name                            | Status      | Est. Tasks |
+| ------- | ------------------------------- | ----------- | ---------- |
+| 01      | Ngrok Configuration & Detection | Not Started | ~15        |
+| 02      | Demo Startup Orchestration      | Not Started | ~18        |
+| 03      | Dynamic URL Configuration       | Not Started | ~14        |
+| 04      | Terminal Output & Demo Card     | Not Started | ~12        |
 
-**Note**: This command does NOT create phase directories or session stubs. Run `/phasebuild` after creating the PRD.
+Session details in `.spec_system/PRD/phase_00/session_NN_*.md`.
 
 ## Technical Stack
 
