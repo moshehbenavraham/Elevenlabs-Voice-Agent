@@ -127,14 +127,25 @@ scripts/           # Shell scripts for dev/build/demo
 
 ## Local Dev Tools
 
-| Category    | Tool                | Config                    |
-| ----------- | ------------------- | ------------------------- |
-| Formatter   | Prettier            | `.prettierrc`             |
-| Linter      | ESLint 9            | `eslint.config.js`        |
-| Type Safety | TypeScript 5        | `tsconfig.json`           |
-| Testing     | Vitest + RTL        | `vitest.config.ts`        |
-| E2E Testing | Playwright          | `playwright.config.ts`    |
-| Git Hooks   | Husky + lint-staged | `.husky/`, `package.json` |
+| Category      | Tool                | Config                    |
+| ------------- | ------------------- | ------------------------- |
+| Formatter     | Prettier            | `.prettierrc`             |
+| Linter        | ESLint 9            | `eslint.config.js`        |
+| Type Safety   | TypeScript 5        | `tsconfig.json`           |
+| Testing       | Vitest + RTL        | `vitest.config.ts`        |
+| E2E Testing   | Playwright          | `playwright.config.ts`    |
+| Observability | pino + pino-pretty  | `src/lib/logger.ts`       |
+| Git Hooks     | Husky + lint-staged | `.husky/`, `package.json` |
+
+## CI/CD
+
+| Bundle       | Status     | Workflow                                                                                |
+| ------------ | ---------- | --------------------------------------------------------------------------------------- |
+| Code Quality | configured | `.github/workflows/quality.yml` (Lint, Format, Type Check)                              |
+| Build & Test | configured | `.github/workflows/test.yml` (Build, Unit Tests)                                        |
+| Security     | configured | `.github/workflows/security.yml` (Gitleaks, CodeQL, Dependency Review, NPM Audit)       |
+| Integration  | configured | `.github/workflows/e2e.yml` (E2E Tests)                                                 |
+| Operations   | configured | `.github/workflows/release.yml`, `.github/dependabot.yml` (Release tagging, Dependabot) |
 
 ## When In Doubt
 
