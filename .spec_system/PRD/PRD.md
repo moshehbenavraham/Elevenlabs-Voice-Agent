@@ -78,9 +78,10 @@ This phase focuses on adding ngrok tunnel support to enable quick external acces
 
 This system delivers the product via phases. Each phase is implemented via multiple 2-4 hour sessions (12-25 tasks each).
 
-| Phase | Name                        | Sessions | Status   | Completed  |
-| ----- | --------------------------- | -------- | -------- | ---------- |
-| 00    | Ngrok Demo Mode Integration | 4        | Complete | 2026-01-18 |
+| Phase | Name                           | Sessions | Status      | Completed  |
+| ----- | ------------------------------ | -------- | ----------- | ---------- |
+| 00    | Ngrok Demo Mode Integration    | 4        | Complete    | 2026-01-18 |
+| 01    | Production Deployment & DevOps | 5        | Not Started | -          |
 
 ## Phase 00: Ngrok Demo Mode Integration
 
@@ -102,6 +103,28 @@ This system delivers the product via phases. Each phase is implemented via multi
 | 04      | Terminal Output & Demo Card     | Complete | 20    | 2026-01-18 |
 
 Session details in `.spec_system/archive/phases/phase_00/`.
+
+## Phase 01: Production Deployment & DevOps
+
+### Objectives
+
+1. Create optimized multi-stage Docker builds with minimal image sizes
+2. Implement comprehensive CI/CD pipeline with automated testing and deployments
+3. Configure cloud deployment options (Vercel, Railway, Fly.io, or AWS)
+4. Add monitoring, logging, and alerting infrastructure
+5. Harden security for production API key management and CORS configuration
+
+### Sessions
+
+| Session | Name                           | Status      | Tasks | Validated |
+| ------- | ------------------------------ | ----------- | ----- | --------- |
+| 01      | Docker Production Optimization | Not Started | ~15   | -         |
+| 02      | GitHub Actions CI/CD Pipeline  | Not Started | ~18   | -         |
+| 03      | Cloud Deployment Configuration | Not Started | ~20   | -         |
+| 04      | Monitoring & Observability     | Not Started | ~16   | -         |
+| 05      | Production Security Hardening  | Not Started | ~14   | -         |
+
+Session details in `.spec_system/PRD/phase_01/`.
 
 ## Technical Stack
 

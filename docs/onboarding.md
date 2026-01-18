@@ -152,6 +152,21 @@ npm run test:run
 - Check that the API key has access to Gemini Live API
 - Sessions are limited to 15 minutes
 
+## Demo Mode
+
+For client demos, mobile testing, or team collaboration with HTTPS access:
+
+```bash
+# Prerequisites: ngrok CLI installed and authenticated
+./scripts/ngrok/install-instructions.sh
+ngrok config add-authtoken YOUR_TOKEN
+
+# Start demo mode
+npm run demo
+```
+
+See [Demo Mode](DEMO_MODE.md) for full documentation.
+
 ## Next Steps
 
 1. Read [Architecture Overview](ARCHITECTURE.md)

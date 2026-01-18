@@ -36,6 +36,7 @@
 | `npm run docker:build`    | Build Docker production image         |
 | `npm run docker:up`       | Start container via docker-compose    |
 | `npm run docker:down`     | Stop and remove container             |
+| `npm run demo`            | Start demo mode with ngrok tunnels    |
 
 ## Development Workflow
 

@@ -13,25 +13,27 @@ Items requiring attention in upcoming phases. Review before each session.
 
 <!-- Max 5 items -->
 
-_None yet - add items as technical debt accumulates._
+- [P00] **Manual testing for shell scripts**: Shell scripts (ngrok scripts, demo.sh) rely on manual testing. Consider adding automated integration tests in future phases.
 
 ### External Dependencies
 
 <!-- Max 5 items -->
 
-_None yet - add items when external API/service risks are identified._
+- [P00] **ngrok tunnel stability**: Demo mode depends on ngrok service availability. Tunnel URLs change on restart, requiring re-sharing.
+- [P00] **jq availability varies**: Some systems don't have jq installed; scripts include grep/sed fallbacks but jq is preferred for reliable JSON parsing.
 
 ### Performance / Security
 
 <!-- Max 5 items -->
 
-_None yet - add items when thresholds or security requirements emerge._
+- [P00] **Demo mode CORS configuration**: CORS_ORIGIN is dynamically set for demos. Ensure production deployments don't accidentally use wide-open CORS settings.
+- [P00] **15-minute Gemini session limit**: Gemini Live API enforces 15-minute session limits with warnings at 12min/14min.
 
 ### Architecture
 
 <!-- Max 5 items -->
 
-_None yet - add items when architectural constraints are discovered._
+- [P00] **Runtime config injection pattern**: Frontend uses `window.VOICE_AGENT_CONFIG` for demo mode URLs. This pattern could be extended for other runtime-configurable settings.
 
 ---
 
@@ -43,19 +45,47 @@ Proven patterns and anti-patterns. Reference during implementation.
 
 <!-- Max 15 items -->
 
-_None yet - add patterns that prove effective._
+- [P00] **POSIX-compliant detection**: Using `command -v` instead of `which` for tool detection ensures cross-platform compatibility.
+
+- [P00] **Script-relative paths**: Using `SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)` and `PROJECT_ROOT` variables ensures scripts work from any directory.
+
+- [P00] **Re-entrancy guards**: The `CLEANUP_IN_PROGRESS` flag pattern prevents cleanup from being triggered multiple times during rapid signal sequences.
+
+- [P00] **LIFO shutdown order**: Stopping dependent processes before their dependencies (frontend -> backend -> ngrok) ensures clean termination.
+
+- [P00] **Exponential backoff for polling**: Using 1s, 2s, 4s, 8s intervals (capped at 8s max) reduces CPU/network load while remaining responsive.
+
+- [P00] **jq with fallback parser**: Implementing grep/sed fallback for JSON parsing ensures scripts work on systems without jq.
+
+- [P00] **Library pattern for shell scripts**: Creating sourceable libraries (output-formatter.sh) reduces duplication and enables consistent styling across scripts.
+
+- [P00] **ASCII-only output**: Using ASCII characters (+, -, |) for box borders instead of Unicode ensures universal terminal compatibility and clean copy-paste.
+
+- [P00] **Centralized getApiBaseUrl utility**: All voice provider contexts import from a single utility function for consistent API URL resolution.
+
+- [P00] **Progressive color enhancement**: Enable colors when TTY detected, disable via NO_COLOR env var or when piped - supports both human and machine consumption.
 
 ### What to Avoid
 
 <!-- Max 10 items -->
 
-_None yet - add anti-patterns discovered during implementation._
+- [P00] **Bash-style defaults in ngrok config**: ngrok YAML config does not support `${VAR:-default}` syntax. Keep config simple and document defaults in .env.example.
+
+- [P00] **Unicode in shell scripts**: Unicode characters (arrows, box-drawing) can cause issues with shellcheck and some terminals. Use ASCII equivalents.
+
+- [P00] **echo -e for formatting**: `echo -e` behaves differently across shells (bash vs zsh vs dash). Use `printf` for reliable escape sequence handling.
+
+- [P00] **Fixed interval polling**: Using fixed-interval polling (e.g., 1s) for API responses wastes resources. Exponential backoff is more efficient.
 
 ### Tool/Library Notes
 
 <!-- Max 5 items -->
 
-_None yet - add key insights about tools and libraries._
+- [P00] **shellcheck**: Running with `--severity=warning` catches potential issues early. SC1091 (sourced file not followed) is expected for runtime-computed paths.
+
+- [P00] **ngrok config v2**: Use `version: 2` format for ngrok CLI v3 compatibility. Environment variable substitution uses `${VAR}` syntax only.
+
+- [P00] **dotenv override option**: Node.js dotenv's `override: true` option ensures .env.demo values take precedence over .env for demo mode.
 
 ---
 
@@ -63,9 +93,9 @@ _None yet - add key insights about tools and libraries._
 
 Recently closed items (buffer - rotates out after 2 phases).
 
-| Phase | Item                    | Resolution |
-| ----- | ----------------------- | ---------- |
-| -     | _No resolved items yet_ | -          |
+| Phase | Item                             | Resolution                                                              |
+| ----- | -------------------------------- | ----------------------------------------------------------------------- |
+| P00   | Unicode encoding in .env.example | Replaced Unicode arrows with ASCII characters for shellcheck compliance |
 
 ---
 
