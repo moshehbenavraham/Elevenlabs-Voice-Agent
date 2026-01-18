@@ -12,11 +12,19 @@
       "session_count": 4
     }
   },
-  "completed_sessions": ["phase00-session01-ngrok-configuration-detection"],
+  "completed_sessions": [
+    "phase00-session01-ngrok-configuration-detection",
+    "phase00-session02-demo-startup-orchestration"
+  ],
   "next_session_history": [
     {
       "date": "2026-01-18",
       "session": "phase00-session01-ngrok-configuration-detection",
+      "status": "completed"
+    },
+    {
+      "date": "2026-01-18",
+      "session": "phase00-session02-demo-startup-orchestration",
       "status": "completed"
     }
   ]

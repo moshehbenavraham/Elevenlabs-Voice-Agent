@@ -1,7 +1,7 @@
 {
   "name": "voice-agent-pupuplatter",
   "private": true,
-  "version": "1.0.43",
+  "version": "1.0.44",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -23,7 +23,8 @@
     "prepare": "husky",
     "docker:build": "docker build -t voice-agent .",
     "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down"
+    "docker:down": "docker compose down",
+    "demo": "bash scripts/demo.sh"
   },
   "lint-staged": {
     "*.{ts,tsx}": [

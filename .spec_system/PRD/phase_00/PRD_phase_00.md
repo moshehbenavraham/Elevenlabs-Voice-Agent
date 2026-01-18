@@ -4,7 +4,7 @@
 **Sessions**: 4 (initial estimate)
 **Estimated Duration**: 1-2 days
 
-**Progress**: 1/4 sessions (25%)
+**Progress**: 2/4 sessions (50%)
 
 ---
 
@@ -19,7 +19,7 @@ This phase adds ngrok tunnel support to enable quick external access for demos a
 | Session | Name                            | Status      | Est. Tasks | Validated  |
 | ------- | ------------------------------- | ----------- | ---------- | ---------- |
 | 01      | Ngrok Configuration & Detection | Complete    | 16         | 2026-01-18 |
-| 02      | Demo Startup Orchestration      | Not Started | ~18        | -          |
+| 02      | Demo Startup Orchestration      | Complete    | 18         | 2026-01-18 |
 | 03      | Dynamic URL Configuration       | Not Started | ~14        | -          |
 | 04      | Terminal Output & Demo Card     | Not Started | ~12        | -          |
 
@@ -38,11 +38,23 @@ Created ngrok configuration file and detection scripts:
 - `scripts/ngrok/install-instructions.sh` - Platform-specific installation guide
 - Updated `.env.example` with ngrok environment variables
 
+### Session 02: Demo Startup Orchestration
+
+**Completed**: 2026-01-18
+
+Created demo orchestration scripts for single-command startup:
+
+- `scripts/demo.sh` - Main orchestrator with PID tracking and LIFO shutdown
+- `scripts/ngrok/start-tunnels.sh` - Starts ngrok and extracts tunnel URLs
+- `scripts/ngrok/wait-for-tunnels.sh` - Polls ngrok API with exponential backoff
+- Added `npm run demo` script to package.json
+- Graceful shutdown via trap-based signal handling
+
 ---
 
 ## Upcoming Sessions
 
-- Session 02: Demo Startup Orchestration
+- Session 03: Dynamic URL Configuration
 
 ---
 
