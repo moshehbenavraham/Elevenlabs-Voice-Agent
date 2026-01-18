@@ -4,7 +4,7 @@
 **Sessions**: 4 (initial estimate)
 **Estimated Duration**: 1-2 days
 
-**Progress**: 2/4 sessions (50%)
+**Progress**: 3/4 sessions (75%)
 
 ---
 
@@ -20,7 +20,7 @@ This phase adds ngrok tunnel support to enable quick external access for demos a
 | ------- | ------------------------------- | ----------- | ---------- | ---------- |
 | 01      | Ngrok Configuration & Detection | Complete    | 16         | 2026-01-18 |
 | 02      | Demo Startup Orchestration      | Complete    | 18         | 2026-01-18 |
-| 03      | Dynamic URL Configuration       | Not Started | ~14        | -          |
+| 03      | Dynamic URL Configuration       | Complete    | 24         | 2026-01-18 |
 | 04      | Terminal Output & Demo Card     | Not Started | ~12        | -          |
 
 ---
@@ -50,11 +50,25 @@ Created demo orchestration scripts for single-command startup:
 - Added `npm run demo` script to package.json
 - Graceful shutdown via trap-based signal handling
 
+### Session 03: Dynamic URL Configuration
+
+**Completed**: 2026-01-18
+
+Implemented dynamic URL configuration for ngrok demo mode:
+
+- `scripts/ngrok/configure-urls.sh` - Extracts ngrok URLs and generates runtime config
+- `scripts/ngrok/validate-cors.sh` - CORS validation script for testing
+- `public/config.template.js` - Template for runtime frontend config
+- `src/lib/apiConfig.ts` - Shared getApiBaseUrl utility function
+- Updated all 5 voice provider contexts to use dynamic API base URL
+- Updated `server/index.js` for dynamic CORS origin from environment
+- Updated `scripts/demo.sh` with URL configuration integration and cleanup
+
 ---
 
 ## Upcoming Sessions
 
-- Session 03: Dynamic URL Configuration
+- Session 04: Terminal Output & Demo Card
 
 ---
 

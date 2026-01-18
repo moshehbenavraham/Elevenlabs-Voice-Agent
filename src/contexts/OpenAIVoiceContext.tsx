@@ -23,10 +23,10 @@ import {
   updateProviderSettings,
   DEFAULT_OPENAI_PROMPT,
 } from '@/lib/settingsStorage';
+import { getApiBaseUrl } from '@/lib/apiConfig';
 import type { VoiceMessage, FunctionCall } from '@/types';
 
 const DEBUG = import.meta.env.DEV;
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 // OpenAI Realtime API configuration
 const OPENAI_REALTIME_URL = 'wss://api.openai.com/v1/realtime';
@@ -139,7 +139,7 @@ function openAIVoiceReducer(state: OpenAIVoiceState, action: OpenAIVoiceAction):
 async function getEphemeralToken(): Promise<string> {
   debugLog('getEphemeralToken', 'Requesting ephemeral token from server...');
 
-  const response = await fetch(`${API_BASE_URL}/api/openai/session`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/openai/session`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -464,7 +464,7 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
 
       try {
         // Execute function via backend
-        const response = await fetch(`${API_BASE_URL}/api/functions/execute`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/functions/execute`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, arguments: args, callId }),

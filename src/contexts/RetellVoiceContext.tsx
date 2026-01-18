@@ -31,9 +31,9 @@ import {
   RetellUpdatePayload,
   RetellVoiceHookReturn,
 } from '@/types/retell';
+import { getApiBaseUrl } from '@/lib/apiConfig';
 
 // API configuration from environment
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 const RETELL_AGENT_ID = import.meta.env.VITE_RETELL_AGENT_ID;
 
 /**
@@ -232,7 +232,7 @@ export function RetellVoiceProvider({ children }: RetellVoiceProviderProps) {
     try {
       // Fetch access token from backend
       console.log('[Retell] Fetching access token from backend...');
-      const response = await fetch(`${API_BASE_URL}/api/retell/create-web-call`, {
+      const response = await fetch(`${getApiBaseUrl()}/api/retell/create-web-call`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

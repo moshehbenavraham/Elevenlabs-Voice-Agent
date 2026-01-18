@@ -3,6 +3,7 @@ import cors from 'cors';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { config } from 'dotenv';
+import { existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import xaiRoutes from './routes/xai.js';
@@ -19,8 +20,19 @@ const __dirname = dirname(__filename);
 // Production mode detection
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Load environment variables
+// Load base environment variables first
 config();
+
+// Demo mode: load .env.demo on top of .env if it exists
+// This allows ngrok URLs to override CORS_ORIGIN dynamically
+const envDemoPath = join(__dirname, '.env.demo');
+if (existsSync(envDemoPath)) {
+  config({ path: envDemoPath, override: true });
+  console.log('[Server] Demo mode: loaded .env.demo overrides');
+}
+
+// Demo mode flag from environment
+const isDemoMode = process.env.DEMO_MODE === 'true';
 
 // Rate limiting configuration
 const apiLimiter = rateLimit({
@@ -139,6 +151,7 @@ app.get('/api/health', (req, res) => {
       api: { windowMs: 900000, max: 100 }, // 15 min, 100 requests
       tokens: { windowMs: 60000, max: 10 }, // 1 min, 10 requests
     },
+    demoMode: isDemoMode,
   };
 
   // Determine overall status
@@ -236,8 +249,11 @@ if (isProduction) {
 
 app.listen(PORT, () => {
   console.log(`[Server] Running on http://localhost:${PORT}`);
-  console.log(`[Server] Mode: ${isProduction ? 'production' : 'development'}`);
+  console.log(`[Server] Mode: ${isProduction ? 'production' : 'development'}${isDemoMode ? ' (demo)' : ''}`);
   console.log(`[Server] CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:8082'}`);
+  if (isDemoMode) {
+    console.log('[Server] Demo mode: CORS configured for ngrok tunnel');
+  }
   console.log(`[Server] ElevenLabs API key: ${process.env.ELEVENLABS_API_KEY ? 'Yes' : 'No'}`);
   console.log(`[Server] ElevenLabs Agent ID: ${process.env.VITE_ELEVENLABS_AGENT_ID ? 'Yes' : 'No'}`);
   console.log(`[Server] xAI API key: ${process.env.XAI_API_KEY ? 'Yes' : 'No'}`);

@@ -41,3 +41,7 @@ EXAMPLE/
 
 RETELL_EXAMPLE/
 VAPI_EXAMPLE/
+
+# Demo mode generated files (ephemeral, not committed)
+server/.env.demo
+public/config.js

@@ -38,10 +38,10 @@ import type {
   GeminiVoiceAction,
 } from '@/types/gemini';
 import { GEMINI_SESSION_TIMERS, GEMINI_INITIAL_STATE } from '@/types/gemini';
+import { getApiBaseUrl } from '@/lib/apiConfig';
 import type { VoiceMessage } from '@/types';
 
 const DEBUG = import.meta.env.DEV;
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 // localStorage keys for voice persistence
 const GEMINI_VOICE_KEY = 'gemini-voice';
@@ -125,7 +125,7 @@ function geminiVoiceReducer(state: GeminiVoiceState, action: GeminiVoiceAction):
 async function getEphemeralToken(): Promise<string> {
   debugLog('getEphemeralToken', 'Requesting ephemeral token from server...');
 
-  const response = await fetch(`${API_BASE_URL}/api/gemini/session`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/gemini/session`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',

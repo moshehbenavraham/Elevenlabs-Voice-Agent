@@ -168,6 +168,25 @@ track_pid() {
     PID_NAMES+=("$name")
 }
 
+# Generated config file paths
+ENV_DEMO_FILE="${PROJECT_ROOT}/server/.env.demo"
+CONFIG_JS_FILE="${PROJECT_ROOT}/public/config.js"
+
+# Clean up generated config files
+cleanup_config_files() {
+    print_info "Removing generated config files..."
+
+    if [[ -f "$ENV_DEMO_FILE" ]]; then
+        rm -f "$ENV_DEMO_FILE"
+        print_success "Removed server/.env.demo"
+    fi
+
+    if [[ -f "$CONFIG_JS_FILE" ]]; then
+        rm -f "$CONFIG_JS_FILE"
+        print_success "Removed public/config.js"
+    fi
+}
+
 # Graceful shutdown - kills processes in reverse order (LIFO)
 cleanup() {
     # Guard against re-entry
@@ -203,6 +222,9 @@ cleanup() {
             fi
         fi
     done
+
+    # Clean up generated config files
+    cleanup_config_files
 
     print_success "All processes stopped"
     exit 0
@@ -244,6 +266,48 @@ start_ngrok() {
 
     track_pid "$ngrok_pid" "ngrok"
     print_success "ngrok tunnels ready"
+}
+
+# Configure URLs - generates runtime config files with ngrok URLs
+configure_urls() {
+    local configure_script="${SCRIPT_DIR}/ngrok/configure-urls.sh"
+
+    print_info "Configuring runtime URLs..."
+
+    if [[ ! -x "$configure_script" ]]; then
+        print_error "configure-urls.sh not found or not executable"
+        cleanup
+        exit 1
+    fi
+
+    # Run configure-urls.sh with the extracted URLs
+    if ! "$configure_script" --frontend-url "$FRONTEND_URL" --backend-url "$BACKEND_URL"; then
+        print_error "Failed to configure URLs"
+        cleanup
+        exit 1
+    fi
+
+    print_success "Runtime configuration generated"
+}
+
+# Validate CORS configuration through ngrok tunnels
+validate_cors() {
+    local validate_script="${SCRIPT_DIR}/ngrok/validate-cors.sh"
+
+    # Skip if validate script doesn't exist
+    if [[ ! -x "$validate_script" ]]; then
+        print_warning "validate-cors.sh not found, skipping CORS validation"
+        return 0
+    fi
+
+    print_info "Validating CORS configuration..."
+
+    if ! "$validate_script" --backend-url "$BACKEND_URL" --frontend-url "$FRONTEND_URL"; then
+        print_warning "CORS validation failed - API calls through ngrok may not work"
+        # Don't exit, just warn
+    else
+        print_success "CORS validation passed"
+    fi
 }
 
 # Start frontend (Vite dev server)
@@ -342,10 +406,23 @@ main() {
     check_ngrok_prereqs
     echo ""
 
-    # Start services in order
+    # Start services in order:
+    # 1. Start ngrok tunnels (gets public URLs)
     start_ngrok
-    start_frontend
+
+    # 2. Configure URLs (generates .env.demo and config.js)
+    #    MUST happen before backend starts so CORS_ORIGIN is set
+    #    MUST happen before frontend serves pages so config.js exists
+    configure_urls
+
+    # 3. Start backend (loads .env.demo for CORS)
     start_backend
+
+    # 4. Start frontend (serves config.js for API base URL)
+    start_frontend
+
+    # 5. Validate CORS (optional, warns if fails)
+    validate_cors
 
     # Display URLs and wait
     display_urls

@@ -1,6 +1,7 @@
 import { createContext, useReducer, useCallback, useEffect, useRef, type ReactNode } from 'react';
 import { UltravoxSession } from 'ultravox-client';
 import { trackError } from '@/lib/errorTracking';
+import { getApiBaseUrl } from '@/lib/apiConfig';
 import {
   mapUltravoxStatus,
   type UltravoxSessionStatus,
@@ -10,7 +11,6 @@ import {
 } from '@/types';
 
 const DEBUG = import.meta.env.DEV;
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 function debugLog(context: string, message: string, data?: unknown) {
   if (DEBUG) {
@@ -87,7 +87,7 @@ async function createUltravoxCall(): Promise<{ joinUrl: string; callId?: string 
 
   const voice = import.meta.env.VITE_ULTRAVOX_VOICE || 'Mark';
 
-  const response = await fetch(`${API_BASE_URL}/api/ultravox/call`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/ultravox/call`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',

@@ -14,7 +14,8 @@
   },
   "completed_sessions": [
     "phase00-session01-ngrok-configuration-detection",
-    "phase00-session02-demo-startup-orchestration"
+    "phase00-session02-demo-startup-orchestration",
+    "phase00-session03-dynamic-url-configuration"
   ],
   "next_session_history": [
     {
@@ -25,6 +26,11 @@
     {
       "date": "2026-01-18",
       "session": "phase00-session02-demo-startup-orchestration",
+      "status": "completed"
+    },
+    {
+      "date": "2026-01-18",
+      "session": "phase00-session03-dynamic-url-configuration",
       "status": "completed"
     }
   ]

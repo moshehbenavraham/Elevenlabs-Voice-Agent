@@ -23,10 +23,10 @@ import {
   updateProviderSettings,
   DEFAULT_XAI_PROMPT,
 } from '@/lib/settingsStorage';
+import { getApiBaseUrl } from '@/lib/apiConfig';
 import type { VoiceMessage, FunctionCall } from '@/types';
 
 const DEBUG = import.meta.env.DEV;
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 const XAI_REALTIME_URL = 'wss://api.x.ai/v1/realtime';
 
 // xAI configuration from environment
@@ -134,7 +134,7 @@ function xaiVoiceReducer(state: XAIVoiceState, action: XAIVoiceAction): XAIVoice
 async function getEphemeralToken(): Promise<string> {
   debugLog('getEphemeralToken', 'Requesting ephemeral token from server...');
 
-  const response = await fetch(`${API_BASE_URL}/api/xai/session`, {
+  const response = await fetch(`${getApiBaseUrl()}/api/xai/session`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -469,7 +469,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
 
       try {
         // Execute function via backend
-        const response = await fetch(`${API_BASE_URL}/api/functions/execute`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/functions/execute`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, arguments: args, callId }),
