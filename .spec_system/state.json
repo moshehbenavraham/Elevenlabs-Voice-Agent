@@ -15,7 +15,8 @@
   "completed_sessions": [
     "phase00-session01-dependencies-audio-infra",
     "phase00-session02-genai-client-backend",
-    "phase00-session03-voice-hook-context"
+    "phase00-session03-voice-hook-context",
+    "phase00-session04-provider-component"
   ],
   "next_session_history": [
     {
@@ -31,6 +32,11 @@
     {
       "date": "2026-01-18",
       "session": "phase00-session03-voice-hook-context",
+      "status": "completed"
+    },
+    {
+      "date": "2026-01-18",
+      "session": "phase00-session04-provider-component",
       "status": "completed"
     }
   ]

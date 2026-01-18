@@ -4,7 +4,7 @@
 **Sessions**: 5 (initial estimate)
 **Estimated Duration**: 2-3 days
 
-**Progress**: 3/5 sessions (60%)
+**Progress**: 4/5 sessions (80%)
 
 ---
 
@@ -21,7 +21,7 @@ Integrate Google Gemini Live as a new voice AI provider, following the establish
 | 01      | Dependencies & Audio Infrastructure | Complete    | 20         | 2026-01-18 |
 | 02      | GenAI Client & Backend              | Complete    | 20         | 2026-01-18 |
 | 03      | Voice Hook & Context                | Complete    | 20         | 2026-01-18 |
-| 04      | Provider Component & UI             | Not Started | ~14        | -          |
+| 04      | Provider Component & UI             | Complete    | 24         | 2026-01-18 |
 | 05      | Testing & Polish                    | Not Started | ~12        | -          |
 
 ---
@@ -46,11 +46,17 @@ Integrate Google Gemini Live as a new voice AI provider, following the establish
 - **Tasks**: 20/20
 - **Key deliverables**: GeminiVoiceContext provider, useGeminiVoice hook, transcript accumulation, session timer (12/14/15min warnings), thinking state detection, 41 unit tests
 
+### Session 04: Provider Component & UI
+
+- **Completed**: 2026-01-18
+- **Tasks**: 24/24
+- **Key deliverables**: GeminiProvider.tsx (Button, Status, VoiceSelector), GeminiEmptyState.tsx, GeminiConversationPanel.tsx, 30-voice selector with style grouping, session timer UI with warnings, full Index.tsx integration
+
 ---
 
 ## Upcoming Sessions
 
-- Session 04: Provider Component & UI
+- Session 05: Testing & Polish
 
 ---
 

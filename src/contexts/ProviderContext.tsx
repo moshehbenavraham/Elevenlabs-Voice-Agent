@@ -62,7 +62,8 @@ function isValidProvider(value: string): value is ProviderType {
     value === 'openai' ||
     value === 'ultravox' ||
     value === 'vapi' ||
-    value === 'retell'
+    value === 'retell' ||
+    value === 'gemini'
   );
 }
 
@@ -95,6 +96,7 @@ export const ProviderProvider: FC<ProviderProviderProps> = ({ children }) => {
     'ultravox',
     'vapi',
     'retell',
+    'gemini',
   ];
 
   // Check if a provider is available

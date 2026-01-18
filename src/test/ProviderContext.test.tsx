@@ -52,6 +52,7 @@ describe('ProviderContext', () => {
         'ultravox',
         'vapi',
         'retell',
+        'gemini',
       ]);
     });
 

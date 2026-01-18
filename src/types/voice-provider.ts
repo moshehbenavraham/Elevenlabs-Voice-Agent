@@ -16,7 +16,8 @@ export type ProviderType =
   | 'openai'
   | 'ultravox'
   | 'vapi'
-  | 'retell';
+  | 'retell'
+  | 'gemini';
 
 /**
  * Message role type for conversation messages
@@ -169,6 +170,14 @@ const isRetellEnabled = (): boolean => {
 };
 
 /**
+ * Check if Gemini provider is enabled via environment variable
+ */
+const isGeminiEnabled = (): boolean => {
+  const envValue = import.meta.env.VITE_GEMINI_ENABLED;
+  return envValue === 'true' || envValue === true;
+};
+
+/**
  * Default provider configurations
  */
 export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
@@ -227,6 +236,14 @@ export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
     isAvailable: isRetellEnabled(),
     requiresApiKey: true,
     icon: 'Phone',
+  },
+  gemini: {
+    id: 'gemini',
+    name: 'Gemini',
+    description: 'Gemini Live voice conversations',
+    isAvailable: isGeminiEnabled(),
+    requiresApiKey: true,
+    icon: 'Sparkle',
   },
 };
 

@@ -56,3 +56,14 @@ export {
   useRetellConfigured,
   checkRetellConfiguration,
 } from './RetellProvider';
+
+export {
+  GeminiProvider,
+  GeminiButton,
+  GeminiVoiceStatus,
+  GeminiVoiceSelector,
+  useGeminiConfigured,
+  checkGeminiConfiguration,
+} from './GeminiProvider';
+
+export { GeminiEmptyState } from './GeminiEmptyState';

@@ -1,6 +1,15 @@
 import * as Tabs from '@radix-ui/react-tabs';
 import { motion, type Variants } from 'framer-motion';
-import { AudioLines, AudioWaveform, Bot, Headphones, Mic, PhoneCall, Sparkles } from 'lucide-react';
+import {
+  AudioLines,
+  AudioWaveform,
+  Bot,
+  Headphones,
+  Mic,
+  PhoneCall,
+  Sparkle,
+  Sparkles,
+} from 'lucide-react';
 import type { ProviderType } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -53,6 +62,7 @@ const PROVIDER_ICONS: Record<ProviderType, React.ComponentType<{ className?: str
   ultravox: AudioWaveform,
   vapi: PhoneCall,
   retell: Headphones,
+  gemini: Sparkle,
 };
 
 /**
@@ -66,6 +76,7 @@ const MOBILE_LABELS: Record<ProviderType, string> = {
   ultravox: 'Ultravox',
   vapi: 'Vapi',
   retell: 'Retell',
+  gemini: 'Gemini',
 };
 
 interface ProviderTabProps {
