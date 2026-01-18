@@ -12,11 +12,19 @@
       "session_count": 5
     }
   },
-  "completed_sessions": ["phase00-session01-dependencies-audio-infra"],
+  "completed_sessions": [
+    "phase00-session01-dependencies-audio-infra",
+    "phase00-session02-genai-client-backend"
+  ],
   "next_session_history": [
     {
       "date": "2026-01-18",
       "session": "phase00-session01-dependencies-audio-infra",
+      "status": "completed"
+    },
+    {
+      "date": "2026-01-18",
+      "session": "phase00-session02-genai-client-backend",
       "status": "completed"
     }
   ]

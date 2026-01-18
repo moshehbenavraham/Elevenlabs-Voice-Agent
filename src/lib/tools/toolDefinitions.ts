@@ -2,7 +2,7 @@
  * Tool Definitions for Voice Agent Function Calling
  *
  * Defines the available tools/functions that voice agents can call.
- * Includes provider-specific schema formats for OpenAI and xAI.
+ * Includes provider-specific schema formats for OpenAI, xAI, Vapi, and Gemini.
  */
 
 /**
@@ -68,6 +68,21 @@ export interface VapiTool {
     type: 'object';
     properties: Record<string, ParameterSchema>;
     required: string[];
+  };
+}
+
+/**
+ * Gemini tool format for FunctionDeclaration
+ * Uses Google's FunctionDeclaration schema for Live API
+ * @see https://ai.google.dev/gemini-api/docs/function-calling
+ */
+export interface GeminiTool {
+  name: string;
+  description: string;
+  parameters: {
+    type: 'object';
+    properties: Record<string, ParameterSchema>;
+    required?: string[];
   };
 }
 
@@ -186,4 +201,22 @@ export function getVapiTools(): VapiTool[] {
  */
 export function getToolByName(name: string): ToolMetadata | undefined {
   return TOOL_DEFINITIONS.find((tool) => tool.name === name);
+}
+
+/**
+ * Get tool definitions in Gemini FunctionDeclaration format
+ * Gemini uses a simple flat structure similar to Vapi but with optional required array
+ * @see https://ai.google.dev/gemini-api/docs/function-calling
+ */
+export function getGeminiTools(): GeminiTool[] {
+  return TOOL_DEFINITIONS.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    parameters: {
+      type: 'object' as const,
+      properties: tool.parameters.properties,
+      // Gemini uses optional required array (empty array if no required params)
+      required: tool.parameters.required.length > 0 ? tool.parameters.required : undefined,
+    },
+  }));
 }
