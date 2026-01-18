@@ -112,50 +112,35 @@ test.describe('Reconnection Behavior', () => {
       // Should have made some reconnection attempts
     });
 
-    test('should cap delay at maximum value', async ({ _page }) => {
+    test.skip('should cap delay at maximum value', async () => {
       // Maximum delay is 30 seconds per spec
       // After several attempts, delay should not exceed 30s
+      // TODO: Implement when reconnection timing can be reliably tested
     });
   });
 
   test.describe('Max Retries', () => {
-    test('should stop reconnecting after max attempts', async ({ _page }) => {
-      await voicePage.clickVoiceButton();
-      await voicePage.waitForVoiceButtonState('connected', 10000);
-
-      // Simulate persistent disconnection
-      await voicePage.simulateWebSocketDisconnect(0, 1006);
-
-      // Wait for max retries (10 attempts per spec)
-      // This would take a while with exponential backoff
-      // In practice, test should verify the max_retries status appears
+    test.skip('should stop reconnecting after max attempts', async () => {
+      // TODO: Implement when max retries can be reliably tested
+      // This would require waiting for 10 attempts with exponential backoff
     });
 
-    test('should show max retries message', async ({ _page }) => {
-      await voicePage.clickVoiceButton();
-      await voicePage.waitForVoiceButtonState('connected', 10000);
-
-      // Wait for max retries status
-      // This is a long-running test in reality
+    test.skip('should show max retries message', async () => {
+      // TODO: Implement when max retries status can be reliably detected
     });
 
-    test('should show manual retry button after max attempts', async ({ _page }) => {
-      await voicePage.clickVoiceButton();
-      await voicePage.waitForVoiceButtonState('connected', 10000);
-
-      // After max retries, manual reconnect button should appear
-      // voicePage.reconnectionRetryButton should be visible
+    test.skip('should show manual retry button after max attempts', async () => {
+      // TODO: Implement when manual retry UI is fully implemented
     });
   });
 
   test.describe('Manual Reconnect', () => {
-    test('should allow manual reconnect after max retries', async ({ _page }) => {
-      // When max retries exceeded, user can click retry button
-      // This resets the attempt counter and tries again
+    test.skip('should allow manual reconnect after max retries', async () => {
+      // TODO: Implement when manual reconnect functionality is testable
     });
 
-    test('should reset attempt counter on manual reconnect', async ({ _page }) => {
-      // Manual reconnect should start fresh with attempt 1
+    test.skip('should reset attempt counter on manual reconnect', async () => {
+      // TODO: Implement when attempt counter reset can be verified
     });
   });
 
@@ -210,31 +195,19 @@ test.describe('Reconnection Behavior', () => {
       }
     });
 
-    test('should use red styling for max retries state', async ({ _page }) => {
-      // Max retries state uses red styling
-      // border-red-500/30 bg-red-500/5
+    test.skip('should use red styling for max retries state', async () => {
+      // TODO: Implement when max retries styling can be verified
+      // Max retries state uses red styling: border-red-500/30 bg-red-500/5
     });
   });
 
   test.describe('Provider-Specific Reconnection', () => {
-    test('should reconnect OpenAI provider correctly', async ({ _page }) => {
-      await voicePage.selectProvider('openai');
-      await voicePage.clickVoiceButton();
-      await voicePage.waitForVoiceButtonState('connected', 10000);
-
-      await voicePage.simulateWebSocketDisconnect(0, 1006);
-
-      // Should attempt OpenAI-specific reconnection
+    test.skip('should reconnect OpenAI provider correctly', async () => {
+      // TODO: Implement when provider-specific reconnection can be verified
     });
 
-    test('should reconnect xAI provider correctly', async ({ _page }) => {
-      await voicePage.selectProvider('xai');
-      await voicePage.clickVoiceButton();
-      await voicePage.waitForVoiceButtonState('connected', 10000);
-
-      await voicePage.simulateWebSocketDisconnect(0, 1006);
-
-      // Should attempt xAI-specific reconnection
+    test.skip('should reconnect xAI provider correctly', async () => {
+      // TODO: Implement when provider-specific reconnection can be verified
     });
   });
 

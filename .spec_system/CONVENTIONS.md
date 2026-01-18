@@ -121,14 +121,31 @@ src/
 
 ## Local Dev Tools
 
-| Category    | Tool                      | Config                                     |
-| ----------- | ------------------------- | ------------------------------------------ |
-| Formatter   | Prettier                  | `.prettierrc`                              |
-| Linter      | ESLint                    | `eslint.config.js`                         |
-| Type Safety | TypeScript                | `tsconfig.json`                            |
-| Testing     | Vitest + RTL + Playwright | `vitest.config.ts`, `playwright.config.ts` |
-| Build       | Vite + SWC                | `vite.config.ts`                           |
-| Git Hooks   | not configured            | -                                          |
+| Category      | Tool                      | Config                                     |
+| ------------- | ------------------------- | ------------------------------------------ |
+| Formatter     | Prettier                  | `.prettierrc`                              |
+| Linter        | ESLint                    | `eslint.config.js`                         |
+| Type Safety   | TypeScript                | `tsconfig.json`                            |
+| Testing       | Vitest + RTL + Playwright | `vitest.config.ts`, `playwright.config.ts` |
+| Observability | pino                      | `src/lib/logger.ts`                        |
+| Build         | Vite + SWC                | `vite.config.ts`                           |
+| Git Hooks     | husky + lint-staged       | `.husky/pre-commit`                        |
+
+## CI/CD
+
+| Bundle       | Status     | Workflow                                           |
+| ------------ | ---------- | -------------------------------------------------- |
+| Code Quality | configured | `.github/workflows/quality.yml`                    |
+| Build & Test | configured | `.github/workflows/test.yml`                       |
+| Security     | configured | `.github/workflows/security.yml`                   |
+| Integration  | configured | `.github/workflows/e2e.yml`                        |
+| Operations   | configured | `.github/workflows/release.yml` + `dependabot.yml` |
+
+**Notes:**
+
+- Dependency Review requires Dependency Graph enabled in repo settings
+- E2E tests require WebSocket mocks for voice provider testing
+- Release workflow creates GitHub releases on version tags (v\*)
 
 ## When In Doubt
 

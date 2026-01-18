@@ -54,6 +54,7 @@ jobs:
     name: Dependency Review
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    continue-on-error: true  # Don't block PR if dependency graph is not enabled
     steps:
       - name: Checkout
         uses: actions/checkout@v4
