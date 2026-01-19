@@ -276,9 +276,44 @@ Check console for `[XAIVoice]` prefixed messages.
 - Audio visualization runs at 60fps - keep handlers lean
 - Use `useReducedMotion` hook for accessibility
 
+## Mode Switching (Local vs Demo)
+
+This project supports two development modes:
+
+- **Local mode**: `npm run dev:all` - Dual-port with HMR (8082 + 3001)
+- **Demo mode**: `npm run demo` - Single-port production build (3001 only)
+
+### Quick Cleanup
+
+After running demo mode, reset to local development:
+
+```bash
+./scripts/reset-dev-mode.sh
+```
+
+### Generated Files to Watch For
+
+These files can cause issues if they persist after mode switching:
+
+| File               | Created By    | Safe to Delete |
+| ------------------ | ------------- | -------------- |
+| `dist/config.js`   | Demo mode     | Yes            |
+| `public/config.js` | Old demo mode | Yes            |
+| `server/.env.demo` | Old demo mode | Yes            |
+
+### More Information
+
+See [DUAL-MODE-DEVELOPMENT-GUIDELINES.md](./ongoing-projects/DUAL-MODE-DEVELOPMENT-GUIDELINES.md) for:
+
+- Complete mode switching checklists
+- Code patterns that work in both modes
+- Troubleshooting guide
+- Emergency recovery steps
+
 ## Common Gotchas
 
 1. **AudioWorklet requires HTTPS** in production
 2. **Microphone access** needs user gesture on Safari
 3. **WebSocket connections** close on tab background (mobile)
 4. **localStorage** is synchronous - don't store large data
+5. **Stale config files** can break API calls after mode switching - run `./scripts/reset-dev-mode.sh`

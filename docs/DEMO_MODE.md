@@ -17,10 +17,10 @@ npm run demo
 
 The demo command starts:
 
-- ngrok tunnels for frontend (port 8082) and backend (port 3001)
-- Vite development server
-- Express backend server
-- Automatic CORS configuration for the ngrok URLs
+- Production build of frontend (into `dist/`)
+- Express server in production mode (serves frontend + API on port 3001)
+- Single ngrok tunnel to port 3001
+- Runtime config (`dist/config.js`) for same-origin API calls
 
 ## Prerequisites
 
@@ -101,59 +101,57 @@ NGROK_INSPECTOR_PORT=4041
 
 ### Architecture
 
+Demo mode uses a **single-tunnel production architecture**. Express serves both the frontend (from `dist/`) and API routes from port 3001. This eliminates CORS issues and allows basic auth to work properly.
+
 ```
 +-------------------------------------------------------------+
 |                        Internet                              |
 +-------------------------------------------------------------+
-|  +---------------------+    +---------------------+         |
-|  |  ngrok Frontend     |    |  ngrok Backend      |         |
-|  |  https://xxx.ngrok  |    |  https://yyy.ngrok  |         |
-|  +----------+----------+    +----------+----------+         |
-+-------------|--------------------------|--------------------|
-              |                          |
-              v                          v
+|              +---------------------------+                   |
+|              |     ngrok Tunnel          |                   |
+|              |  https://xxx.ngrok-free   |                   |
+|              +-------------+-------------+                   |
++----------------------------|--------------------------------+
+                             |
+                             v
 +-------------------------------------------------------------+
 |                    Local Machine                             |
-|  +---------------------+    +---------------------+         |
-|  |  Vite Dev Server    |    |  Express Backend    |         |
-|  |  localhost:8082     |    |  localhost:3001     |         |
-|  +---------------------+    +---------------------+         |
+|              +---------------------------+                   |
+|              |    Express Server         |                   |
+|              |    localhost:3001         |                   |
+|              |                           |                   |
+|              |  /api/*  → API routes     |                   |
+|              |  /*      → dist/ (static) |                   |
+|              +---------------------------+                   |
 +-------------------------------------------------------------+
 ```
 
 ### Startup Sequence
 
-1. **Port Check**: Verifies ports 8082, 3001, and 4041 are available
+1. **Port Check**: Verifies ports 3001 and 4041 are available
 2. **ngrok Detection**: Confirms ngrok is installed and authenticated
-3. **Start Tunnels**: Creates ngrok tunnels for frontend and backend
-4. **URL Extraction**: Retrieves public URLs from ngrok API
-5. **Configure URLs**: Generates runtime config files:
-   - `server/.env.demo` - Sets `CORS_ORIGIN` to frontend ngrok URL
-   - `public/config.js` - Sets `VITE_API_BASE_URL` to backend ngrok URL
-6. **Start Backend**: Launches Express server with demo CORS config
-7. **Start Frontend**: Launches Vite dev server
-8. **CORS Validation**: Verifies cross-origin requests work
-9. **Display Demo Card**: Shows shareable URLs and credentials
+3. **Build Frontend**: Runs `npm run build` to create `dist/`
+4. **Start Tunnel**: Creates single ngrok tunnel to port 3001
+5. **Generate Config**: Creates `dist/config.js` for same-origin API calls
+6. **Start Server**: Launches Express in production mode (serves dist/ + API)
+7. **Display Demo Card**: Shows shareable URL
 
 ### Generated Files
 
-Demo mode creates two ephemeral config files (deleted on shutdown):
+Demo mode creates one ephemeral config file (deleted on shutdown):
 
-**`server/.env.demo`**
-
-```bash
-DEMO_MODE=true
-CORS_ORIGIN=https://xxx.ngrok-free.app
-```
-
-**`public/config.js`**
+**`dist/config.js`**
 
 ```javascript
-window.__RUNTIME_CONFIG__ = {
-  VITE_API_BASE_URL: 'https://yyy.ngrok-free.app',
-  DEMO_MODE: true,
+window.__DEMO_CONFIG__ = {
+  apiBaseUrl: '', // Empty = same-origin (relative paths)
+  frontendUrl: '',
+  isDemoMode: true,
+  generatedAt: '2024-...',
 };
 ```
+
+> **Note**: The empty `apiBaseUrl` means API calls use relative paths (e.g., `/api/token`), which works because frontend and API are served from the same origin.
 
 ## Usage
 
@@ -163,53 +161,50 @@ window.__RUNTIME_CONFIG__ = {
 npm run demo
 ```
 
-This displays a demo card with all connection details:
+This displays a demo card with the connection URL:
 
 ```
-+--------------------------------------------------------------+
-|                                                              |
-|  Voice-Agent-PuPuPlatter                                     |
-|  Demo Mode Active                                            |
-|                                                              |
-|----------------------------------------                      |
-|  PUBLIC URLS                                                 |
-|----------------------------------------                      |
-|                                                              |
-|  Frontend: https://abc123.ngrok-free.app                     |
-|  Backend:  https://def456.ngrok-free.app                     |
-|                                                              |
-|----------------------------------------                      |
-|  LOCAL URLS (your machine only)                              |
-|----------------------------------------                      |
-|                                                              |
-|  Frontend: http://localhost:8082                             |
-|  Backend:  http://localhost:3001                             |
-|                                                              |
-|----------------------------------------                      |
-|  QUICK START                                                 |
-|----------------------------------------                      |
-|                                                              |
-|  1. Open the Frontend URL in your browser                    |
-|  2. Click the microphone button to start                     |
-|  3. Speak to interact with the voice agent                   |
-|                                                              |
-|  Press Ctrl+C to stop the demo                               |
-|                                                              |
-+--------------------------------------------------------------+
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║  Voice-Agent-PuPuPlatter                                   ║
+║  Demo Mode Active                                          ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║  DEMO URL                                                  ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  https://abc123.ngrok-free.app                             ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║  LOCAL URL (your machine only)                             ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  http://localhost:3001                                     ║
+║                                                            ║
+╠════════════════════════════════════════════════════════════╣
+║  QUICK START                                               ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  1. Open the Demo URL in your browser                      ║
+║  2. Click the microphone button to start                   ║
+║  3. Speak to interact with the voice agent                 ║
+║                                                            ║
+║  Press Ctrl+C to stop the demo                             ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
 ```
 
 ### Stop Demo Mode
 
 Press `Ctrl+C` to gracefully shut down all services:
 
-1. Stops frontend (Vite)
-2. Stops backend (Express)
-3. Stops ngrok tunnels
-4. Removes generated config files
+1. Stops Express server
+2. Stops ngrok tunnel
+3. Removes `dist/config.js`
 
-### Share Demo URLs
+### Share Demo URL
 
-Copy the Frontend URL from the demo card and share it with:
+Copy the Demo URL from the demo card and share it with:
 
 - Clients for live demos
 - Team members for testing
@@ -416,21 +411,22 @@ This adds a username/password prompt before accessing the tunnel.
 
 Demo mode automatically cleans up on shutdown:
 
-- Stops all processes (frontend, backend, ngrok)
-- Removes `server/.env.demo`
-- Removes `public/config.js`
+- Stops Express server and ngrok tunnel
+- Removes `dist/config.js`
 
 Manual cleanup (if needed):
 
 ```bash
-# Remove generated files
-rm -f server/.env.demo public/config.js
+# Use the reset script (recommended)
+./scripts/reset-dev-mode.sh
 
-# Kill any orphaned processes
+# Or manually:
+rm -f dist/config.js public/config.js server/.env.demo
 pkill -f "ngrok"
-pkill -f "vite"
 pkill -f "node.*server"
 ```
+
+See [DUAL-MODE-DEVELOPMENT-GUIDELINES.md](./ongoing-projects/DUAL-MODE-DEVELOPMENT-GUIDELINES.md) for detailed mode switching procedures.
 
 ## FAQ
 

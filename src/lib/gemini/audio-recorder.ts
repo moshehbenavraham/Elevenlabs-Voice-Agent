@@ -81,8 +81,8 @@ export class GeminiAudioRecorder extends EventEmitter<GeminiAudioRecorderEvents>
       this.sourceNode = this.audioContext.createMediaStreamSource(this.mediaStream);
 
       // Load and register the AudioWorklet processor
-      const workletUrl = new URL('../worklets/gemini-audio-worklet.ts', import.meta.url);
-      await this.audioContext.audioWorklet.addModule(workletUrl);
+      // Use absolute path to public worklet file - works in both dev and production
+      await this.audioContext.audioWorklet.addModule('/worklets/gemini-audio-worklet.js');
 
       // Create worklet node
       this.workletNode = new AudioWorkletNode(this.audioContext, 'gemini-audio-processor', {

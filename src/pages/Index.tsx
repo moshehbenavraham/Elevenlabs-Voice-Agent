@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, AlertCircle, X } from 'lucide-react';
 import { HeroSection } from '@/components/HeroSection';
@@ -67,6 +67,9 @@ export const Index = () => {
   const [retellHasStarted, setRetellHasStarted] = useState(false);
   const [geminiHasStarted, setGeminiHasStarted] = useState(false);
 
+  // Refs to expose provider disconnect functions for clean provider switching
+  const geminiDisconnectRef = useRef<(() => Promise<void>) | null>(null);
+
   // Handle provider change - disconnect active connection before switching
   const handleProviderChange = useCallback(
     async (newProvider: ProviderType) => {
@@ -112,9 +115,12 @@ export const Index = () => {
         setRetellHasStarted(false);
       }
 
-      // Disconnect Gemini if active
+      // Disconnect Gemini if active - must call actual disconnect to clean up AudioContext
       if (geminiHasStarted && activeProvider === 'gemini') {
         debugLog('handleProviderChange', 'Disconnecting Gemini before switch');
+        if (geminiDisconnectRef.current) {
+          await geminiDisconnectRef.current();
+        }
         setGeminiHasStarted(false);
       }
 
@@ -1118,7 +1124,10 @@ export const Index = () => {
 
           {/* Gemini Provider */}
           {activeProvider === 'gemini' && (
-            <GeminiProvider onDisconnect={handleGeminiDisconnect}>
+            <GeminiProvider
+              onDisconnect={handleGeminiDisconnect}
+              disconnectRef={geminiDisconnectRef}
+            >
               {!geminiHasStarted ? (
                 <motion.div
                   key="hero-gemini"

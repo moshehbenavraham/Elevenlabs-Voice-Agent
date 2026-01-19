@@ -53,6 +53,38 @@ echo -e "${BLUE}   Voice AI Development Server${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
+# Clean up stale demo mode config files to ensure smooth mode switching
+# These files override local dev settings if left behind from a demo session
+
+# Reset public/config.js to no-op stub (prevents 404 and removes demo config)
+CONFIG_STUB='/* Local development mode - no runtime config override */
+/* This file is overwritten by demo mode with actual ngrok URLs */'
+
+if [ -f "public/config.js" ]; then
+    # Check if it's a demo config (contains __DEMO_CONFIG__)
+    if grep -q "__DEMO_CONFIG__" "public/config.js" 2>/dev/null; then
+        echo "$CONFIG_STUB" > "public/config.js"
+        echo -e "${YELLOW}Reset public/config.js to local stub${NC}"
+    fi
+else
+    # Create stub if missing
+    echo "$CONFIG_STUB" > "public/config.js"
+    echo -e "${YELLOW}Created public/config.js stub${NC}"
+fi
+
+# Remove other demo files that don't need stubs
+DEMO_FILES=(
+    "server/.env.demo"
+    "scripts/ngrok/ngrok.yml"
+)
+
+for file in "${DEMO_FILES[@]}"; do
+    if [ -f "$file" ]; then
+        rm -f "$file"
+        echo -e "${YELLOW}Cleaned stale demo file: $file${NC}"
+    fi
+done
+
 # Check if .env exists
 if [ ! -f ".env" ]; then
     echo -e "${RED}Error: .env file not found${NC}"

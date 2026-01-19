@@ -43,21 +43,39 @@ export function useGeminiConfigured(): { isConfigured: boolean; isChecking: bool
 interface GeminiProviderProps {
   children?: ReactNode;
   onDisconnect?: () => void;
+  /** Ref to expose disconnect function for external control (e.g., provider switching) */
+  disconnectRef?: React.MutableRefObject<(() => Promise<void>) | null>;
 }
 
 /**
  * Inner component that handles disconnect callback
  * Must be inside GeminiVoiceProvider to use the hook
  */
-function GeminiProviderInner({ children, onDisconnect }: GeminiProviderProps) {
+function GeminiProviderInner({
+  children,
+  onDisconnect,
+  disconnectRef: externalDisconnectRef,
+}: GeminiProviderProps) {
   const { disconnect, status } = useGeminiVoice();
   const wasConnectedRef = useRef(false);
-  const disconnectRef = useRef(disconnect);
+  const internalDisconnectRef = useRef(disconnect);
 
-  // Keep disconnectRef in sync (for stable cleanup reference)
+  // Keep internal ref in sync (for stable cleanup reference)
   useEffect(() => {
-    disconnectRef.current = disconnect;
+    internalDisconnectRef.current = disconnect;
   }, [disconnect]);
+
+  // Expose disconnect to parent via external ref (for provider switching)
+  useEffect(() => {
+    if (externalDisconnectRef) {
+      externalDisconnectRef.current = disconnect;
+    }
+    return () => {
+      if (externalDisconnectRef) {
+        externalDisconnectRef.current = null;
+      }
+    };
+  }, [disconnect, externalDisconnectRef]);
 
   // Handle disconnect callback when connection ends
   useEffect(() => {
@@ -78,7 +96,7 @@ function GeminiProviderInner({ children, onDisconnect }: GeminiProviderProps) {
   // Cleanup on unmount - use ref to avoid dependency on disconnect
   useEffect(() => {
     return () => {
-      disconnectRef.current();
+      internalDisconnectRef.current();
     };
   }, []);
 
@@ -89,10 +107,12 @@ function GeminiProviderInner({ children, onDisconnect }: GeminiProviderProps) {
  * Gemini Voice Provider wrapper component
  * Wraps children with GeminiVoiceProvider context to ensure single client instance
  */
-export function GeminiProvider({ children, onDisconnect }: GeminiProviderProps) {
+export function GeminiProvider({ children, onDisconnect, disconnectRef }: GeminiProviderProps) {
   return (
     <GeminiVoiceProvider onDisconnect={onDisconnect}>
-      <GeminiProviderInner onDisconnect={onDisconnect}>{children}</GeminiProviderInner>
+      <GeminiProviderInner onDisconnect={onDisconnect} disconnectRef={disconnectRef}>
+        {children}
+      </GeminiProviderInner>
     </GeminiVoiceProvider>
   );
 }
