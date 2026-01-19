@@ -193,3 +193,94 @@ export function resampleAudio(
 
   return output;
 }
+
+/**
+ * Creates a Blob URL for the PCM encoder AudioWorklet processor.
+ *
+ * This approach inlines the worklet code as a Blob, avoiding network requests
+ * that can fail with basic auth or CORS restrictions. The Blob URL works
+ * regardless of authentication state.
+ *
+ * @param targetSampleRate - Target sample rate for resampling (default: 24000)
+ * @returns Blob URL that can be passed to audioContext.audioWorklet.addModule()
+ */
+export function createPcmEncoderWorkletUrl(targetSampleRate: number = XAI_SAMPLE_RATE): string {
+  const workletCode = `
+const TARGET_SAMPLE_RATE = ${targetSampleRate};
+
+class PCMEncoderProcessor extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.buffer = [];
+    this.inputSampleRate = sampleRate;
+  }
+
+  process(inputs, outputs, parameters) {
+    const input = inputs[0];
+    if (!input || input.length === 0) return true;
+
+    const channelData = input[0];
+    if (!channelData || channelData.length === 0) return true;
+
+    this.buffer.push(new Float32Array(channelData));
+
+    const samplesPerChunk = Math.floor(this.inputSampleRate * 0.1);
+    const totalSamples = this.buffer.reduce((sum, arr) => sum + arr.length, 0);
+
+    if (totalSamples >= samplesPerChunk) {
+      this.processBuffer();
+    }
+
+    return true;
+  }
+
+  processBuffer() {
+    const totalLength = this.buffer.reduce((sum, arr) => sum + arr.length, 0);
+    const combined = new Float32Array(totalLength);
+    let offset = 0;
+    for (const chunk of this.buffer) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+    this.buffer = [];
+
+    const resampled = this.resample(combined, this.inputSampleRate, TARGET_SAMPLE_RATE);
+    const pcm16 = this.floatToPcm16(resampled);
+
+    this.port.postMessage({ type: 'audio', audio: pcm16 });
+  }
+
+  resample(input, inputRate, outputRate) {
+    if (inputRate === outputRate) return input;
+
+    const ratio = inputRate / outputRate;
+    const outputLength = Math.floor(input.length / ratio);
+    const output = new Float32Array(outputLength);
+
+    for (let i = 0; i < outputLength; i++) {
+      const srcIndex = i * ratio;
+      const floor = Math.floor(srcIndex);
+      const ceil = Math.min(floor + 1, input.length - 1);
+      const t = srcIndex - floor;
+      output[i] = input[floor] * (1 - t) + input[ceil] * t;
+    }
+
+    return output;
+  }
+
+  floatToPcm16(float32Data) {
+    const pcm16 = new Int16Array(float32Data.length);
+    for (let i = 0; i < float32Data.length; i++) {
+      const sample = Math.max(-1, Math.min(1, float32Data[i]));
+      pcm16[i] = sample < 0 ? sample * 0x8000 : sample * 0x7fff;
+    }
+    return pcm16;
+  }
+}
+
+registerProcessor('pcm-encoder-processor', PCMEncoderProcessor);
+`;
+
+  const blob = new Blob([workletCode], { type: 'application/javascript' });
+  return URL.createObjectURL(blob);
+}

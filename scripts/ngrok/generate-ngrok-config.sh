@@ -6,6 +6,10 @@
 #   Handles optional fields (domain, basic_auth) by including them only
 #   when the relevant environment variables are set.
 #
+# Architecture:
+#   Single-tunnel production mode - Express serves both frontend and API
+#   from port 3001. This eliminates CORS issues, allowing basic_auth to work.
+#
 # Exit Codes:
 #   0 - Config generated successfully
 #   1 - Template file not found
@@ -77,43 +81,28 @@ NGROK_INSPECTOR_PORT="${NGROK_INSPECTOR_PORT:-4041}"
 NGROK_INSPECTOR_PORT="${NGROK_INSPECTOR_PORT%%+([[:space:]])}"
 NGROK_DOMAIN="${NGROK_DOMAIN:-}"
 NGROK_DOMAIN="${NGROK_DOMAIN%%+([[:space:]])}"
-NGROK_BACKEND_DOMAIN="${NGROK_BACKEND_DOMAIN:-}"
-NGROK_BACKEND_DOMAIN="${NGROK_BACKEND_DOMAIN%%+([[:space:]])}"
 NGROK_AUTH_USER="${NGROK_AUTH_USER:-}"
 NGROK_AUTH_USER="${NGROK_AUTH_USER%%+([[:space:]])}"
 NGROK_AUTH_PASS="${NGROK_AUTH_PASS:-}"
 NGROK_AUTH_PASS="${NGROK_AUTH_PASS%%+([[:space:]])}"
 shopt -u extglob
 
-# Build conditional sections
-# Frontend domain (only if NGROK_DOMAIN is set and valid)
-FRONTEND_DOMAIN=""
+# Build conditional sections for single demo tunnel
+# Domain (only if NGROK_DOMAIN is set and valid)
+DEMO_DOMAIN=""
 if [[ -n "$NGROK_DOMAIN" && "$NGROK_DOMAIN" != *" "* ]]; then
-    FRONTEND_DOMAIN="    domain: ${NGROK_DOMAIN}"
-    print_info "Frontend domain: ${NGROK_DOMAIN}"
+    DEMO_DOMAIN="    domain: ${NGROK_DOMAIN}"
+    print_info "Demo domain: ${NGROK_DOMAIN}"
 else
     if [[ -n "$NGROK_DOMAIN" ]]; then
         print_info "Skipping invalid NGROK_DOMAIN (contains spaces): '${NGROK_DOMAIN}'"
     fi
 fi
 
-# Backend domain (only if NGROK_BACKEND_DOMAIN is set and valid)
-BACKEND_DOMAIN=""
-if [[ -n "$NGROK_BACKEND_DOMAIN" && "$NGROK_BACKEND_DOMAIN" != *" "* ]]; then
-    BACKEND_DOMAIN="    domain: ${NGROK_BACKEND_DOMAIN}"
-    print_info "Backend domain: ${NGROK_BACKEND_DOMAIN}"
-else
-    if [[ -n "$NGROK_BACKEND_DOMAIN" ]]; then
-        print_info "Skipping invalid NGROK_BACKEND_DOMAIN (contains spaces): '${NGROK_BACKEND_DOMAIN}'"
-    fi
-fi
-
 # Basic auth section (only if both user and pass are set)
-FRONTEND_BASIC_AUTH=""
-BACKEND_BASIC_AUTH=""
+DEMO_BASIC_AUTH=""
 if [[ -n "$NGROK_AUTH_USER" && -n "$NGROK_AUTH_PASS" ]]; then
-    FRONTEND_BASIC_AUTH="    basic_auth:\n      - \"${NGROK_AUTH_USER}:${NGROK_AUTH_PASS}\""
-    BACKEND_BASIC_AUTH="    basic_auth:\n      - \"${NGROK_AUTH_USER}:${NGROK_AUTH_PASS}\""
+    DEMO_BASIC_AUTH="    basic_auth:\n      - \"${NGROK_AUTH_USER}:${NGROK_AUTH_PASS}\""
     print_info "Basic auth enabled for user: ${NGROK_AUTH_USER}"
 else
     print_info "Basic auth disabled (NGROK_AUTH_USER or NGROK_AUTH_PASS not set)"
@@ -124,21 +113,20 @@ CONTENT=$(cat "$TEMPLATE_FILE")
 
 # Substitute placeholders
 CONTENT="${CONTENT//__NGROK_INSPECTOR_PORT__/$NGROK_INSPECTOR_PORT}"
-CONTENT="${CONTENT//__FRONTEND_DOMAIN__/$FRONTEND_DOMAIN}"
-CONTENT="${CONTENT//__BACKEND_DOMAIN__/$BACKEND_DOMAIN}"
 
 # Use printf for sections that may contain newlines
-# Handle basic auth with printf to preserve newlines
-if [[ -n "$FRONTEND_BASIC_AUTH" ]]; then
-    CONTENT="${CONTENT//__FRONTEND_BASIC_AUTH__/$(printf '%b' "$FRONTEND_BASIC_AUTH")}"
+# Handle domain
+if [[ -n "$DEMO_DOMAIN" ]]; then
+    CONTENT="${CONTENT//__DEMO_DOMAIN__/$DEMO_DOMAIN}"
 else
-    CONTENT="${CONTENT//__FRONTEND_BASIC_AUTH__/}"
+    CONTENT="${CONTENT//__DEMO_DOMAIN__/}"
 fi
 
-if [[ -n "$BACKEND_BASIC_AUTH" ]]; then
-    CONTENT="${CONTENT//__BACKEND_BASIC_AUTH__/$(printf '%b' "$BACKEND_BASIC_AUTH")}"
+# Handle basic auth with printf to preserve newlines
+if [[ -n "$DEMO_BASIC_AUTH" ]]; then
+    CONTENT="${CONTENT//__DEMO_BASIC_AUTH__/$(printf '%b' "$DEMO_BASIC_AUTH")}"
 else
-    CONTENT="${CONTENT//__BACKEND_BASIC_AUTH__/}"
+    CONTENT="${CONTENT//__DEMO_BASIC_AUTH__/}"
 fi
 
 # Remove empty lines that may result from empty placeholders
@@ -150,5 +138,6 @@ echo "$CONTENT" > "$OUTPUT_FILE"
 
 print_success "Generated: ${OUTPUT_FILE}"
 print_info "Inspector port: ${NGROK_INSPECTOR_PORT}"
+print_info "Architecture: Single-tunnel production mode (port 3001)"
 
 exit 0

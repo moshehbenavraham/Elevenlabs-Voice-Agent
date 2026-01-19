@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# wait-for-tunnels.sh - Poll ngrok API until tunnels are ready
+# wait-for-tunnels.sh - Poll ngrok API until tunnel is ready
 #
 # Description:
-#   Polls the ngrok local API to check if tunnels are established.
+#   Polls the ngrok local API to check if the demo tunnel is established.
 #   Uses exponential backoff for retry timing.
-#   Outputs tunnel URLs on success.
+#   Outputs the tunnel URL on success.
+#
+# Architecture:
+#   Single-tunnel production mode - Express serves both frontend and API
+#   from port 3001. One tunnel handles everything.
 #
 # Exit Codes:
-#   0 - Tunnels are ready and URLs extracted
-#   1 - Timeout waiting for tunnels
+#   0 - Tunnel is ready and URL extracted
+#   1 - Timeout waiting for tunnel
 #   2 - ngrok API not responding
 #
 # Usage:
@@ -19,9 +23,8 @@
 #   --api-port PORT     ngrok API port (default: 4041)
 #
 # Output:
-#   On success, prints tunnel URLs to stdout in format:
-#     FRONTEND_URL=https://xxx.ngrok.io
-#     BACKEND_URL=https://yyy.ngrok.io
+#   On success, prints tunnel URL to stdout in format:
+#     DEMO_URL=https://xxx.ngrok.io
 #
 # Part of Voice-Agent-PuPuPlatter ngrok demo infrastructure
 
@@ -70,9 +73,8 @@ TIMEOUT=30
 API_PORT=4041
 API_URL=""
 
-# Extracted URLs (populated by parse_tunnels)
-FRONTEND_URL=""
-BACKEND_URL=""
+# Extracted URL (populated by parse_tunnel)
+DEMO_URL=""
 
 # Parse command line arguments
 parse_args() {
@@ -100,53 +102,47 @@ has_jq() {
     command -v jq >/dev/null 2>&1
 }
 
-# Parse tunnel URLs from ngrok API response using jq
-parse_tunnels_jq() {
+# Parse tunnel URL from ngrok API response using jq
+parse_tunnel_jq() {
     local json="$1"
 
-    # Extract frontend URL (port 8082)
-    FRONTEND_URL=$(echo "$json" | jq -r '.tunnels[] | select(.config.addr | test(":8082$")) | .public_url' 2>/dev/null | head -1)
+    # Extract demo URL (port 3001) - try by port first, then by name
+    DEMO_URL=$(echo "$json" | jq -r '.tunnels[] | select(.config.addr | test(":3001$")) | .public_url' 2>/dev/null | head -1)
 
-    # Extract backend URL (port 3001)
-    BACKEND_URL=$(echo "$json" | jq -r '.tunnels[] | select(.config.addr | test(":3001$")) | .public_url' 2>/dev/null | head -1)
+    # Fallback: try by tunnel name
+    if [[ -z "$DEMO_URL" || "$DEMO_URL" == "null" ]]; then
+        DEMO_URL=$(echo "$json" | jq -r '.tunnels[] | select(.name == "demo") | .public_url' 2>/dev/null | head -1)
+    fi
 }
 
-# Parse tunnel URLs from ngrok API response using grep/sed fallback
-parse_tunnels_fallback() {
+# Parse tunnel URL from ngrok API response using grep/sed fallback
+parse_tunnel_fallback() {
     local json="$1"
 
-    # Extract all public_url and config.addr pairs
-    # Format: {"name":"frontend","public_url":"https://xxx.ngrok.io","config":{"addr":"http://localhost:8082",...},...}
-
-    # Frontend: find URL associated with port 8082
-    FRONTEND_URL=$(echo "$json" | grep -oE '"public_url":"https://[^"]+"|"addr":"[^"]+"' | \
-        tr '\n' ' ' | sed 's/"public_url":/\n/g' | grep -E ':8082"' | \
-        head -1 | grep -oE 'https://[^"]+' || true)
-
-    # Backend: find URL associated with port 3001
-    BACKEND_URL=$(echo "$json" | grep -oE '"public_url":"https://[^"]+"|"addr":"[^"]+"' | \
+    # Extract URL associated with port 3001
+    DEMO_URL=$(echo "$json" | grep -oE '"public_url":"https://[^"]+"|"addr":"[^"]+"' | \
         tr '\n' ' ' | sed 's/"public_url":/\n/g' | grep -E ':3001"' | \
         head -1 | grep -oE 'https://[^"]+' || true)
 }
 
-# Parse tunnel URLs (auto-selects jq or fallback)
-parse_tunnels() {
+# Parse tunnel (auto-selects jq or fallback)
+parse_tunnel() {
     local json="$1"
 
     if has_jq; then
-        parse_tunnels_jq "$json"
+        parse_tunnel_jq "$json"
     else
-        parse_tunnels_fallback "$json"
+        parse_tunnel_fallback "$json"
     fi
 }
 
-# Check if both tunnels are ready
-tunnels_ready() {
-    [[ -n "$FRONTEND_URL" && -n "$BACKEND_URL" ]]
+# Check if tunnel is ready
+tunnel_ready() {
+    [[ -n "$DEMO_URL" && "$DEMO_URL" != "null" ]]
 }
 
 # Poll ngrok API with exponential backoff
-poll_tunnels() {
+poll_tunnel() {
     local start_time
     local elapsed=0
     local delay=1
@@ -156,7 +152,7 @@ poll_tunnels() {
 
     start_time=$(date +%s)
 
-    print_info "Waiting for ngrok tunnels..."
+    print_info "Waiting for ngrok tunnel..."
     print_info "API endpoint: ${API_URL}"
 
     while [[ $elapsed -lt $TIMEOUT ]]; do
@@ -166,9 +162,9 @@ poll_tunnels() {
         if response=$(curl -s --max-time 5 "${API_URL}" 2>/dev/null); then
             # Check if we got valid JSON with tunnels
             if echo "$response" | grep -q '"tunnels"'; then
-                parse_tunnels "$response"
+                parse_tunnel "$response"
 
-                if tunnels_ready; then
+                if tunnel_ready; then
                     return 0
                 fi
             fi
@@ -197,16 +193,15 @@ poll_tunnels() {
 main() {
     parse_args "$@"
 
-    # Poll for tunnels
-    if poll_tunnels; then
-        print_success "Tunnels established"
+    # Poll for tunnel
+    if poll_tunnel; then
+        print_success "Tunnel established"
 
-        # Output URLs in parseable format
-        echo "FRONTEND_URL=${FRONTEND_URL}"
-        echo "BACKEND_URL=${BACKEND_URL}"
+        # Output URL in parseable format
+        echo "DEMO_URL=${DEMO_URL}"
         exit 0
     else
-        print_error "Timeout waiting for tunnels (${TIMEOUT}s)"
+        print_error "Timeout waiting for tunnel (${TIMEOUT}s)"
 
         # Check if API is responding at all
         if ! curl -s --max-time 2 "${API_URL}" >/dev/null 2>&1; then

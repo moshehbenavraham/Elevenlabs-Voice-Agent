@@ -5,6 +5,11 @@
 # This template is processed by generate-ngrok-config.sh
 # which substitutes __VAR__ placeholders with environment values.
 #
+# ARCHITECTURE: Single-tunnel production mode
+#   - Express serves both API routes AND static frontend (from dist/)
+#   - One ngrok tunnel to port 3001 handles everything
+#   - Same-origin = no CORS issues = basic_auth works with preflight
+#
 # Environment Variables Required:
 #   NGROK_AUTHTOKEN - Your ngrok auth token (required)
 #
@@ -25,18 +30,11 @@ version: "2"
 web_addr: localhost:__NGROK_INSPECTOR_PORT__
 
 tunnels:
-  # Frontend tunnel - Vite dev server
-  # Exposes the React frontend at localhost:8082
-  frontend:
-    proto: http
-    addr: 8082
-__FRONTEND_DOMAIN__
-__FRONTEND_BASIC_AUTH__
-
-  # Backend tunnel - Express API server
-  # Exposes the backend API at localhost:3001
-  backend:
+  # Single tunnel - Express server in production mode
+  # Serves both the frontend (from dist/) and API routes
+  # This eliminates CORS issues, allowing basic_auth to work
+  demo:
     proto: http
     addr: 3001
-__BACKEND_DOMAIN__
-__BACKEND_BASIC_AUTH__
+__DEMO_DOMAIN__
+__DEMO_BASIC_AUTH__

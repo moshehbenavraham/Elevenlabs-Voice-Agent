@@ -32,7 +32,7 @@ const DEFAULT_API_BASE_URL = 'http://localhost:3001';
  * Get the API base URL for making backend requests.
  *
  * Resolution order:
- * 1. window.__DEMO_CONFIG__.apiBaseUrl (demo mode - ngrok URL)
+ * 1. window.__DEMO_CONFIG__.apiBaseUrl (demo mode - ngrok URL or empty for same-origin)
  * 2. import.meta.env.VITE_API_BASE_URL (build-time env var)
  * 3. DEFAULT_API_BASE_URL (localhost fallback)
  *
@@ -40,8 +40,10 @@ const DEFAULT_API_BASE_URL = 'http://localhost:3001';
  */
 export function getApiBaseUrl(): string {
   // Priority 1: Demo mode runtime config (set by config.js)
-  if (typeof window !== 'undefined' && window.__DEMO_CONFIG__?.apiBaseUrl) {
-    return window.__DEMO_CONFIG__.apiBaseUrl;
+  // Check isDemoMode first - apiBaseUrl may be empty string for same-origin requests
+  if (typeof window !== 'undefined' && window.__DEMO_CONFIG__?.isDemoMode === true) {
+    // Return apiBaseUrl even if empty (empty = same-origin, no CORS)
+    return window.__DEMO_CONFIG__.apiBaseUrl || '';
   }
 
   // Priority 2: Build-time environment variable

@@ -14,6 +14,7 @@ import {
   createAudioBuffer,
   int16ToBytes,
   XAI_SAMPLE_RATE,
+  createPcmEncoderWorkletUrl,
 } from '@/lib/audio/audioUtils';
 import { getSavedVoice, saveVoice } from '@/lib/voiceConfig';
 import { useReconnection, type ReconnectionState } from '@/hooks/useReconnection';
@@ -296,8 +297,8 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
     analyser.fftSize = 256;
     analyserRef.current = analyser;
 
-    // Initialize microphone capture
-    const workletUrl = new URL('../lib/audio/pcmEncoder.worklet.ts', import.meta.url).href;
+    // Initialize microphone capture with inline worklet (avoids auth/CORS issues)
+    const workletUrl = createPcmEncoderWorkletUrl(OPENAI_SAMPLE_RATE);
     await audioContext.audioWorklet.addModule(workletUrl);
 
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -728,10 +729,10 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
    */
   const initializeAudioCapture = useCallback(async (audioContext: AudioContext) => {
     try {
-      // Load the PCM encoder worklet
-      const workletUrl = new URL('../lib/audio/pcmEncoder.worklet.ts', import.meta.url).href;
+      // Load the PCM encoder worklet (inline blob avoids auth/CORS issues)
+      const workletUrl = createPcmEncoderWorkletUrl(OPENAI_SAMPLE_RATE);
       await audioContext.audioWorklet.addModule(workletUrl);
-      debugLog('audio', 'AudioWorklet loaded');
+      debugLog('audio', 'AudioWorklet loaded via Blob URL');
 
       // Get microphone stream
       const stream = await navigator.mediaDevices.getUserMedia({

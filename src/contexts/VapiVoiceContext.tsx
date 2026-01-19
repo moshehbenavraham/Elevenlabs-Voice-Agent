@@ -69,26 +69,31 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
   useEffect(() => {
     if (!vapi) return;
 
+    // Disable Krisp noise cancellation as early as possible
+    // Listen to call-start-progress to catch when Daily call object is created
+    // This runs BEFORE the call joins, preventing Krisp AudioWorklet loading issues
+    const onCallStartProgress = (event: { stage: string; status: string }) => {
+      if (event.stage === 'daily-call-object-creation' && event.status === 'completed') {
+        const dailyCall = vapi.getDailyCallObject();
+        if (dailyCall) {
+          try {
+            dailyCall.updateInputSettings({
+              audio: { processor: { type: 'none' } },
+            });
+            console.log('[Vapi] Disabled Krisp noise cancellation (early)');
+          } catch (e) {
+            console.warn('[Vapi] Could not disable noise cancellation:', e);
+          }
+        }
+      }
+    };
+
     // Call lifecycle events
     const onCallStart = () => {
       setCallStatus(VapiCallStatus.ACTIVE);
       setError(null);
       setMessages([]); // Clear previous messages on new call
       setActiveTranscript(null);
-
-      // Disable Krisp noise cancellation to prevent AudioWorklet errors
-      // The Vapi SDK 2.x auto-enables Krisp which causes failures in some browsers
-      const dailyCall = vapi.getDailyCallObject();
-      if (dailyCall) {
-        try {
-          dailyCall.updateInputSettings({
-            audio: { processor: { type: 'none' } },
-          });
-          console.log('[Vapi] Disabled Krisp noise cancellation');
-        } catch (e) {
-          console.warn('[Vapi] Could not disable noise cancellation:', e);
-        }
-      }
     };
 
     const onCallEnd = () => {
@@ -143,6 +148,8 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
     };
 
     // Attach all event listeners ONCE
+    // @ts-expect-error - call-start-progress is a valid event but not in types
+    vapi.on('call-start-progress', onCallStartProgress);
     vapi.on('call-start', onCallStart);
     vapi.on('call-end', onCallEnd);
     vapi.on('speech-start', onSpeechStart);
@@ -153,6 +160,8 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
 
     // Cleanup: remove all event listeners on unmount
     return () => {
+      // @ts-expect-error - call-start-progress is a valid event but not in types
+      vapi.off('call-start-progress', onCallStartProgress);
       vapi.off('call-start', onCallStart);
       vapi.off('call-end', onCallEnd);
       vapi.off('speech-start', onSpeechStart);

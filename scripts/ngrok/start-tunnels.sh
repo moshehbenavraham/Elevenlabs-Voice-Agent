@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# start-tunnels.sh - Start ngrok tunnels and extract URLs
+# start-tunnels.sh - Start ngrok tunnel and extract URL
 #
 # Description:
 #   Starts ngrok with the project configuration file.
-#   Waits for tunnels to be established.
-#   Extracts and outputs the public URLs.
+#   Waits for tunnel to be established.
+#   Extracts and outputs the public URL.
+#
+# Architecture:
+#   Single-tunnel production mode - Express serves both frontend and API
+#   from port 3001. One tunnel handles everything, eliminating CORS issues.
 #
 # Exit Codes:
-#   0 - Tunnels started and URLs extracted successfully
-#   1 - Failed to start ngrok or extract URLs
+#   0 - Tunnel started and URL extracted successfully
+#   1 - Failed to start ngrok or extract URL
 #   2 - ngrok not installed or not authenticated
 #
 # Usage:
@@ -16,13 +20,12 @@
 #
 # Options:
 #   --config PATH       Path to ngrok.yml (default: scripts/ngrok/ngrok.yml)
-#   --timeout SECONDS   Max wait for tunnels (default: 30)
+#   --timeout SECONDS   Max wait for tunnel (default: 30)
 #
 # Output:
 #   Prints to stdout:
 #     NGROK_PID=12345
-#     FRONTEND_URL=https://xxx.ngrok.io
-#     BACKEND_URL=https://yyy.ngrok.io
+#     DEMO_URL=https://xxx.ngrok.io
 #
 # Part of Voice-Agent-PuPuPlatter ngrok demo infrastructure
 
@@ -42,7 +45,7 @@ load_env() {
         while IFS='=' read -r key value || [[ -n "$key" ]]; do
             # Skip comments and empty lines
             [[ -z "$key" || "$key" =~ ^# ]] && continue
-            # Export NGROK_* variables (includes NGROK_BACKEND_DOMAIN)
+            # Export NGROK_* variables
             if [[ "$key" =~ ^NGROK_ ]]; then
                 # Remove surrounding quotes if present
                 value="${value%\"}"
@@ -103,9 +106,8 @@ TIMEOUT=30
 NGROK_PID=""
 API_PORT="${NGROK_INSPECTOR_PORT:-4041}"
 
-# Extracted URLs
-FRONTEND_URL=""
-BACKEND_URL=""
+# Extracted URL
+DEMO_URL=""
 
 # Parse command line arguments
 parse_args() {
@@ -174,7 +176,7 @@ generate_config() {
 
 # Start ngrok in background and capture PID
 start_ngrok() {
-    print_info "Starting ngrok tunnels..."
+    print_info "Starting ngrok tunnel..."
     print_info "Config: ${NGROK_CONFIG}"
 
     # Verify config file exists
@@ -221,8 +223,8 @@ start_ngrok() {
     print_success "ngrok started (PID: ${NGROK_PID})"
 }
 
-# Extract URLs using wait-for-tunnels.sh
-extract_urls() {
+# Extract URL using wait-for-tunnels.sh
+extract_url() {
     local wait_script="${SCRIPT_DIR}/wait-for-tunnels.sh"
     local output
 
@@ -234,19 +236,16 @@ extract_urls() {
 
     # Run wait-for-tunnels.sh and capture output
     if ! output=$("$wait_script" --timeout "$TIMEOUT" --api-port "$API_PORT"); then
-        print_error "Failed to extract tunnel URLs"
+        print_error "Failed to extract tunnel URL"
         kill "$NGROK_PID" 2>/dev/null || true
         exit 1
     fi
 
-    # Parse output for URLs
-    FRONTEND_URL=$(echo "$output" | grep '^FRONTEND_URL=' | cut -d= -f2)
-    BACKEND_URL=$(echo "$output" | grep '^BACKEND_URL=' | cut -d= -f2)
+    # Parse output for URL
+    DEMO_URL=$(echo "$output" | grep '^DEMO_URL=' | cut -d= -f2)
 
-    if [[ -z "$FRONTEND_URL" || -z "$BACKEND_URL" ]]; then
-        print_error "Could not extract both tunnel URLs"
-        print_info "Frontend: ${FRONTEND_URL:-not found}"
-        print_info "Backend: ${BACKEND_URL:-not found}"
+    if [[ -z "$DEMO_URL" ]]; then
+        print_error "Could not extract tunnel URL"
         kill "$NGROK_PID" 2>/dev/null || true
         exit 1
     fi
@@ -265,13 +264,12 @@ main() {
     # Start ngrok
     start_ngrok
 
-    # Wait for tunnels and extract URLs
-    extract_urls
+    # Wait for tunnel and extract URL
+    extract_url
 
     # Output results in parseable format
     echo "NGROK_PID=${NGROK_PID}"
-    echo "FRONTEND_URL=${FRONTEND_URL}"
-    echo "BACKEND_URL=${BACKEND_URL}"
+    echo "DEMO_URL=${DEMO_URL}"
 
     exit 0
 }
