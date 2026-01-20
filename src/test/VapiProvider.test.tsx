@@ -46,7 +46,16 @@ vi.mock('@/lib/vapi', () => ({
     stop: vi.fn(),
     on: vi.fn(),
     off: vi.fn(),
+    getDailyCallObject: vi.fn(),
   },
+  prepareAudioContext: vi.fn().mockReturnValue(null),
+  cleanupAudioContext: vi.fn(),
+  getVapiDebugInfo: vi.fn().mockReturnValue({
+    sdkInitialized: true,
+    webTokenConfigured: true,
+    audioContext: null,
+    dailyCallObject: null,
+  }),
 }));
 
 // Helper to create mock hook return value

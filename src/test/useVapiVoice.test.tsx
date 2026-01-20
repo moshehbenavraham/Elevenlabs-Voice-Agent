@@ -38,6 +38,12 @@ vi.mock('@/lib/vapi', () => ({
       vapiMocks.off(event, handler);
     }),
   },
+  getVapiDebugInfo: vi.fn().mockReturnValue({
+    sdkInitialized: true,
+    webTokenConfigured: true,
+    audioContext: null,
+    dailyCallObject: null,
+  }),
 }));
 
 // Wrapper component that provides VapiVoiceProvider
@@ -129,6 +135,7 @@ describe('useVapiVoice', () => {
         await result.current.start('asst_123');
       });
 
+      // vapi.start() uses POSITIONAL parameters - assistant ID string is first param
       expect(vapiMocks.start).toHaveBeenCalledWith('asst_123');
     });
 
@@ -139,6 +146,7 @@ describe('useVapiVoice', () => {
         await result.current.start({ assistantId: 'asst_456' });
       });
 
+      // vapi.start() uses POSITIONAL parameters - extracts assistantId from config
       expect(vapiMocks.start).toHaveBeenCalledWith('asst_456');
     });
 
