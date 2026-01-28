@@ -15,10 +15,6 @@ const webToken = import.meta.env.VITE_VAPI_WEB_TOKEN;
 
 console.log(`${LOG_PREFIX} Initializing Vapi SDK module...`);
 console.log(`${LOG_PREFIX} Web token configured:`, !!webToken);
-console.log(
-  `${LOG_PREFIX} Token preview:`,
-  webToken ? `${webToken.substring(0, 10)}...` : 'NOT SET'
-);
 
 if (!webToken) {
   console.warn(
@@ -73,31 +69,18 @@ export function prepareAudioContext(): AudioContext | null {
     // Reuse existing context if available
     if (window.__vapiAudioContext) {
       const ctx = window.__vapiAudioContext;
-      console.log(`${LOG_PREFIX} Reusing existing AudioContext, state:`, ctx.state);
 
       if (ctx.state === 'suspended') {
-        console.log(`${LOG_PREFIX} AudioContext is suspended, attempting resume...`);
         ctx
           .resume()
-          .then(() =>
-            console.log(`${LOG_PREFIX} AudioContext resumed successfully, new state:`, ctx.state)
-          )
           .catch((e) => console.warn(`${LOG_PREFIX} Failed to resume AudioContext:`, e));
       }
       return ctx;
     }
 
     // Create new context during user gesture
-    console.log(`${LOG_PREFIX} Creating new AudioContext...`);
     const ctx = new AudioContextClass();
     window.__vapiAudioContext = ctx;
-
-    console.log(`${LOG_PREFIX} AudioContext created successfully:`, {
-      state: ctx.state,
-      sampleRate: ctx.sampleRate,
-      baseLatency: ctx.baseLatency,
-      outputLatency: ctx.outputLatency,
-    });
 
     return ctx;
   } catch (e) {
@@ -110,18 +93,12 @@ export function prepareAudioContext(): AudioContext | null {
  * Cleanup AudioContext on app unmount
  */
 export function cleanupAudioContext(): void {
-  console.log(`${LOG_PREFIX} cleanupAudioContext() called`);
-
   const ctx = window.__vapiAudioContext;
   if (ctx) {
-    console.log(`${LOG_PREFIX} Closing AudioContext, current state:`, ctx.state);
     ctx
       .close()
-      .then(() => console.log(`${LOG_PREFIX} AudioContext closed successfully`))
       .catch((e) => console.warn(`${LOG_PREFIX} Error closing AudioContext:`, e));
     delete window.__vapiAudioContext;
-  } else {
-    console.log(`${LOG_PREFIX} No AudioContext to cleanup`);
   }
 }
 

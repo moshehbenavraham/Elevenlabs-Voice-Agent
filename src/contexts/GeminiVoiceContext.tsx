@@ -758,9 +758,8 @@ export function GeminiVoiceProvider({ children, onDisconnect }: GeminiVoiceProvi
     };
     dispatch({ type: 'ADD_MESSAGE', payload: userMessage });
 
-    // TODO: Implement client.sendText method in GenAILiveClient
-    // For now, this is a placeholder for future implementation
-    debugLog('sendText', 'Text sending not yet implemented in GenAILiveClient');
+    // Send text to Gemini
+    clientRef.current.sendText(text);
   }, []);
 
   /**

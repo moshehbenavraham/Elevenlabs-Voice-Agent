@@ -27,7 +27,6 @@ const LOG_PREFIX = '[Vapi:UI]';
 export function checkVapiConfiguration(): boolean {
   const webToken = import.meta.env.VITE_VAPI_WEB_TOKEN;
   const isConfigured = !!webToken && webToken !== 'your-vapi-web-token';
-  console.log(`${LOG_PREFIX} checkVapiConfiguration():`, isConfigured);
   return isConfigured;
 }
 
@@ -78,7 +77,6 @@ function VapiProviderInner({ children, onDisconnect }: VapiProviderProps) {
   // Uses ref to get the latest stop function without being a dependency
   useEffect(() => {
     return () => {
-      console.log('[Vapi:UI] VapiProviderInner unmounting, calling stop()');
       stopRef.current();
     };
   }, []);
@@ -129,41 +127,20 @@ export function VapiButton({ className, size = 'lg', onConnect, onDisconnect }: 
   const config = sizeConfig[size];
 
   const handleClick = async () => {
-    console.log(`${LOG_PREFIX} ══════════════════════════════════════════`);
-    console.log(`${LOG_PREFIX} 🖱️ BUTTON CLICKED`);
-    console.log(`${LOG_PREFIX}   isLoading: ${isLoading}`);
-    console.log(`${LOG_PREFIX}   isConnected: ${isConnected}`);
-    console.log(`${LOG_PREFIX}   callStatus: ${callStatus}`);
-    console.log(`${LOG_PREFIX} ══════════════════════════════════════════`);
-
     if (isLoading) {
-      console.log(`${LOG_PREFIX} ⏳ Ignoring click - still loading`);
       return;
     }
 
     if (isConnected) {
-      console.log(`${LOG_PREFIX} 🛑 Stopping call...`);
       stop();
       onDisconnect?.();
     } else {
-      console.log(`${LOG_PREFIX} 🚀 Starting call...`);
-
       // Pre-initialize AudioContext BEFORE vapi.start()
       // This ensures execution context exists for Daily.co's Krisp AudioWorklet
-      console.log(`${LOG_PREFIX} 🎤 Step 1: Pre-initializing AudioContext...`);
-      const audioCtx = prepareAudioContext();
-      console.log(
-        `${LOG_PREFIX}   AudioContext result:`,
-        audioCtx ? `state=${audioCtx.state}` : 'null'
-      );
+      prepareAudioContext();
 
-      console.log(`${LOG_PREFIX} 📊 Step 2: Debug info before start:`);
-      console.log(`${LOG_PREFIX}  `, getVapiDebugInfo());
-
-      console.log(`${LOG_PREFIX} 📞 Step 3: Calling start()...`);
       try {
         await start();
-        console.log(`${LOG_PREFIX} ✅ start() completed without throwing`);
         onConnect?.();
       } catch (e) {
         console.error(`${LOG_PREFIX} ❌ start() threw an error:`, e);

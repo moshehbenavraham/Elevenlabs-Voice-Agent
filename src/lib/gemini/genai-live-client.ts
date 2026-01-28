@@ -230,6 +230,32 @@ export class GenAILiveClient extends EventEmitter<GenAILiveClientEvents> {
   }
 
   /**
+   * Send text input to Gemini.
+   *
+   * @param text - The text message to send
+   */
+  sendText(text: string): void {
+    if (!this.isConnected) {
+      console.warn('[GenAILiveClient] Cannot send text: not connected');
+      return;
+    }
+
+    const message: ClientContentMessage = {
+      clientContent: {
+        turns: [
+          {
+            role: 'user',
+            parts: [{ text }],
+          },
+        ],
+        turnComplete: true,
+      },
+    };
+
+    this.send(message);
+  }
+
+  /**
    * Send the setup message to configure the session.
    * Called automatically after WebSocket connection opens.
    */
