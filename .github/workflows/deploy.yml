@@ -106,7 +106,7 @@ jobs:
 
       - name: Deploy via SSH (alternative)
         if: ${{ vars.DEPLOY_WEBHOOK_URL == '' && vars.DEPLOY_SSH_HOST != '' }}
-        uses: appleboy/ssh-action@v1.2.0
+        uses: appleboy/ssh-action@v1.2.5
         with:
           host: ${{ vars.DEPLOY_SSH_HOST }}
           username: ${{ vars.DEPLOY_SSH_USER }}
