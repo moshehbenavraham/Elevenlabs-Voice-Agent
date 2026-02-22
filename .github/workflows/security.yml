@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    # Run weekly on Monday at 00:00 UTC
-    - cron: '0 0 * * 1'
+    # Run bi-weekly on 1st and 15th
+    - cron: '0 0 1,15 * *'
 
 permissions:
   contents: read
