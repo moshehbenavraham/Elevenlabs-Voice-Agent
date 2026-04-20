@@ -6,6 +6,7 @@ const router = Router();
 // Retell API configuration constants
 const RETELL_API_URL = 'https://api.retellai.com/v2/create-web-call';
 const REQUEST_TIMEOUT_MS = 30000;
+const RETELL_AGENT_PLACEHOLDER = 'your-retell-agent-id';
 
 /**
  * Validates that RETELL_API_KEY environment variable is configured.
@@ -28,21 +29,23 @@ function validateApiKey() {
 }
 
 /**
- * Validates the request body for agent_id.
- * @param {Object} body - Request body
+ * Resolves the trusted Retell agent ID from server-side configuration.
+ * Prefers RETELL_AGENT_ID and falls back to VITE_RETELL_AGENT_ID for compatibility.
  * @returns {{ valid: boolean, agentId?: string, error?: { error: string, message: string } }}
  */
-function validateRequestBody(body) {
-  const agentId = body?.agent_id;
-  if (!agentId || typeof agentId !== 'string') {
+export function getConfiguredRetellAgentId() {
+  const agentId = process.env.RETELL_AGENT_ID || process.env.VITE_RETELL_AGENT_ID;
+
+  if (!agentId || agentId === RETELL_AGENT_PLACEHOLDER) {
     return {
       valid: false,
       error: {
-        error: 'Validation error',
-        message: 'agent_id is required and must be a string'
+        error: 'Server configuration error',
+        message: 'Retell agent ID not configured'
       }
     };
   }
+
   return { valid: true, agentId };
 }
 
@@ -52,8 +55,6 @@ function validateRequestBody(body) {
  * @param {string} apiKey - The Retell API key
  * @param {Object} options - Call configuration options
  * @param {string} options.agentId - Required Retell agent ID
- * @param {Object} [options.metadata] - Optional metadata for the call
- * @param {Object} [options.retellLlmDynamicVariables] - Optional dynamic variables
  * @returns {Promise<{ success: boolean, accessToken?: string, callId?: string, error?: { error: string, message: string }, status?: number }>}
  */
 async function createRetellWebCall(apiKey, options) {
@@ -61,20 +62,13 @@ async function createRetellWebCall(apiKey, options) {
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const { agentId, metadata, retellLlmDynamicVariables } = options;
+    const { agentId } = options;
     console.log('[Server] Creating Retell web call for agent:', sanitizeLogInput(agentId));
 
     // Build request body - agent_id is required
     const requestBody = {
       agent_id: agentId
     };
-    if (metadata) {
-      requestBody.metadata = metadata;
-    }
-    if (retellLlmDynamicVariables) {
-      requestBody.retell_llm_dynamic_variables = retellLlmDynamicVariables;
-    }
-
     const response = await fetch(RETELL_API_URL, {
       method: 'POST',
       headers: {
@@ -180,9 +174,7 @@ router.get('/health', (req, res) => {
  * The frontend RetellWebClient uses this access_token to connect.
  *
  * Request body:
- *   - agent_id: string (required) - Retell agent ID from dashboard
- *   - metadata: object (optional) - Custom metadata for the call
- *   - retell_llm_dynamic_variables: object (optional) - Dynamic variables
+ *   - No client-supplied fields are accepted. Agent selection is pinned server-side.
  *
  * Response:
  *   - Success: { access_token: string, call_id?: string }
@@ -195,20 +187,21 @@ router.post('/create-web-call', async (req, res) => {
     return res.status(500).json(apiValidation.error);
   }
 
-  // Validate request body
-  const bodyValidation = validateRequestBody(req.body);
-  if (!bodyValidation.valid) {
-    return res.status(400).json(bodyValidation.error);
+  if (req.body && Object.keys(req.body).length > 0) {
+    return res.status(400).json({
+      error: 'Validation error',
+      message: 'This endpoint does not accept client-supplied call configuration'
+    });
   }
 
-  // Parse optional fields from request body
-  const { metadata, retell_llm_dynamic_variables } = req.body || {};
+  const agentValidation = getConfiguredRetellAgentId();
+  if (!agentValidation.valid) {
+    return res.status(500).json(agentValidation.error);
+  }
 
   // Create Retell web call
   const result = await createRetellWebCall(apiValidation.apiKey, {
-    agentId: bodyValidation.agentId,
-    metadata,
-    retellLlmDynamicVariables: retell_llm_dynamic_variables
+    agentId: agentValidation.agentId
   });
 
   if (!result.success) {

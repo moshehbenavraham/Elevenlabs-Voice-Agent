@@ -100,6 +100,25 @@ print_info() {
     printf "       %s\n" "$1"
 }
 
+# Require ngrok basic auth by default for demos unless explicitly overridden.
+check_access_controls() {
+    local allow_public="${NGROK_ALLOW_PUBLIC_DEMO:-false}"
+
+    if [[ "$allow_public" == "true" ]]; then
+        print_warning "NGROK_ALLOW_PUBLIC_DEMO=true - starting a public demo without ngrok basic auth"
+        return 0
+    fi
+
+    if [[ -z "${NGROK_AUTH_USER:-}" || -z "${NGROK_AUTH_PASS:-}" ]]; then
+        print_error "ngrok basic auth is required for demo mode"
+        print_info "Set NGROK_AUTH_USER and NGROK_AUTH_PASS in .env"
+        print_info "Or set NGROK_ALLOW_PUBLIC_DEMO=true to intentionally allow public access"
+        exit 1
+    fi
+
+    print_info "Demo access protection: basic auth enabled"
+}
+
 # Configuration defaults
 NGROK_CONFIG=""
 TIMEOUT=30
@@ -257,6 +276,7 @@ main() {
 
     # Verify ngrok is available
     check_ngrok
+    check_access_controls
 
     # Generate config from template (substitutes env vars)
     generate_config

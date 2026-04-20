@@ -111,6 +111,8 @@ OpenAI uses the Realtime API with ephemeral tokens for secure WebSocket connecti
 ```bash
 # Server-side environment (Ultravox requires backend for call creation)
 ULTRAVOX_API_KEY=your_ultravox_api_key_here
+ULTRAVOX_SYSTEM_PROMPT=You are a helpful voice assistant. Keep responses conversational and concise.
+ULTRAVOX_VOICE=Mark
 
 # Client-side (enable Ultravox in frontend)
 VITE_ULTRAVOX_ENABLED=true
@@ -118,7 +120,7 @@ VITE_ULTRAVOX_VOICE=Mark
 VITE_API_BASE_URL=http://localhost:3001
 ```
 
-Ultravox uses a call-based model where the backend creates a call via REST API and returns a WebSocket joinUrl. The frontend connects using the ultravox-client SDK.
+Ultravox uses a call-based model where the backend creates a call via REST API and returns a WebSocket joinUrl. The frontend connects using the ultravox-client SDK. The server now pins prompt and voice settings from trusted environment variables instead of accepting caller-supplied overrides.
 
 #### Vapi Setup
 
@@ -138,6 +140,7 @@ Vapi uses a frontend-only integration with a public web token. The @vapi-ai/web 
 ```bash
 # Server-side environment (Retell requires backend for access tokens)
 RETELL_API_KEY=key_your_retell_api_key_here
+RETELL_AGENT_ID=your-retell-agent-id
 
 # Client-side (enable Retell in frontend)
 VITE_RETELL_ENABLED=true
@@ -145,7 +148,7 @@ VITE_RETELL_AGENT_ID=your-retell-agent-id
 VITE_API_BASE_URL=http://localhost:3001
 ```
 
-Retell uses a backend-generated access token for secure WebRTC connections via LiveKit. The agent configuration (voice, LLM, prompts) is managed in the [Retell Dashboard](https://dashboard.retellai.com/). The `retell-client-js-sdk` handles audio streaming.
+Retell uses a backend-generated access token for secure WebRTC connections via LiveKit. The agent configuration (voice, LLM, prompts) is managed in the [Retell Dashboard](https://dashboard.retellai.com/). The server now pins the agent ID from trusted environment variables instead of trusting client-supplied values. The `retell-client-js-sdk` handles audio streaming.
 
 #### Gemini Live Setup
 

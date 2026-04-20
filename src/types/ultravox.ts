@@ -62,17 +62,11 @@ export function mapUltravoxStatus(sdkStatus: UltravoxSessionStatus): UltravoxCon
 }
 
 /**
- * Request body for creating an Ultravox call
- * Sent to POST /api/ultravox/call
+ * Client request for creating an Ultravox call.
+ * The backend now uses trusted server-side config for prompt/voice/model,
+ * so clients should send an empty POST body.
  */
-export interface UltravoxCallRequest {
-  /** System prompt for the voice agent */
-  systemPrompt?: string;
-  /** Voice selection (optional - uses Ultravox default if not specified) */
-  voice?: string;
-  /** Model selection (optional - uses default model if not specified) */
-  model?: string;
-}
+export type UltravoxCallRequest = Record<string, never>;
 
 /**
  * Successful response from Ultravox call creation

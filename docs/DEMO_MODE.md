@@ -67,16 +67,17 @@ Demo mode uses these environment variables (set in `.env`):
 | Variable          | Description                | Example      |
 | ----------------- | -------------------------- | ------------ |
 | `NGROK_AUTHTOKEN` | ngrok authentication token | `2abc123...` |
+| `NGROK_AUTH_USER` | Demo basic auth username   | `demo`       |
+| `NGROK_AUTH_PASS` | Demo basic auth password   | `secret123`  |
 
 ### Optional
 
-| Variable               | Description                | Default          |
-| ---------------------- | -------------------------- | ---------------- |
-| `NGROK_DOMAIN`         | Custom domain (paid plans) | Random subdomain |
-| `NGROK_AUTH_USER`      | Basic auth username        | None             |
-| `NGROK_AUTH_PASS`      | Basic auth password        | None             |
-| `NGROK_INSPECTOR_PORT` | ngrok web inspector port   | `4041`           |
-| `NGROK_API_KEY`        | ngrok API key              | None             |
+| Variable                  | Description                | Default          |
+| ------------------------- | -------------------------- | ---------------- |
+| `NGROK_DOMAIN`            | Custom domain (paid plans) | Random subdomain |
+| `NGROK_ALLOW_PUBLIC_DEMO` | Skip basic auth on purpose | `false`          |
+| `NGROK_INSPECTOR_PORT`    | ngrok web inspector port   | `4041`           |
+| `NGROK_API_KEY`           | ngrok API key              | None             |
 
 ### Example Configuration
 
@@ -85,17 +86,20 @@ Demo mode uses these environment variables (set in `.env`):
 
 # Required
 NGROK_AUTHTOKEN=2abc123def456ghi789
+NGROK_AUTH_USER=demo
+NGROK_AUTH_PASS=secretpass123
 
 # Optional - Custom domain (paid plans only)
 NGROK_DOMAIN=myvoiceapp.ngrok.dev
 
-# Optional - Password protection for demos
-NGROK_AUTH_USER=demo
-NGROK_AUTH_PASS=secretpass123
+# Optional - only set to true if you intentionally want a public unauthenticated demo
+NGROK_ALLOW_PUBLIC_DEMO=false
 
 # Optional - Custom inspector port
 NGROK_INSPECTOR_PORT=4041
 ```
+
+By default, `npm run demo` now refuses to start a tunnel unless ngrok basic auth is configured. If you truly want a public demo URL, set `NGROK_ALLOW_PUBLIC_DEMO=true` explicitly.
 
 ## How Demo Mode Works
 

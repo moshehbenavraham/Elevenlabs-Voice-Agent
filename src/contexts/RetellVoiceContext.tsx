@@ -33,9 +33,6 @@ import {
 } from '@/types/retell';
 import { getApiBaseUrl } from '@/lib/apiConfig';
 
-// API configuration from environment
-const RETELL_AGENT_ID = import.meta.env.VITE_RETELL_AGENT_ID;
-
 /**
  * Generate unique ID for message deduplication
  */
@@ -208,12 +205,6 @@ export function RetellVoiceProvider({ children }: RetellVoiceProviderProps) {
       return;
     }
 
-    // Validate agent ID is configured
-    if (!RETELL_AGENT_ID) {
-      setError('VITE_RETELL_AGENT_ID is not configured');
-      return;
-    }
-
     // Don't start if already active or connecting (use ref to avoid stale state)
     if (
       callStatusRef.current === RetellCallStatus.CONNECTED ||
@@ -237,9 +228,6 @@ export function RetellVoiceProvider({ children }: RetellVoiceProviderProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          agent_id: RETELL_AGENT_ID,
-        }),
       });
 
       if (!response.ok) {
@@ -248,7 +236,7 @@ export function RetellVoiceProvider({ children }: RetellVoiceProviderProps) {
           400: 'Invalid request - check agent configuration',
           401: 'Authentication failed - check Retell API key',
           403: 'Access denied - verify Retell permissions',
-          404: 'Agent not found - check VITE_RETELL_AGENT_ID',
+          404: 'Retell agent not found - check server configuration',
           429: 'Rate limited - please wait and try again',
           500: 'Retell server error - try again later',
           502: 'Retell service unavailable - try again later',

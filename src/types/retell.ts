@@ -134,17 +134,11 @@ export interface RetellVoiceHookReturn extends RetellVoiceState {
 // ============================================================
 
 /**
- * Configuration options for Retell backend call creation.
- * Passed to /api/retell/create-web-call endpoint.
+ * Client request for Retell call creation.
+ * The backend now pins the trusted agent ID server-side,
+ * so clients should send an empty POST body.
  */
-export interface RetellCallConfig {
-  /** Retell agent ID from dashboard (required) */
-  agentId: string;
-  /** Optional metadata for the call */
-  metadata?: Record<string, unknown>;
-  /** Optional dynamic variables for the Retell LLM */
-  retellLlmDynamicVariables?: Record<string, unknown>;
-}
+export type RetellCallConfig = Record<string, never>;
 
 /**
  * Response from backend /api/retell/create-web-call endpoint.

@@ -81,20 +81,10 @@ function ultravoxVoiceReducer(
 async function createUltravoxCall(): Promise<{ joinUrl: string; callId?: string }> {
   debugLog('createCall', 'Requesting call from backend...');
 
-  const systemPrompt =
-    import.meta.env.VITE_ULTRAVOX_INSTRUCTIONS ||
-    'You are a helpful voice assistant. Keep responses conversational and concise.';
-
-  const voice = import.meta.env.VITE_ULTRAVOX_VOICE || 'Mark';
-
   const response = await fetch(`${getApiBaseUrl()}/api/ultravox/call`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({
-      systemPrompt,
-      voice,
-    }),
   });
 
   if (!response.ok) {

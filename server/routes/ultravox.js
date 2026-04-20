@@ -29,6 +29,27 @@ function validateApiKey() {
 }
 
 /**
+ * Resolves the trusted Ultravox call configuration from server-side environment variables.
+ * Prefers non-VITE variables and falls back to VITE_* values for compatibility.
+ * @returns {{ systemPrompt: string, voice?: string, model?: string }}
+ */
+export function getConfiguredUltravoxOptions() {
+  const systemPrompt =
+    process.env.ULTRAVOX_SYSTEM_PROMPT ||
+    process.env.VITE_ULTRAVOX_INSTRUCTIONS ||
+    DEFAULT_SYSTEM_PROMPT;
+
+  const voice = process.env.ULTRAVOX_VOICE || process.env.VITE_ULTRAVOX_VOICE;
+  const model = process.env.ULTRAVOX_MODEL || process.env.VITE_ULTRAVOX_MODEL;
+
+  return {
+    systemPrompt,
+    voice: voice || undefined,
+    model: model || undefined
+  };
+}
+
+/**
  * Creates an Ultravox call and returns the joinUrl for frontend SDK connection.
  * Ultravox uses a different pattern than OpenAI/xAI - instead of ephemeral tokens,
  * we create a "call" via REST API and get a joinUrl for the WebSocket connection.
@@ -162,10 +183,8 @@ router.get('/health', (req, res) => {
  * Creates an Ultravox call and returns the joinUrl for WebSocket connection.
  * The frontend ultravox-client SDK uses this joinUrl to connect.
  *
- * Request body (optional):
- *   - systemPrompt: string - System prompt for the voice agent
- *   - voice: string - Voice selection (optional)
- *   - model: string - Model selection (optional)
+ * Request body:
+ *   - No client-supplied fields are accepted. Prompt, voice, and model are pinned server-side.
  *
  * Response:
  *   - Success: { joinUrl: string, callId?: string }
@@ -178,15 +197,15 @@ router.post('/call', async (req, res) => {
     return res.status(500).json(validation.error);
   }
 
-  // Parse request body with defaults
-  const { systemPrompt, voice, model } = req.body || {};
+  if (req.body && Object.keys(req.body).length > 0) {
+    return res.status(400).json({
+      error: 'Validation error',
+      message: 'This endpoint does not accept client-supplied call configuration'
+    });
+  }
 
   // Create Ultravox call
-  const result = await createUltravoxCall(validation.apiKey, {
-    systemPrompt,
-    voice,
-    model
-  });
+  const result = await createUltravoxCall(validation.apiKey, getConfiguredUltravoxOptions());
 
   if (!result.success) {
     return res.status(result.status || 500).json(result.error);

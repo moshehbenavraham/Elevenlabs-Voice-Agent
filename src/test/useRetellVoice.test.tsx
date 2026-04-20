@@ -856,7 +856,7 @@ describe('useRetellVoice', () => {
   // Configuration Tests
   // ===========================================
   describe('configuration', () => {
-    it('sets error when agent ID is not configured', async () => {
+    it('still requests a server-managed Retell token when client env is missing', async () => {
       vi.stubEnv('VITE_RETELL_AGENT_ID', '');
 
       // Need to re-import to get new env
@@ -876,7 +876,13 @@ describe('useRetellVoice', () => {
         await result.current.startCall();
       });
 
-      expect(result.current.error).toBe('VITE_RETELL_AGENT_ID is not configured');
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:3001/api/retell/create-web-call',
+        expect.objectContaining({
+          method: 'POST',
+        })
+      );
+      expect(result.current.error).toBeNull();
 
       // Restore
       vi.stubEnv('VITE_RETELL_AGENT_ID', 'test-agent-id');
