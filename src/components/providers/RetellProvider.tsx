@@ -336,6 +336,7 @@ export function RetellButton({
                 fill="currentColor"
               />
               <motion.div
+                data-testid="voice-button-active-indicator"
                 className={cn(
                   'absolute -top-1 -right-1 w-3 h-3 rounded-full',
                   isAgentSpeaking ? 'bg-teal-500' : 'bg-teal-500'

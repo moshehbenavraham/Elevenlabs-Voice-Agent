@@ -92,6 +92,7 @@ type OpenAIVoiceAction =
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_VOLUME'; payload: number }
   | { type: 'ADD_MESSAGE'; payload: VoiceMessage }
+  | { type: 'UPDATE_MESSAGE'; payload: VoiceMessage }
   | { type: 'UPDATE_LAST_MESSAGE'; payload: string }
   | { type: 'SET_PENDING_FUNCTION_CALL'; payload: FunctionCall | null }
   | { type: 'RESET' };
@@ -115,6 +116,13 @@ function openAIVoiceReducer(state: OpenAIVoiceState, action: OpenAIVoiceAction):
       return { ...state, volume: action.payload };
     case 'ADD_MESSAGE':
       return { ...state, messages: [...state.messages, action.payload] };
+    case 'UPDATE_MESSAGE':
+      return {
+        ...state,
+        messages: state.messages.map((message) =>
+          message.id === action.payload.id ? action.payload : message
+        ),
+      };
     case 'UPDATE_LAST_MESSAGE': {
       if (state.messages.length === 0) return state;
       const updatedMessages = [...state.messages];
@@ -455,13 +463,14 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
         arguments: args,
         status: 'executing',
       };
+      const messageId = `openai-function-${callId}`;
       dispatch({ type: 'SET_PENDING_FUNCTION_CALL', payload: functionCall });
 
       // Add function call message to transcript
       dispatch({
         type: 'ADD_MESSAGE',
         payload: {
-          id: `openai-function-${callId}`,
+          id: messageId,
           role: 'function',
           content: `Calling ${name}...`,
           timestamp: Date.now(),
@@ -495,9 +504,9 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
 
         // Update the function message with result
         dispatch({
-          type: 'ADD_MESSAGE',
+          type: 'UPDATE_MESSAGE',
           payload: {
-            id: `openai-function-result-${callId}`,
+            id: messageId,
             role: 'function',
             content: result.result?.formatted || JSON.stringify(result.result),
             timestamp: Date.now(),
@@ -540,9 +549,9 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
 
         // Update the function message with error
         dispatch({
-          type: 'ADD_MESSAGE',
+          type: 'UPDATE_MESSAGE',
           payload: {
-            id: `openai-function-error-${callId}`,
+            id: messageId,
             role: 'function',
             content: `Error: ${errorMessage}`,
             timestamp: Date.now(),

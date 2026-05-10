@@ -18,6 +18,7 @@ export class VoicePage {
   // Voice button and status
   readonly voiceButton: Locator;
   readonly voiceButtonStatus: Locator;
+  readonly voiceButtonActiveIndicator: Locator;
   readonly voiceStatus: Locator;
   readonly voiceStatusText: Locator;
 
@@ -48,6 +49,7 @@ export class VoicePage {
     // Voice button and status
     this.voiceButton = page.getByTestId('voice-button');
     this.voiceButtonStatus = page.getByTestId('voice-button-status');
+    this.voiceButtonActiveIndicator = page.getByTestId('voice-button-active-indicator');
     this.voiceStatus = page.getByTestId('voice-status');
     this.voiceStatusText = page.getByTestId('voice-status-text');
 

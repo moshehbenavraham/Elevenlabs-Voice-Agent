@@ -19,6 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Dependency and Tooling Refresh**: Updated the main runtime and development stack, including React, React DOM, React Router, TanStack Query, Google GenAI, ElevenLabs React, Lucide, Framer Motion, Tailwind packages, Pino, ESLint, TypeScript, Vite, Vitest, Playwright, Prettier, jsdom, lint-staged, globals, and related plugins
+- **ElevenLabs React v1 Migration**: Migrated the app to `@elevenlabs/react@^1.6.0`, which installs `@elevenlabs/client@1.7.0`
+  - Wrapped the app's custom voice provider with the SDK `ConversationProvider`
+  - Moved transcript handling to `onMessage` callbacks
+  - Moved visualization support to the SDK frequency-data helper APIs
+- **Vite React Plugin**: Replaced `@vitejs/plugin-react-swc` with `@vitejs/plugin-react` in Vite and Vitest configuration
+- **Runtime Config Stub**: Kept `public/config.js` generated/ignored and added npm lifecycle hooks so direct `npm run dev`, `npm run build`, and `npm run preview` create the local no-op stub when missing
+- **Dependency Currency**: Updated `tailwind-merge` to `^3.6.0` and restored `npm outdated --json` to `{}`
 - **Documentation Updates**: Updated all documentation to reflect current project structure
   - Fixed package references from `@11labs/react` to `@elevenlabs/react` in API_INTEGRATION.md
   - Updated CLAUDE.md to reflect actual component file structure
@@ -26,6 +34,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **ElevenLabs SDK Runtime**: Fixed the `useRegisterCallbacks must be used within a ConversationProvider` runtime failure after the ElevenLabs React v1 upgrade
+- **Function Call Transcript State**: Fixed OpenAI/xAI function-call transcript updates so completed/error results replace the original function-call message instead of leaving stale executing entries visible
+- **Voice Button E2E Hooks**: Added stable `voice-button-active-indicator` hooks to provider voice-button active dots and updated Playwright assertions to avoid provider-specific color class selectors
+- **OpenAI/xAI Disconnect Behavior**: Rewired OpenAI/xAI end-conversation controls to call provider context disconnect functions and fixed stale WebSocket close-handler state after abnormal closes
+- **Transitive Deprecation Warning**: Added an npm override for the `@google/genai -> google-auth-library -> gaxios -> node-fetch -> fetch-blob -> node-domexception` path using `@profoundlogic/node-domexception@1.0.2`
 - **Critical Layout Issues**: Fixed conflicting positioning systems in header layout
   - Removed independent `fixed` positioning from ThemeToggle component
   - Integrated ThemeToggle into unified header layout system

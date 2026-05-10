@@ -27,6 +27,8 @@
 | `npm run preview`         | Preview production build locally      |
 | `npm run lint`            | Run ESLint checks                     |
 | `npm run format`          | Format code with Prettier             |
+| `npm run format:check`    | Check Prettier formatting             |
+| `npm run type-check`      | Run app TypeScript checks             |
 | `npm run test`            | Run Vitest in watch mode              |
 | `npm run test:run`        | Single test run (CI mode)             |
 | `npm run test:ui`         | Visual test interface                 |
@@ -47,6 +49,47 @@
 5. Run lint: `npm run lint`
 6. Commit with conventional commits
 7. Open PR
+
+## Verification Gates
+
+Run the full local gate set before merging dependency, tooling, provider, or E2E
+infrastructure changes:
+
+```bash
+npm ci
+npm run lint
+npm run format:check
+npm run type-check
+npm run test:run
+npm run build
+npm audit --audit-level=high
+npm outdated --json
+```
+
+`npm outdated --json` should return `{}` after a planned dependency update. If it
+reports newly available versions, update them or document why they are deferred.
+
+For browser coverage:
+
+```bash
+# Chromium first for the fastest broad signal
+env -u NO_COLOR npx playwright test --project=chromium --workers=1 --max-failures=1
+
+# Full configured matrix: Chromium, Firefox, WebKit, Mobile Chrome, Mobile Safari
+env -u NO_COLOR npx playwright test --workers=1 --max-failures=1
+```
+
+The current post-update baseline is 623 Vitest tests and a full Playwright matrix
+that passes with expected skips for disabled or intentionally skipped scenarios.
+
+## Dependency Maintenance
+
+- `package.json` includes an npm override for the transitive
+  `node-domexception` path under `@google/genai`. Verify it with:
+  `npm ls node-domexception @profoundlogic/node-domexception @google/genai --all`.
+- Keep the override until upstream packages remove the deprecated dependency path.
+- `@elevenlabs/react` is on the v1 provider model. Hooks that call
+  `useConversation` must run under the SDK `ConversationProvider`.
 
 ## Testing
 
@@ -295,11 +338,11 @@ After running demo mode, reset to local development:
 
 These files can cause issues if they persist after mode switching:
 
-| File               | Created By    | Safe to Delete |
-| ------------------ | ------------- | -------------- |
-| `dist/config.js`   | Demo mode     | Yes            |
-| `public/config.js` | Old demo mode | Yes            |
-| `server/.env.demo` | Old demo mode | Yes            |
+| File               | Created By                | Safe to Delete                                    |
+| ------------------ | ------------------------- | ------------------------------------------------- |
+| `dist/config.js`   | Demo mode                 | Yes                                               |
+| `public/config.js` | Local/demo runtime config | Yes - npm lifecycle hooks recreate the local stub |
+| `server/.env.demo` | Old demo mode             | Yes                                               |
 
 ### More Information
 

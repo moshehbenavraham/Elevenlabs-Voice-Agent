@@ -76,6 +76,27 @@ nano .env
 npm run dev:all
 ```
 
+## Runtime Config Stub
+
+`public/config.js` is generated and ignored by git. In local mode it should be a
+no-op stub that prevents `/config.js` 404s and avoids stale demo-mode runtime
+configuration. Demo and ngrok flows may overwrite it with runtime URLs.
+
+Direct npm lifecycle hooks create the local stub when missing:
+
+- `predev`
+- `prebuild`
+- `prebuild:dev`
+- `prepreview`
+
+The stub is safe to delete locally; `npm run dev`, `npm run build`, `npm run
+build:dev`, and `npm run preview` recreate it. If demo mode leaves stale runtime
+URLs behind, run:
+
+```bash
+./scripts/reset-dev-mode.sh
+```
+
 ## Production Setup
 
 ### Vercel

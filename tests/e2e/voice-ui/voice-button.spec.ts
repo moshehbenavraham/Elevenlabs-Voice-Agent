@@ -126,11 +126,7 @@ test.describe('Voice Button Component', () => {
       await voicePage.clickVoiceButton();
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
-      // Active indicator dot should be present
-      const indicator = voicePage.voiceButton.locator(
-        '.rounded-full.bg-amber-500, .rounded-full.bg-emerald-500'
-      );
-      await expect(indicator.first()).toBeVisible();
+      await expect(voicePage.voiceButtonActiveIndicator).toBeVisible();
     });
   });
 

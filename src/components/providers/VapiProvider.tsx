@@ -392,6 +392,7 @@ export function VapiButton({ className, size = 'lg', onConnect, onDisconnect }: 
                 fill="currentColor"
               />
               <motion.div
+                data-testid="voice-button-active-indicator"
                 className={cn(
                   'absolute -top-1 -right-1 w-3 h-3 rounded-full',
                   isSpeechActive ? 'bg-violet-500' : 'bg-violet-500'

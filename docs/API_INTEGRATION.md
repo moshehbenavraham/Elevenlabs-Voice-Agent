@@ -97,6 +97,17 @@ const API_ENDPOINTS = {
 npm install @elevenlabs/react
 ```
 
+### Current SDK Version Notes
+
+This app uses `@elevenlabs/react@^1.6.0`. In this SDK line, components that call
+`useConversation` must render inside the package `ConversationProvider`. The app's
+custom `VoiceProvider` wraps that SDK provider internally.
+
+Transcripts are accumulated from `onMessage` callbacks. Audio visualization uses
+the SDK frequency-data helpers, such as `getInputByteFrequencyData()` and
+`getOutputByteFrequencyData()`, instead of older hook fields such as `messages`
+or `audioStream`.
+
 ### Basic React SDK Setup
 
 ```typescript

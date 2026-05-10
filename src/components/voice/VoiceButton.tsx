@@ -235,6 +235,7 @@ export function VoiceButton({ className, size = 'lg', onConnect, onDisconnect }:
               />
               {/* Active indicator dot */}
               <motion.div
+                data-testid="voice-button-active-indicator"
                 className={cn(
                   'absolute -top-1 -right-1 w-3 h-3 rounded-full',
                   isSpeaking ? 'bg-emerald-500' : 'bg-amber-500'
