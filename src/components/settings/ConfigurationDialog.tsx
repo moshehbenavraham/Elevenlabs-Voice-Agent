@@ -64,7 +64,6 @@ export const ConfigurationDialog: FC<ConfigurationDialogProps> = ({
   useLayoutEffect(() => {
     if (isOpen && !wasOpenRef.current) {
       const freshSettings = loadSettings();
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSettings(freshSettings);
 
       setHasChanges(false);

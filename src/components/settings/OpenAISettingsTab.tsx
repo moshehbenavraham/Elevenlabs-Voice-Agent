@@ -1,4 +1,4 @@
-import { type FC, useEffect, useState } from 'react';
+import { type FC } from 'react';
 import { VoiceSelector } from '@/components/voice/VoiceSelector';
 import { useOpenAIVoice } from '@/hooks/useOpenAIVoice';
 import type { ProviderSettings } from '@/lib/settingsStorage';
@@ -41,17 +41,8 @@ export const OpenAISettingsTab: FC<OpenAISettingsTabProps> = ({ settings, onSett
     // Context not available, use local state
   }
 
-  // Local state for textarea
-  const [promptValue, setPromptValue] = useState(contextSystemPrompt);
-
-  // Sync prompt value when settings change
-  useEffect(() => {
-    setPromptValue(settings.systemPrompt);
-  }, [settings.systemPrompt]);
-
   // Handle prompt change with debounce
   const handlePromptChange = (value: string) => {
-    setPromptValue(value);
     contextSetSystemPrompt(value);
   };
 
@@ -69,7 +60,7 @@ export const OpenAISettingsTab: FC<OpenAISettingsTabProps> = ({ settings, onSett
       <div className="space-y-2">
         <label className="block text-xs font-medium text-zinc-400">System Prompt</label>
         <textarea
-          value={promptValue}
+          value={contextSystemPrompt}
           onChange={(e) => handlePromptChange(e.target.value)}
           disabled={isConnected}
           rows={4}

@@ -92,10 +92,12 @@ describe('GenAILiveClient', () => {
       mockWs = new MockWebSocket(url);
       return mockWs;
     } as unknown as typeof WebSocket;
-    MockWebSocketWrapper.CONNECTING = 0;
-    MockWebSocketWrapper.OPEN = 1;
-    MockWebSocketWrapper.CLOSING = 2;
-    MockWebSocketWrapper.CLOSED = 3;
+    Object.defineProperties(MockWebSocketWrapper, {
+      CONNECTING: { value: 0 },
+      OPEN: { value: 1 },
+      CLOSING: { value: 2 },
+      CLOSED: { value: 3 },
+    });
 
     global.WebSocket = MockWebSocketWrapper;
   });

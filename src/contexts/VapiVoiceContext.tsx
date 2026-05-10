@@ -83,7 +83,9 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
   useEffect(() => {
     console.log(`${LOG_PREFIX} [${timestamp()}] Setting up event listeners...`);
 
-    if (!vapi) {
+    const vapiClient = vapi;
+
+    if (!vapiClient) {
       console.error(`${LOG_PREFIX} [${timestamp()}] Cannot set up event listeners - vapi is null!`);
       return;
     }
@@ -120,7 +122,7 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
           `${LOG_PREFIX} [${timestamp()}] 🎤 Daily call object created, attempting to disable Krisp...`
         );
 
-        const dailyCall = vapi.getDailyCallObject();
+        const dailyCall = vapiClient.getDailyCallObject();
         console.log(
           `${LOG_PREFIX} [${timestamp()}]   Daily call object:`,
           dailyCall ? 'EXISTS' : 'NULL'
@@ -348,19 +350,16 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
     // ═══════════════════════════════════════════════════════════════════════════
     console.log(`${LOG_PREFIX} [${timestamp()}] Attaching event listeners...`);
 
-    // @ts-expect-error - call-start-progress is a valid event but not in types
-    vapi.on('call-start-progress', onCallStartProgress);
-    // @ts-expect-error - call-start-success is a valid event but not in types
-    vapi.on('call-start-success', onCallStartSuccess);
-    vapi.on('call-start', onCallStart);
-    vapi.on('call-end', onCallEnd);
-    vapi.on('speech-start', onSpeechStart);
-    vapi.on('speech-end', onSpeechEnd);
-    vapi.on('volume-level', onVolumeLevel);
-    vapi.on('message', onMessage);
-    vapi.on('error', onError);
-    // @ts-expect-error - call-start-failed is a valid event but not in types
-    vapi.on('call-start-failed', onCallStartFailed);
+    vapiClient.on('call-start-progress', onCallStartProgress);
+    vapiClient.on('call-start-success', onCallStartSuccess);
+    vapiClient.on('call-start', onCallStart);
+    vapiClient.on('call-end', onCallEnd);
+    vapiClient.on('speech-start', onSpeechStart);
+    vapiClient.on('speech-end', onSpeechEnd);
+    vapiClient.on('volume-level', onVolumeLevel);
+    vapiClient.on('message', onMessage);
+    vapiClient.on('error', onError);
+    vapiClient.on('call-start-failed', onCallStartFailed);
 
     console.log(`${LOG_PREFIX} [${timestamp()}] ✅ All event listeners attached`);
 
@@ -368,19 +367,16 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
     return () => {
       console.log(`${LOG_PREFIX} [${timestamp()}] 🧹 Cleaning up event listeners...`);
 
-      // @ts-expect-error - call-start-progress is a valid event but not in types
-      vapi.off('call-start-progress', onCallStartProgress);
-      // @ts-expect-error - call-start-success is a valid event but not in types
-      vapi.off('call-start-success', onCallStartSuccess);
-      vapi.off('call-start', onCallStart);
-      vapi.off('call-end', onCallEnd);
-      vapi.off('speech-start', onSpeechStart);
-      vapi.off('speech-end', onSpeechEnd);
-      vapi.off('volume-level', onVolumeLevel);
-      vapi.off('message', onMessage);
-      vapi.off('error', onError);
-      // @ts-expect-error - call-start-failed is a valid event but not in types
-      vapi.off('call-start-failed', onCallStartFailed);
+      vapiClient.off('call-start-progress', onCallStartProgress);
+      vapiClient.off('call-start-success', onCallStartSuccess);
+      vapiClient.off('call-start', onCallStart);
+      vapiClient.off('call-end', onCallEnd);
+      vapiClient.off('speech-start', onSpeechStart);
+      vapiClient.off('speech-end', onSpeechEnd);
+      vapiClient.off('volume-level', onVolumeLevel);
+      vapiClient.off('message', onMessage);
+      vapiClient.off('error', onError);
+      vapiClient.off('call-start-failed', onCallStartFailed);
 
       console.log(`${LOG_PREFIX} [${timestamp()}] ✅ Event listeners removed`);
     };
@@ -409,7 +405,9 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
     console.log(`${LOG_PREFIX} [${timestamp()}]   Current status: ${callStatusRef.current}`);
     console.log(`${LOG_PREFIX} [${timestamp()}] ══════════════════════════════════════════`);
 
-    if (!vapi) {
+    const vapiClient = vapi;
+
+    if (!vapiClient) {
       console.error(`${LOG_PREFIX} [${timestamp()}] ❌ Cannot start - vapi SDK is null!`);
       setError('Vapi SDK not initialized. Check VITE_VAPI_WEB_TOKEN.');
       return;
@@ -439,7 +437,7 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
           `${LOG_PREFIX} [${timestamp()}] 📞 Starting call with assistant ID string: "${config}"`
         );
         console.log(`${LOG_PREFIX} [${timestamp()}]   Calling vapi.start("${config}")...`);
-        const result = await vapi.start(config);
+        const result = await vapiClient.start(config);
         console.log(`${LOG_PREFIX} [${timestamp()}] ✅ vapi.start() resolved:`, result);
       } else if (config && 'assistantId' in config && config.assistantId) {
         // Config object with assistantId - extract and pass as first param
@@ -450,7 +448,7 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
         console.log(
           `${LOG_PREFIX} [${timestamp()}]   Calling vapi.start("${config.assistantId}")...`
         );
-        const result = await vapi.start(config.assistantId);
+        const result = await vapiClient.start(config.assistantId);
         console.log(`${LOG_PREFIX} [${timestamp()}] ✅ vapi.start() resolved:`, result);
       } else if (config) {
         // Inline assistant configuration (CreateAssistantDTO-like)
@@ -490,7 +488,9 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
         console.log(`${LOG_PREFIX} [${timestamp()}]   Full config:`, assistantConfig);
         console.log(`${LOG_PREFIX} [${timestamp()}]   Calling vapi.start(inlineConfig)...`);
         // Pass CreateAssistantDTO as first positional parameter
-        const result = await vapi.start(assistantConfig as Parameters<typeof vapi.start>[0]);
+        const result = await vapiClient.start(
+          assistantConfig as Parameters<typeof vapiClient.start>[0]
+        );
         console.log(`${LOG_PREFIX} [${timestamp()}] ✅ vapi.start() resolved:`, result);
       } else {
         // No config provided - try to use environment variable assistant ID
@@ -504,7 +504,7 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
           // Use assistant ID as first positional parameter
           console.log(`${LOG_PREFIX} [${timestamp()}]   Using env assistant ID: "${assistantId}"`);
           console.log(`${LOG_PREFIX} [${timestamp()}]   Calling vapi.start("${assistantId}")...`);
-          const result = await vapi.start(assistantId);
+          const result = await vapiClient.start(assistantId);
           console.log(`${LOG_PREFIX} [${timestamp()}] ✅ vapi.start() resolved:`, result);
         } else {
           // Create default inline config from environment
@@ -538,7 +538,9 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
           console.log(`${LOG_PREFIX} [${timestamp()}]   Model: ${defaultConfig.model.model}`);
           console.log(`${LOG_PREFIX} [${timestamp()}]   Full default config:`, defaultConfig);
           console.log(`${LOG_PREFIX} [${timestamp()}]   Calling vapi.start(defaultConfig)...`);
-          const result = await vapi.start(defaultConfig as Parameters<typeof vapi.start>[0]);
+          const result = await vapiClient.start(
+            defaultConfig as Parameters<typeof vapiClient.start>[0]
+          );
           console.log(`${LOG_PREFIX} [${timestamp()}] ✅ vapi.start() resolved:`, result);
         }
       }
@@ -571,7 +573,9 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
     console.log(`${LOG_PREFIX} [${timestamp()}]   Current status: ${callStatusRef.current}`);
     console.log(`${LOG_PREFIX} [${timestamp()}] ══════════════════════════════════════════`);
 
-    if (!vapi) {
+    const vapiClient = vapi;
+
+    if (!vapiClient) {
       console.error(`${LOG_PREFIX} [${timestamp()}] ❌ Cannot stop - vapi SDK is null!`);
       return;
     }
@@ -584,7 +588,7 @@ export function VapiVoiceProvider({ children }: VapiVoiceProviderProps) {
 
     console.log(`${LOG_PREFIX} [${timestamp()}] 📴 Calling vapi.stop()...`);
     setCallStatus(VapiCallStatus.LOADING);
-    vapi.stop();
+    vapiClient.stop();
     console.log(
       `${LOG_PREFIX} [${timestamp()}] ✅ vapi.stop() called (waiting for call-end event)`
     );

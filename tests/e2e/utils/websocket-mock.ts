@@ -13,6 +13,7 @@ export const websocketMockScript = `
 
   // Store active mock connections for testing
   const mockConnections = [];
+  const getProviderConnections = () => mockConnections.filter(conn => conn._provider !== 'unknown');
 
   class MockWebSocket {
     static CONNECTING = 0;
@@ -92,10 +93,52 @@ export const websocketMockScript = `
           });
         }, 100);
       }
+
+      // Send initial conversation metadata for ElevenLabs v1
+      if (this._provider === 'elevenlabs') {
+        setTimeout(() => {
+          this._sendMockMessage({
+            type: 'conversation_initiation_metadata',
+            conversation_initiation_metadata_event: {
+              conversation_id: 'mock-elevenlabs-conversation-' + Math.random().toString(36).substr(2, 9),
+              agent_output_audio_format: 'pcm_16000',
+              user_input_audio_format: 'pcm_16000'
+            }
+          });
+        }, 100);
+      }
     }
 
     _sendMockMessage(data) {
       if (this.readyState !== MockWebSocket.OPEN) return;
+
+      if (this._provider === 'openai' && data && typeof data === 'object') {
+        if (data.type === 'response.text.done') {
+          const responseId = 'resp-' + Date.now();
+          this._sendMockMessage({
+            type: 'response.created',
+            response: {
+              id: responseId,
+              status: 'in_progress'
+            }
+          });
+          this._sendMockMessage({
+            type: 'response.output_audio_transcript.delta',
+            delta: data.text || ''
+          });
+          return;
+        }
+
+        if (data.type === 'conversation.item.created' && data.item?.role === 'user') {
+          const content = Array.isArray(data.item.content) ? data.item.content[0] : null;
+          this._sendMockMessage({
+            type: 'conversation.item.input_audio_transcription.completed',
+            item_id: data.item.id,
+            transcript: content?.text || ''
+          });
+          return;
+        }
+      }
 
       const messageData = typeof data === 'string' ? data : JSON.stringify(data);
       const event = new MessageEvent('message', { data: messageData });
@@ -122,6 +165,16 @@ export const websocketMockScript = `
 
     _handleClientMessage(message) {
       // Simulate responses based on message type
+      if (message.type === 'session.update') {
+        setTimeout(() => {
+          this._sendMockMessage({
+            type: 'session.updated',
+            session: message.session || {}
+          });
+        }, 100);
+        return;
+      }
+
       if (message.type === 'input_audio_buffer.append') {
         // Audio chunk received - no response needed
         return;
@@ -232,15 +285,15 @@ export const websocketMockScript = `
   window.__E2E_WEBSOCKET_MOCK__ = {
     MockWebSocket,
     OriginalWebSocket,
-    getConnections: () => mockConnections,
+    getConnections: getProviderConnections,
     simulateClose: (index, code = 1006) => {
-      const conn = mockConnections[index];
+      const conn = getProviderConnections()[index];
       if (conn) {
         conn.close(code, 'Simulated disconnect');
       }
     },
     simulateReconnect: (index) => {
-      const conn = mockConnections[index];
+      const conn = getProviderConnections()[index];
       if (conn && conn.readyState === MockWebSocket.CLOSED) {
         conn.readyState = MockWebSocket.CONNECTING;
         setTimeout(() => {
@@ -249,7 +302,7 @@ export const websocketMockScript = `
       }
     },
     simulateError: (index, errorMsg = 'Mock WebSocket error') => {
-      const conn = mockConnections[index];
+      const conn = getProviderConnections()[index];
       if (conn) {
         const event = new Event('error');
         event.message = errorMsg;
@@ -259,14 +312,14 @@ export const websocketMockScript = `
       }
     },
     simulateNetworkDisconnect: () => {
-      mockConnections.forEach((conn, i) => {
+      getProviderConnections().forEach((conn) => {
         if (conn.readyState === MockWebSocket.OPEN) {
           conn.close(1006, 'Network disconnected');
         }
       });
     },
     simulateFunctionCall: (index, functionName, args, result) => {
-      const conn = mockConnections[index];
+      const conn = getProviderConnections()[index];
       if (conn && conn.readyState === MockWebSocket.OPEN) {
         // Send function call event
         conn._sendMockMessage({
@@ -285,7 +338,7 @@ export const websocketMockScript = `
         }, 200);
       }
     },
-    getConnectionCount: () => mockConnections.length,
+    getConnectionCount: () => getProviderConnections().length,
     clearConnections: () => {
       mockConnections.forEach(conn => {
         if (conn.readyState !== MockWebSocket.CLOSED) {

@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
+import { hasConfiguredValue } from '@/lib/configPlaceholders';
 
 interface HeroSectionProps {
   onStartConversation: () => Promise<void>;
@@ -69,6 +70,10 @@ export const HeroSection: FC<HeroSectionProps> = ({ onStartConversation, isLoadi
             <button
               onClick={onStartConversation}
               disabled={isLoading}
+              data-testid="voice-button"
+              data-state={isLoading ? 'loading' : error ? 'error' : 'idle'}
+              aria-busy={isLoading}
+              aria-pressed="false"
               className="group relative overflow-hidden"
             >
               <div className="relative flex items-center gap-4 px-8 py-4 bg-amber-500 text-zinc-900 font-medium rounded-full transition-all duration-300 hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -94,14 +99,13 @@ export const HeroSection: FC<HeroSectionProps> = ({ onStartConversation, isLoadi
             </button>
 
             {/* Status indicator */}
-            <div className="flex items-center gap-3 py-4">
+            <div className="flex items-center gap-3 py-4" data-testid="voice-status">
               <div className="relative">
                 <div className="w-2 h-2 rounded-full bg-emerald-500" />
                 <div className="absolute inset-0 w-2 h-2 rounded-full bg-emerald-500 animate-ping opacity-75" />
               </div>
-              <span className="text-sm text-zinc-500 font-mono">
-                {import.meta.env.VITE_ELEVENLABS_AGENT_ID &&
-                import.meta.env.VITE_ELEVENLABS_AGENT_ID !== 'your_agent_id_here'
+              <span className="text-sm text-zinc-500 font-mono" data-testid="voice-status-text">
+                {hasConfiguredValue(import.meta.env.VITE_ELEVENLABS_AGENT_ID)
                   ? 'Agent ready'
                   : 'Configure agent'}
               </span>

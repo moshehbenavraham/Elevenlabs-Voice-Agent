@@ -1,11 +1,19 @@
 import { createContext, useContext, useReducer, useCallback, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { useConversation } from '@elevenlabs/react';
+import {
+  ConversationProvider as ElevenLabsConversationProvider,
+  useConversation,
+} from '@elevenlabs/react';
+import type { HookOptions, UseConversationOptions } from '@elevenlabs/react';
 import { trackError, trackWarning } from '@/lib/errorTracking';
 import { useReconnection, type ReconnectionState } from '@/hooks/useReconnection';
 import { getApiBaseUrl } from '@/lib/apiConfig';
+import { isPlaceholderConfigValue } from '@/lib/configPlaceholders';
 
 const DEBUG = import.meta.env.DEV;
+const EMPTY_FREQUENCY_DATA = new Uint8Array(0);
+
+type ElevenLabsConversation = ReturnType<typeof useConversation>;
 
 function debugLog(context: string, message: string, data?: unknown) {
   if (DEBUG) {
@@ -49,6 +57,8 @@ interface VoiceContextType extends VoiceState {
   disconnect: () => Promise<void>;
   setVolume: (volume: number) => void;
   clearError: () => void;
+  getInputByteFrequencyData: () => Uint8Array;
+  getOutputByteFrequencyData: () => Uint8Array;
   reconnection: ReconnectionState;
   manualReconnect: () => void;
 }
@@ -69,8 +79,8 @@ type VoiceAction =
   | { type: 'SET_SPEAKING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'ADD_MESSAGE'; payload: { role: 'user' | 'assistant'; content: string } }
+  | { type: 'CLEAR_MESSAGES' }
   | { type: 'SET_VOLUME'; payload: number }
-  | { type: 'SET_AUDIO_STREAM'; payload: MediaStream | null }
   | { type: 'RESET' };
 
 function voiceReducer(state: VoiceState, action: VoiceAction): VoiceState {
@@ -85,10 +95,10 @@ function voiceReducer(state: VoiceState, action: VoiceAction): VoiceState {
       return { ...state, error: action.payload };
     case 'ADD_MESSAGE':
       return { ...state, messages: [...state.messages, action.payload] };
+    case 'CLEAR_MESSAGES':
+      return { ...state, messages: [] };
     case 'SET_VOLUME':
       return { ...state, volume: action.payload };
-    case 'SET_AUDIO_STREAM':
-      return { ...state, audioStream: action.payload };
     case 'RESET':
       return { ...initialState, volume: state.volume };
     default:
@@ -182,6 +192,26 @@ function parseElevenLabsError(error: unknown): string {
   return 'An unexpected error occurred. Please try again.';
 }
 
+function getElevenLabsSessionOptions(signedUrl: string): HookOptions {
+  return {
+    signedUrl,
+    connectionType: 'websocket',
+    dynamicVariables: {
+      agent_name: 'Atlas',
+      greeting: 'Hey',
+      user_name: 'there',
+    },
+    overrides: {
+      agent: {
+        prompt: {
+          prompt: `You are Atlas, a friendly and helpful AI voice assistant. You help users with general questions, tasks, and conversation. Be concise, natural, and conversational in your responses since this is a voice interaction. Keep responses brief unless the user asks for more detail.`,
+        },
+        firstMessage: "Hey there! It's Atlas. What can I do for you?",
+      },
+    },
+  };
+}
+
 // eslint-disable-next-line react-refresh/only-export-components
 export const VoiceContext = createContext<VoiceContextType | null>(null);
 
@@ -190,12 +220,16 @@ interface VoiceProviderProps {
   onDisconnect?: () => void;
 }
 
-export function VoiceProvider({
-  children,
-  onDisconnect: onDisconnectCallback,
-}: VoiceProviderProps) {
+export function VoiceProvider(props: VoiceProviderProps) {
+  return (
+    <ElevenLabsConversationProvider>
+      <VoiceProviderCore {...props} />
+    </ElevenLabsConversationProvider>
+  );
+}
+
+function VoiceProviderCore({ children, onDisconnect: onDisconnectCallback }: VoiceProviderProps) {
   const [state, dispatch] = useReducer(voiceReducer, initialState);
-  const lastMessageCount = useRef(0);
 
   // Track if disconnect was intentional to prevent auto-reconnect
   const intentionalDisconnectRef = useRef(false);
@@ -205,9 +239,146 @@ export function VoiceProvider({
   // Ref to track previous connection state for detecting disconnect
   const wasConnectedRef = useRef(false);
   // Ref to store conversation object for use in callbacks
-  const conversationRef = useRef<ReturnType<typeof useConversation> | null>(null);
+  const conversationRef = useRef<ElevenLabsConversation | null>(null);
   // Ref to store reconnection hook methods for use in callbacks
   const reconnectionHookRef = useRef<ReturnType<typeof useReconnection> | null>(null);
+
+  // Initialize conversation with event handlers for better error tracking
+  const conversation = useConversation({
+    volume: state.volume,
+    onConnect: () => {
+      debugLog('onConnect', 'Successfully connected to ElevenLabs');
+      dispatch({ type: 'SET_CONNECTED', payload: true });
+      dispatch({ type: 'SET_LOADING', payload: false });
+      wasConnectedRef.current = true;
+      // Notify reconnection hook of successful connection (use ref for latest)
+      reconnectionHookRef.current?.onConnected();
+    },
+    onDisconnect: (details) => {
+      debugLog('onDisconnect', 'Disconnected from ElevenLabs', details);
+      dispatch({ type: 'SET_CONNECTED', payload: false });
+      dispatch({ type: 'SET_LOADING', payload: false });
+      dispatch({ type: 'SET_SPEAKING', payload: false });
+
+      // Determine if this was an abnormal disconnect
+      const wasConnected = wasConnectedRef.current;
+      wasConnectedRef.current = false;
+
+      if (wasConnected && !intentionalDisconnectRef.current) {
+        // Abnormal disconnect - trigger reconnection
+        debugLog('onDisconnect', 'Abnormal disconnect detected, triggering reconnection');
+        const closeCode = 'closeCode' in details ? (details.closeCode ?? 1006) : 1006;
+        reconnectionHookRef.current?.onDisconnected(closeCode);
+      } else if (intentionalDisconnectRef.current) {
+        // Intentional disconnect - reset reconnection state
+        debugLog('onDisconnect', 'Intentional disconnect, resetting state');
+        reconnectionHookRef.current?.resetReconnection();
+        onDisconnectCallback?.();
+      }
+    },
+    onError: (message, context) => {
+      const errorMessage = parseElevenLabsError(context ?? message);
+      trackError('VoiceContext', 'ElevenLabs conversation error', context ?? message, {
+        status: conversationRef.current?.status,
+      });
+      // Enhanced error logging for debugging
+      debugLog('onError', 'Conversation error', {
+        error: context ?? message,
+        parsed: errorMessage,
+        errorType: context instanceof Error ? context.name : typeof (context ?? message),
+        errorDetails:
+          context instanceof Error ? context.message : JSON.stringify(context ?? message),
+      });
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      dispatch({ type: 'SET_LOADING', payload: false });
+    },
+    onMessage: (message) => {
+      debugLog('onMessage', 'Received message', message);
+      dispatch({
+        type: 'ADD_MESSAGE',
+        payload: {
+          role: message.role === 'user' || message.source === 'user' ? 'user' : 'assistant',
+          content: message.message,
+        },
+      });
+    },
+    onModeChange: ({ mode }) => {
+      debugLog('onModeChange', 'Mode changed', { mode });
+      dispatch({ type: 'SET_SPEAKING', payload: mode === 'speaking' });
+    },
+    onStatusChange: (status) => {
+      debugLog('onStatusChange', 'Status changed', { status });
+    },
+  } satisfies UseConversationOptions);
+
+  // Keep conversation ref in sync
+  useEffect(() => {
+    conversationRef.current = conversation;
+  }, [conversation]);
+
+  // Monitor connection state
+  useEffect(() => {
+    debugLog('status', `Status changed: ${conversation.status}`, {
+      isSpeaking: conversation.isSpeaking,
+      message: conversation.message,
+    });
+    dispatch({ type: 'SET_CONNECTED', payload: conversation.status === 'connected' });
+    dispatch({ type: 'SET_LOADING', payload: conversation.status === 'connecting' });
+    dispatch({ type: 'SET_SPEAKING', payload: conversation.isSpeaking || false });
+    if (conversation.status === 'error' && conversation.message) {
+      dispatch({ type: 'SET_ERROR', payload: conversation.message });
+    }
+  }, [conversation.status, conversation.isSpeaking, conversation.message]);
+
+  const startSessionWithLifecycle = useCallback((options: HookOptions): Promise<void> => {
+    const activeConversation = conversationRef.current;
+    if (!activeConversation) {
+      return Promise.reject(
+        new Error('Voice conversation not initialized. Please refresh the page.')
+      );
+    }
+
+    if (activeConversation.status === 'connected') {
+      return Promise.resolve();
+    }
+
+    return new Promise<void>((resolve, reject) => {
+      let settled = false;
+
+      const timeoutId = window.setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          reject(new Error('Timed out while connecting to ElevenLabs'));
+        }
+      }, 30000);
+
+      const resolveOnce = () => {
+        if (!settled) {
+          settled = true;
+          window.clearTimeout(timeoutId);
+          resolve();
+        }
+      };
+
+      const rejectOnce = (message: string, context?: unknown) => {
+        if (!settled) {
+          settled = true;
+          window.clearTimeout(timeoutId);
+          reject(context instanceof Error ? context : new Error(message));
+        }
+      };
+
+      try {
+        activeConversation.startSession({
+          ...options,
+          onConnect: resolveOnce,
+          onError: rejectOnce,
+        });
+      } catch (error) {
+        rejectOnce(parseElevenLabsError(error), error);
+      }
+    });
+  }, []);
 
   /**
    * Reconnect function - fetches fresh signed URL and re-establishes connection
@@ -227,30 +398,11 @@ export function VoiceProvider({
       throw new Error('No agent ID available for reconnection');
     }
 
-    // Get fresh signed URL
     const signedUrl = await getSignedUrl();
-
-    // Start new session using ref
-    await conversationRef.current?.startSession({
-      signedUrl,
-      connectionType: 'websocket',
-      dynamicVariables: {
-        agent_name: 'Atlas',
-        greeting: 'Hey',
-        user_name: 'there',
-      },
-      overrides: {
-        agent: {
-          prompt: {
-            prompt: `You are Atlas, a friendly and helpful AI voice assistant. You help users with general questions, tasks, and conversation. Be concise, natural, and conversational in your responses since this is a voice interaction. Keep responses brief unless the user asks for more detail.`,
-          },
-          firstMessage: "Hey there! It's Atlas. What can I do for you?",
-        },
-      },
-    });
+    await startSessionWithLifecycle(getElevenLabsSessionOptions(signedUrl));
 
     debugLog('reconnect', 'Reconnection successful');
-  }, []);
+  }, [startSessionWithLifecycle]);
 
   // Reconnection hook
   const reconnectionHook = useReconnection(performReconnect, {
@@ -265,103 +417,6 @@ export function VoiceProvider({
     reconnectionHookRef.current = reconnectionHook;
   }, [reconnectionHook]);
 
-  // Initialize conversation with event handlers for better error tracking
-  const conversation = useConversation({
-    onConnect: () => {
-      debugLog('onConnect', 'Successfully connected to ElevenLabs');
-      dispatch({ type: 'SET_CONNECTED', payload: true });
-      dispatch({ type: 'SET_LOADING', payload: false });
-      wasConnectedRef.current = true;
-      // Notify reconnection hook of successful connection (use ref for latest)
-      reconnectionHookRef.current?.onConnected();
-    },
-    onDisconnect: () => {
-      debugLog('onDisconnect', 'Disconnected from ElevenLabs');
-      dispatch({ type: 'SET_CONNECTED', payload: false });
-
-      // Determine if this was an abnormal disconnect
-      const wasConnected = wasConnectedRef.current;
-      wasConnectedRef.current = false;
-
-      if (wasConnected && !intentionalDisconnectRef.current) {
-        // Abnormal disconnect - trigger reconnection
-        // Use 1006 (abnormal closure) since SDK doesn't expose close codes
-        debugLog('onDisconnect', 'Abnormal disconnect detected, triggering reconnection');
-        reconnectionHookRef.current?.onDisconnected(1006);
-      } else if (intentionalDisconnectRef.current) {
-        // Intentional disconnect - reset reconnection state
-        debugLog('onDisconnect', 'Intentional disconnect, resetting state');
-        reconnectionHookRef.current?.resetReconnection();
-        onDisconnectCallback?.();
-      }
-    },
-    onError: (error) => {
-      const errorMessage = parseElevenLabsError(error);
-      trackError('VoiceContext', 'ElevenLabs conversation error', error, {
-        status: conversationRef.current?.status,
-      });
-      // Enhanced error logging for debugging
-      debugLog('onError', 'Conversation error', {
-        error,
-        parsed: errorMessage,
-        errorType: error instanceof Error ? error.name : typeof error,
-        errorDetails: error instanceof Error ? error.message : JSON.stringify(error),
-      });
-      dispatch({ type: 'SET_ERROR', payload: errorMessage });
-      dispatch({ type: 'SET_LOADING', payload: false });
-    },
-    onMessage: (message) => {
-      debugLog('onMessage', 'Received message', message);
-    },
-    onStatusChange: (status) => {
-      debugLog('onStatusChange', 'Status changed', { status });
-    },
-  });
-
-  // Keep conversation ref in sync
-  useEffect(() => {
-    conversationRef.current = conversation;
-  }, [conversation]);
-
-  // Real audio stream handling
-  useEffect(() => {
-    if (conversation?.audioStream) {
-      debugLog('audioStream', 'Audio stream available');
-      dispatch({ type: 'SET_AUDIO_STREAM', payload: conversation.audioStream });
-    }
-  }, [conversation?.audioStream]);
-
-  // Monitor connection state
-  useEffect(() => {
-    if (conversation) {
-      debugLog('status', `Status changed: ${conversation.status}`, {
-        isSpeaking: conversation.isSpeaking,
-      });
-      dispatch({ type: 'SET_CONNECTED', payload: conversation.status === 'connected' });
-      dispatch({ type: 'SET_LOADING', payload: conversation.status === 'connecting' });
-      dispatch({ type: 'SET_SPEAKING', payload: conversation.isSpeaking || false });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversation?.status, conversation?.isSpeaking]);
-
-  // Handle messages - improved to avoid duplicates
-  useEffect(() => {
-    if (conversation?.messages && conversation.messages.length > lastMessageCount.current) {
-      const newMessages = conversation.messages.slice(lastMessageCount.current);
-      newMessages.forEach((msg) => {
-        debugLog('messages', 'New message', msg);
-        dispatch({
-          type: 'ADD_MESSAGE',
-          payload: {
-            role: msg.source === 'user' ? 'user' : 'assistant',
-            content: msg.message,
-          },
-        });
-      });
-      lastMessageCount.current = conversation.messages.length;
-    }
-  }, [conversation?.messages]);
-
   const connect = useCallback(
     async (agentId: string) => {
       debugLog('connect', 'Starting connection', { agentId: agentId.substring(0, 8) + '...' });
@@ -374,17 +429,9 @@ export function VoiceProvider({
         return;
       }
 
-      if (agentId === 'your_agent_id_here') {
+      if (isPlaceholderConfigValue(agentId)) {
         const error = 'Please configure a valid ElevenLabs Agent ID';
         trackWarning('VoiceContext', error);
-        dispatch({ type: 'SET_ERROR', payload: error });
-        return;
-      }
-
-      // Check if conversation hook is available
-      if (!conversation) {
-        const error = 'Voice conversation not initialized. Please refresh the page.';
-        trackError('VoiceContext', error);
         dispatch({ type: 'SET_ERROR', payload: error });
         return;
       }
@@ -397,7 +444,7 @@ export function VoiceProvider({
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
         dispatch({ type: 'SET_ERROR', payload: null });
-        lastMessageCount.current = 0;
+        dispatch({ type: 'CLEAR_MESSAGES' });
 
         debugLog('connect', 'Requesting microphone permission...');
 
@@ -431,23 +478,7 @@ export function VoiceProvider({
         }
 
         debugLog('connect', 'Starting ElevenLabs session with signed URL...');
-        await conversation.startSession({
-          signedUrl,
-          connectionType: 'websocket',
-          dynamicVariables: {
-            agent_name: 'Atlas',
-            greeting: 'Hey',
-            user_name: 'there',
-          },
-          overrides: {
-            agent: {
-              prompt: {
-                prompt: `You are Atlas, a friendly and helpful AI voice assistant. You help users with general questions, tasks, and conversation. Be concise, natural, and conversational in your responses since this is a voice interaction. Keep responses brief unless the user asks for more detail.`,
-              },
-              firstMessage: "Hey there! It's Atlas. What can I do for you?",
-            },
-          },
-        });
+        await startSessionWithLifecycle(getElevenLabsSessionOptions(signedUrl));
         debugLog('connect', 'Session started successfully');
       } catch (error) {
         const errorMessage = parseElevenLabsError(error);
@@ -460,7 +491,7 @@ export function VoiceProvider({
         dispatch({ type: 'SET_LOADING', payload: false });
       }
     },
-    [conversation]
+    [startSessionWithLifecycle]
   );
 
   const disconnect = useCallback(async () => {
@@ -474,10 +505,9 @@ export function VoiceProvider({
     reconnectionHook.resetReconnection();
 
     try {
-      await conversation?.endSession();
+      conversation.endSession();
       debugLog('disconnect', 'Session ended successfully');
       dispatch({ type: 'RESET' });
-      lastMessageCount.current = 0;
       wasConnectedRef.current = false;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to disconnect';
@@ -486,24 +516,38 @@ export function VoiceProvider({
     }
   }, [conversation, reconnectionHook]);
 
-  const setVolume = useCallback(
-    (volume: number) => {
-      dispatch({ type: 'SET_VOLUME', payload: volume });
-      // Apply volume to audio stream if available
-      if (state.audioStream) {
-        const audioContext = new AudioContext();
-        const source = audioContext.createMediaStreamSource(state.audioStream);
-        const gainNode = audioContext.createGain();
-        gainNode.gain.value = volume;
-        source.connect(gainNode);
-        gainNode.connect(audioContext.destination);
+  const setVolume = useCallback((volume: number) => {
+    dispatch({ type: 'SET_VOLUME', payload: volume });
+    const activeConversation = conversationRef.current;
+    if (activeConversation?.status === 'connected') {
+      try {
+        activeConversation.setVolume({ volume });
+      } catch (error) {
+        trackError('VoiceContext', 'Failed to set ElevenLabs volume', error);
       }
-    },
-    [state.audioStream]
-  );
+    }
+  }, []);
 
   const clearError = useCallback(() => {
     dispatch({ type: 'SET_ERROR', payload: null });
+  }, []);
+
+  const getInputByteFrequencyData = useCallback(() => {
+    try {
+      return conversationRef.current?.getInputByteFrequencyData() ?? EMPTY_FREQUENCY_DATA;
+    } catch (error) {
+      trackError('VoiceContext', 'Failed to read ElevenLabs input frequency data', error);
+      return EMPTY_FREQUENCY_DATA;
+    }
+  }, []);
+
+  const getOutputByteFrequencyData = useCallback(() => {
+    try {
+      return conversationRef.current?.getOutputByteFrequencyData() ?? EMPTY_FREQUENCY_DATA;
+    } catch (error) {
+      trackError('VoiceContext', 'Failed to read ElevenLabs output frequency data', error);
+      return EMPTY_FREQUENCY_DATA;
+    }
   }, []);
 
   const value: VoiceContextType = {
@@ -512,6 +556,8 @@ export function VoiceProvider({
     disconnect,
     setVolume,
     clearError,
+    getInputByteFrequencyData,
+    getOutputByteFrequencyData,
     reconnection: {
       status: reconnectionHook.status,
       attempt: reconnectionHook.attempt,

@@ -65,12 +65,22 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
 })) as unknown as typeof HTMLCanvasElement.prototype.getContext;
 
 // Mock IntersectionObserver for components that use it
-global.IntersectionObserver = class IntersectionObserver {
+class MockIntersectionObserver implements IntersectionObserver {
+  readonly root = null;
+  readonly rootMargin = '0px';
+  readonly scrollMargin = '0px';
+  readonly thresholds = [];
+
   constructor() {}
   disconnect() {}
   observe() {}
+  takeRecords() {
+    return [];
+  }
   unobserve() {}
-};
+}
+
+global.IntersectionObserver = MockIntersectionObserver;
 
 // Mock ResizeObserver for components that use it
 global.ResizeObserver = class ResizeObserver {
@@ -96,7 +106,7 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock Web Audio API for AudioVisualizer component
-global.AudioContext = class AudioContext {
+class MockAudioContext {
   constructor() {}
   createAnalyser() {
     return {
@@ -114,7 +124,9 @@ global.AudioContext = class AudioContext {
       gain: { value: 1 },
     };
   }
-};
+}
+
+global.AudioContext = MockAudioContext as unknown as typeof AudioContext;
 
 // Mock navigator.mediaDevices for microphone access
 Object.defineProperty(navigator, 'mediaDevices', {

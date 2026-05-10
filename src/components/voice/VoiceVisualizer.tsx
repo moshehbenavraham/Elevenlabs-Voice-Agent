@@ -2,7 +2,6 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useVoice } from '@/contexts/VoiceContext';
 import { cn } from '@/lib/utils';
-import { trackError } from '@/lib/errorTracking';
 
 interface VoiceVisualizerProps {
   className?: string;
@@ -21,13 +20,13 @@ export function VoiceVisualizer({
   responsive = true,
 }: VoiceVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
-  const analyserRef = useRef<AnalyserNode>();
-  const dataArrayRef = useRef<Uint8Array>();
+  const animationRef = useRef<number | null>(null);
   const [isActive, setIsActive] = useState(false);
+  const isActiveRef = useRef(false);
   const smoothDataRef = useRef<number[]>(new Array(barCount).fill(0));
 
-  const { audioStream, isConnected, isSpeaking } = useVoice();
+  const { isConnected, isSpeaking, getInputByteFrequencyData, getOutputByteFrequencyData } =
+    useVoice();
 
   // Smooth the audio data for more organic movement
   const smoothData = useCallback((newData: number[], smoothFactor = 0.3) => {
@@ -37,42 +36,30 @@ export function VoiceVisualizer({
     });
   }, []);
 
-  // Initialize audio analysis
-  useEffect(() => {
-    if (!audioStream || !canvasRef.current) {
-      return;
+  const updateIsActive = useCallback((value: boolean) => {
+    if (isActiveRef.current !== value) {
+      isActiveRef.current = value;
+      setIsActive(value);
     }
+  }, []);
 
-    let audioContext: AudioContext | null = null;
-    let source: MediaStreamAudioSourceNode | null = null;
-
-    const setupAudio = () => {
-      try {
-        audioContext = new AudioContext();
-        source = audioContext.createMediaStreamSource(audioStream);
-        const analyser = audioContext.createAnalyser();
-
-        analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.85;
-        source.connect(analyser);
-
-        analyserRef.current = analyser;
-        dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
-        setIsActive(true);
-      } catch (error) {
-        trackError('VoiceVisualizer', 'Failed to initialize audio visualization', error);
+  const sampleFrequencyData = useCallback(
+    (frequencyData: Uint8Array) => {
+      if (frequencyData.length === 0) {
+        return [];
       }
-    };
 
-    const timeoutId = setTimeout(setupAudio, 0);
+      const data: number[] = [];
+      const step = Math.max(1, Math.floor(frequencyData.length / barCount));
 
-    return () => {
-      clearTimeout(timeoutId);
-      if (source) source.disconnect();
-      if (audioContext) audioContext.close();
-      setIsActive(false);
-    };
-  }, [audioStream]);
+      for (let i = 0; i < barCount; i++) {
+        data.push(frequencyData[i * step] || 0);
+      }
+
+      return data;
+    },
+    [barCount]
+  );
 
   // Draw organic waveform
   const drawWaveform = useCallback(
@@ -169,9 +156,9 @@ export function VoiceVisualizer({
     [smoothData, isSpeaking]
   );
 
-  // Animation loop for active audio
+  // Animation loop driven by ElevenLabs v1 frequency helpers.
   useEffect(() => {
-    if (!isActive || !canvasRef.current || !analyserRef.current || !dataArrayRef.current) {
+    if (!canvasRef.current) {
       return;
     }
 
@@ -179,20 +166,27 @@ export function VoiceVisualizer({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const analyser = analyserRef.current;
-    const dataArray = dataArrayRef.current;
-
     const animate = () => {
-      if (!isActive) return;
-
-      analyser.getByteFrequencyData(dataArray);
-
-      // Convert to array and sample for display
-      const data: number[] = [];
-      const step = Math.floor(dataArray.length / barCount);
-      for (let i = 0; i < barCount; i++) {
-        data.push(dataArray[i * step] || 0);
+      if (!isConnected) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        updateIsActive(false);
+        return;
       }
+
+      const frequencyData = isSpeaking ? getOutputByteFrequencyData() : getInputByteFrequencyData();
+      const sampledData = sampleFrequencyData(frequencyData);
+      const hasFrequencyData = sampledData.some((value) => value > 0);
+      updateIsActive(hasFrequencyData);
+
+      const data =
+        sampledData.length > 0
+          ? sampledData
+          : Array.from({ length: barCount }, (_, i) => {
+              const time = Date.now() / 1000;
+              const wave1 = Math.sin(time * 2 + i * 0.2) * 0.3 + 0.3;
+              const wave2 = Math.sin(time * 1.5 + i * 0.15) * 0.2;
+              return Math.max(0, (wave1 + wave2) * 255 * 0.3);
+            });
 
       drawWaveform(ctx, canvas.width, canvas.height, data);
       animationRef.current = requestAnimationFrame(animate);
@@ -205,42 +199,16 @@ export function VoiceVisualizer({
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [isActive, barCount, drawWaveform]);
-
-  // Idle animation when connected but no active audio
-  useEffect(() => {
-    if (isActive || !canvasRef.current || !isConnected) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const animateIdle = () => {
-      if (isActive) return;
-
-      const time = Date.now() / 1000;
-      const data: number[] = [];
-
-      for (let i = 0; i < barCount; i++) {
-        // Create gentle wave pattern
-        const wave1 = Math.sin(time * 2 + i * 0.2) * 0.3 + 0.3;
-        const wave2 = Math.sin(time * 1.5 + i * 0.15) * 0.2;
-        const combined = (wave1 + wave2) * 255 * 0.3;
-        data.push(Math.max(0, combined));
-      }
-
-      drawWaveform(ctx, canvas.width, canvas.height, data);
-      animationRef.current = requestAnimationFrame(animateIdle);
-    };
-
-    animateIdle();
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-    };
-  }, [isActive, isConnected, barCount, drawWaveform]);
+  }, [
+    barCount,
+    drawWaveform,
+    getInputByteFrequencyData,
+    getOutputByteFrequencyData,
+    isConnected,
+    isSpeaking,
+    sampleFrequencyData,
+    updateIsActive,
+  ]);
 
   return (
     <motion.div

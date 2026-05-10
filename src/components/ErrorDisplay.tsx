@@ -10,6 +10,8 @@ interface ErrorDisplayProps {
   onOpenSettings?: () => void;
 }
 
+type ErrorColor = 'red' | 'yellow' | 'orange';
+
 export const ErrorDisplay: FC<ErrorDisplayProps> = ({
   error,
   onRetry,
@@ -27,7 +29,7 @@ export const ErrorDisplay: FC<ErrorDisplayProps> = ({
         description: 'Your ElevenLabs Agent ID is not properly configured.',
         action: 'Open Settings',
         onAction: onOpenSettings,
-        color: 'yellow',
+        color: 'yellow' satisfies ErrorColor,
       };
     } else if (error.includes('network') || error.includes('connection')) {
       return {
@@ -36,7 +38,7 @@ export const ErrorDisplay: FC<ErrorDisplayProps> = ({
         description: 'Unable to connect to ElevenLabs. Please check your internet connection.',
         action: 'Retry',
         onAction: onRetry,
-        color: 'red',
+        color: 'red' satisfies ErrorColor,
       };
     } else if (error.includes('microphone') || error.includes('permission')) {
       return {
@@ -45,7 +47,7 @@ export const ErrorDisplay: FC<ErrorDisplayProps> = ({
         description: 'Please allow microphone access to use voice chat.',
         action: 'Request Access',
         onAction: onRetry,
-        color: 'orange',
+        color: 'orange' satisfies ErrorColor,
       };
     } else {
       return {
@@ -54,14 +56,14 @@ export const ErrorDisplay: FC<ErrorDisplayProps> = ({
         description: error,
         action: 'Retry',
         onAction: onRetry,
-        color: 'red',
+        color: 'red' satisfies ErrorColor,
       };
     }
   };
 
   const errorDetails = getErrorDetails();
   const Icon = errorDetails.icon;
-  const colorClasses = {
+  const colorClasses: Record<ErrorColor, string> = {
     red: 'border-red-500/50 bg-red-500/10 text-red-400',
     yellow: 'border-yellow-500/50 bg-yellow-500/10 text-yellow-400',
     orange: 'border-orange-500/50 bg-orange-500/10 text-orange-400',
@@ -76,7 +78,11 @@ export const ErrorDisplay: FC<ErrorDisplayProps> = ({
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
         className="fixed bottom-6 left-6 right-6 md:left-auto md:right-6 md:max-w-md z-50"
       >
-        <div className={`glass-enhanced p-4 rounded-xl border ${colorClasses[errorDetails.color]}`}>
+        <div
+          className={`glass-enhanced p-4 rounded-xl border ${
+            colorClasses[errorDetails.color as ErrorColor]
+          }`}
+        >
           <div className="flex items-start gap-3">
             <div className="flex-shrink-0">
               <Icon className="w-5 h-5 mt-0.5" />

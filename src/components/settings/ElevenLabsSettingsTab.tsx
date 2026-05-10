@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { ExternalLink, Check, AlertTriangle } from 'lucide-react';
+import { hasConfiguredValue } from '@/lib/configPlaceholders';
 
 /**
  * ElevenLabs settings tab
@@ -7,7 +8,7 @@ import { ExternalLink, Check, AlertTriangle } from 'lucide-react';
  */
 export const ElevenLabsSettingsTab: FC = () => {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
-  const isConfigured = agentId && agentId !== 'your_agent_id_here';
+  const isConfigured = hasConfiguredValue(agentId);
 
   return (
     <div className="space-y-6">

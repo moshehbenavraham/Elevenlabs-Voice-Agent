@@ -219,6 +219,12 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
   // Track if disconnect was intentional to prevent auto-reconnect
   const intentionalDisconnectRef = useRef(false);
 
+  // Track status for WebSocket callbacks so close handlers do not read stale render state.
+  const statusRef = useRef(state.status);
+  useEffect(() => {
+    statusRef.current = state.status;
+  }, [state.status]);
+
   // Voice selection state with localStorage persistence
   const [selectedVoice, setSelectedVoiceState] = useState(() => getSavedVoice('openai'));
   const selectedVoiceRef = useRef(selectedVoice);
@@ -773,7 +779,7 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
     } catch (error) {
       const errorMsg = parseMicrophoneError(error);
       trackError('OpenAIVoiceContext', 'Microphone initialization failed', error);
-      throw new Error(errorMsg);
+      throw new Error(errorMsg, { cause: error });
     }
   }, []);
 
@@ -853,11 +859,13 @@ export function OpenAIVoiceProvider({ children, onDisconnect }: OpenAIVoiceProvi
       ws.onclose = (event) => {
         debugLog('ws', `WebSocket closed: ${event.code} ${event.reason}`);
         // Only trigger reconnection if we were connected and it's not intentional
-        if (state.status === 'connected' && !intentionalDisconnectRef.current) {
+        if (statusRef.current === 'connected' && !intentionalDisconnectRef.current) {
+          wsRef.current = null;
           dispatch({ type: 'SET_STATUS', payload: 'idle' });
           // Trigger reconnection for abnormal closures
           reconnectionHook.onDisconnected(event.code);
         } else if (intentionalDisconnectRef.current) {
+          wsRef.current = null;
           dispatch({ type: 'SET_STATUS', payload: 'idle' });
           onDisconnect?.();
         }

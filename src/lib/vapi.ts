@@ -6,36 +6,54 @@
  * safe to expose in the frontend - no backend token exchange needed.
  */
 
-import Vapi from '@vapi-ai/web';
+import VapiClient from '@vapi-ai/web';
+import { hasConfiguredValue } from '@/lib/configPlaceholders';
 
 // Logging prefix for easy filtering in console
 const LOG_PREFIX = '[Vapi:SDK]';
+const DEBUG = import.meta.env.VITE_VAPI_DEBUG === 'true';
+
+function debugLog(...args: unknown[]) {
+  if (DEBUG) {
+    console.log(...args);
+  }
+}
+
+function debugWarn(...args: unknown[]) {
+  if (DEBUG) {
+    console.warn(...args);
+  }
+}
 
 const webToken = import.meta.env.VITE_VAPI_WEB_TOKEN;
+const isWebTokenConfigured = hasConfiguredValue(webToken);
+type VapiInstance = InstanceType<typeof VapiClient>;
+type VapiConstructor = new (token: string) => VapiInstance;
 
-console.log(`${LOG_PREFIX} Initializing Vapi SDK module...`);
-console.log(`${LOG_PREFIX} Web token configured:`, !!webToken);
-console.log(
+const VapiCtor = ((VapiClient as unknown as { default?: VapiConstructor }).default ??
+  VapiClient) as VapiConstructor;
+
+debugLog(`${LOG_PREFIX} Initializing Vapi SDK module...`);
+debugLog(`${LOG_PREFIX} Web token configured:`, isWebTokenConfigured);
+debugLog(
   `${LOG_PREFIX} Token preview:`,
-  webToken ? `${webToken.substring(0, 10)}...` : 'NOT SET'
+  isWebTokenConfigured ? `${webToken.substring(0, 10)}...` : 'NOT SET'
 );
 
-if (!webToken) {
-  console.warn(
-    `${LOG_PREFIX} VITE_VAPI_WEB_TOKEN not configured. Vapi voice provider will not work.`
-  );
+if (!isWebTokenConfigured) {
+  debugLog(`${LOG_PREFIX} VITE_VAPI_WEB_TOKEN not configured. Vapi provider disabled.`);
 }
 
 /**
  * Vapi SDK singleton instance
  * Initialized with the public web token from environment variables
  */
-export const vapi = webToken ? new Vapi(webToken) : null;
+export const vapi = isWebTokenConfigured ? new VapiCtor(webToken) : null;
 
 if (vapi) {
-  console.log(`${LOG_PREFIX} Vapi SDK instance created successfully`);
+  debugLog(`${LOG_PREFIX} Vapi SDK instance created successfully`);
 } else {
-  console.warn(`${LOG_PREFIX} Vapi SDK instance is NULL (no web token)`);
+  debugLog(`${LOG_PREFIX} Vapi SDK instance is NULL (no web token)`);
 }
 
 // Window augmentation for AudioContext storage
@@ -47,7 +65,7 @@ declare global {
 }
 
 // Enable debug mode for extra verbose logging
-window.__vapiDebugMode = true;
+window.__vapiDebugMode = DEBUG;
 
 /**
  * Pre-initialize AudioContext to prevent AudioWorklet failures.
@@ -58,7 +76,7 @@ window.__vapiDebugMode = true;
  * audio system is primed during a user gesture.
  */
 export function prepareAudioContext(): AudioContext | null {
-  console.log(`${LOG_PREFIX} prepareAudioContext() called`);
+  debugLog(`${LOG_PREFIX} prepareAudioContext() called`);
 
   try {
     const AudioContextClass =
@@ -66,33 +84,33 @@ export function prepareAudioContext(): AudioContext | null {
       (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
 
     if (!AudioContextClass) {
-      console.warn(`${LOG_PREFIX} AudioContext not supported in this browser`);
+      debugWarn(`${LOG_PREFIX} AudioContext not supported in this browser`);
       return null;
     }
 
     // Reuse existing context if available
     if (window.__vapiAudioContext) {
       const ctx = window.__vapiAudioContext;
-      console.log(`${LOG_PREFIX} Reusing existing AudioContext, state:`, ctx.state);
+      debugLog(`${LOG_PREFIX} Reusing existing AudioContext, state:`, ctx.state);
 
       if (ctx.state === 'suspended') {
-        console.log(`${LOG_PREFIX} AudioContext is suspended, attempting resume...`);
+        debugLog(`${LOG_PREFIX} AudioContext is suspended, attempting resume...`);
         ctx
           .resume()
           .then(() =>
-            console.log(`${LOG_PREFIX} AudioContext resumed successfully, new state:`, ctx.state)
+            debugLog(`${LOG_PREFIX} AudioContext resumed successfully, new state:`, ctx.state)
           )
-          .catch((e) => console.warn(`${LOG_PREFIX} Failed to resume AudioContext:`, e));
+          .catch((e) => debugWarn(`${LOG_PREFIX} Failed to resume AudioContext:`, e));
       }
       return ctx;
     }
 
     // Create new context during user gesture
-    console.log(`${LOG_PREFIX} Creating new AudioContext...`);
+    debugLog(`${LOG_PREFIX} Creating new AudioContext...`);
     const ctx = new AudioContextClass();
     window.__vapiAudioContext = ctx;
 
-    console.log(`${LOG_PREFIX} AudioContext created successfully:`, {
+    debugLog(`${LOG_PREFIX} AudioContext created successfully:`, {
       state: ctx.state,
       sampleRate: ctx.sampleRate,
       baseLatency: ctx.baseLatency,
@@ -110,18 +128,18 @@ export function prepareAudioContext(): AudioContext | null {
  * Cleanup AudioContext on app unmount
  */
 export function cleanupAudioContext(): void {
-  console.log(`${LOG_PREFIX} cleanupAudioContext() called`);
+  debugLog(`${LOG_PREFIX} cleanupAudioContext() called`);
 
   const ctx = window.__vapiAudioContext;
   if (ctx) {
-    console.log(`${LOG_PREFIX} Closing AudioContext, current state:`, ctx.state);
+    debugLog(`${LOG_PREFIX} Closing AudioContext, current state:`, ctx.state);
     ctx
       .close()
-      .then(() => console.log(`${LOG_PREFIX} AudioContext closed successfully`))
-      .catch((e) => console.warn(`${LOG_PREFIX} Error closing AudioContext:`, e));
+      .then(() => debugLog(`${LOG_PREFIX} AudioContext closed successfully`))
+      .catch((e) => debugWarn(`${LOG_PREFIX} Error closing AudioContext:`, e));
     delete window.__vapiAudioContext;
   } else {
-    console.log(`${LOG_PREFIX} No AudioContext to cleanup`);
+    debugLog(`${LOG_PREFIX} No AudioContext to cleanup`);
   }
 }
 
@@ -134,7 +152,7 @@ export function getVapiDebugInfo(): Record<string, unknown> {
 
   return {
     sdkInitialized: !!vapi,
-    webTokenConfigured: !!webToken,
+    webTokenConfigured: isWebTokenConfigured,
     audioContext: audioCtx
       ? {
           state: audioCtx.state,

@@ -1,8 +1,6 @@
 import { useContext } from 'react';
-import {
-  UltravoxVoiceContext,
-  type UltravoxVoiceContextValue,
-} from '@/contexts/UltravoxVoiceContext';
+import { UltravoxVoiceContext } from '@/contexts/UltravoxVoiceContext';
+import type { UltravoxVoiceContextValue } from '@/types';
 
 /**
  * Hook to access Ultravox Voice context.

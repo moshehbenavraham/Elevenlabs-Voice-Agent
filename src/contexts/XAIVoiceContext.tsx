@@ -782,7 +782,7 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
     } catch (error) {
       const errorMsg = parseMicrophoneError(error);
       trackError('XAIVoiceContext', 'Microphone initialization failed', error);
-      throw new Error(errorMsg);
+      throw new Error(errorMsg, { cause: error });
     }
   }, []);
 
@@ -863,11 +863,13 @@ export function XAIVoiceProvider({ children, onDisconnect }: XAIVoiceProviderPro
       ws.onclose = (event) => {
         debugLog('ws', `WebSocket closed: ${event.code} ${event.reason}`);
         // Only trigger reconnection if we were connected and it's not intentional
-        if (state.status === 'connected' && !intentionalDisconnectRef.current) {
+        if (statusRef.current === 'connected' && !intentionalDisconnectRef.current) {
+          wsRef.current = null;
           dispatch({ type: 'SET_STATUS', payload: 'idle' });
           // Trigger reconnection for abnormal closures
           reconnectionHook.onDisconnected(event.code);
         } else if (intentionalDisconnectRef.current) {
+          wsRef.current = null;
           dispatch({ type: 'SET_STATUS', payload: 'idle' });
           onDisconnect?.();
         }

@@ -7,6 +7,7 @@
 export {
   XAIProvider,
   XAIVoiceButton,
+  XAIVoiceSelector,
   XAIVoiceStatus,
   XAIVoiceVisualizer,
   XAIEmptyState,
@@ -23,6 +24,7 @@ export {
 export {
   OpenAIProvider,
   OpenAIVoiceButton,
+  OpenAIVoiceSelector,
   OpenAIVoiceStatus,
   OpenAIVoiceVisualizer,
   OpenAIEmptyState,

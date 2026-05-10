@@ -21,10 +21,12 @@ import {
 import {
   XAIProvider,
   XAIVoiceButton,
+  XAIVoiceSelector,
   XAIVoiceStatus,
   XAIVoiceVisualizer,
   OpenAIProvider,
   OpenAIVoiceButton,
+  OpenAIVoiceSelector,
   OpenAIVoiceStatus,
   OpenAIVoiceVisualizer,
   UltravoxProvider,
@@ -44,6 +46,9 @@ import {
 import { useVoice } from '@/contexts/VoiceContext';
 import { useProvider } from '@/contexts/ProviderContext';
 import { toast } from '@/hooks/use-toast';
+import { useOpenAIVoice } from '@/hooks/useOpenAIVoice';
+import { useXAIVoice } from '@/hooks/useXAIVoice';
+import { hasConfiguredValue, isPlaceholderConfigValue } from '@/lib/configPlaceholders';
 import { trackError } from '@/lib/errorTracking';
 import type { ProviderType } from '@/types';
 
@@ -53,6 +58,28 @@ function debugLog(context: string, message: string, data?: unknown) {
   if (DEBUG) {
     console.log(`[Index:${context}]`, message, data ?? '');
   }
+}
+
+function EndConversationButton({ onClick }: { onClick: () => Promise<void> | void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-2 px-6 py-3 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all duration-200"
+    >
+      <X className="w-4 h-4" />
+      <span className="text-sm">End conversation</span>
+    </button>
+  );
+}
+
+function OpenAIEndConversationButton() {
+  const { disconnect } = useOpenAIVoice();
+  return <EndConversationButton onClick={disconnect} />;
+}
+
+function XAIEndConversationButton() {
+  const { disconnect } = useXAIVoice();
+  return <EndConversationButton onClick={disconnect} />;
 }
 
 export const Index = () => {
@@ -250,20 +277,22 @@ export const Index = () => {
     });
   }, []);
 
-  // Check if agent ID is configured on mount
+  // Check if the active ElevenLabs provider is configured
   useEffect(() => {
+    const shouldPromptForElevenLabs =
+      activeProvider === 'elevenlabs' || activeProvider === 'elevenlabs-sdk';
     const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
     debugLog('mount', 'Checking configuration', {
+      activeProvider,
       hasAgentId: !!agentId,
-      isPlaceholder: agentId === 'your_agent_id_here',
+      isPlaceholder: isPlaceholderConfigValue(agentId),
       agentIdPreview: agentId ? agentId.substring(0, 8) + '...' : 'not set',
     });
 
-    if (!agentId || agentId === 'your_agent_id_here') {
-      debugLog('mount', 'Agent ID not configured, will show config modal');
-      setTimeout(() => setShowConfig(true), 1000);
+    if (shouldPromptForElevenLabs && !hasConfiguredValue(agentId)) {
+      debugLog('mount', 'Agent ID not configured');
     }
-  }, []);
+  }, [activeProvider]);
 
   // Handle connection success
   const handleConnect = () => {
@@ -333,7 +362,7 @@ export const Index = () => {
 
   // Check for missing configuration
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
-  const isConfigured = agentId && agentId !== 'your_agent_id_here';
+  const isConfigured = hasConfiguredValue(agentId);
 
   // Main render
   return (
@@ -558,6 +587,15 @@ export const Index = () => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
+                      className="w-full max-w-md mx-auto"
+                    >
+                      <XAIVoiceSelector />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.45, type: 'spring', stiffness: 200 }}
                       className="py-8"
                     >
                       <XAIVoiceButton size="lg" onConnect={handleXAIConnect} />
@@ -594,6 +632,14 @@ export const Index = () => {
                           Grok is Listening
                         </h2>
                         <p className="text-zinc-500 text-sm">Speak naturally - xAI is processing</p>
+                      </motion.div>
+
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.25 }}
+                      >
+                        <XAIVoiceSelector />
                       </motion.div>
 
                       <motion.div
@@ -635,13 +681,7 @@ export const Index = () => {
                         transition={{ delay: 0.6 }}
                         className="flex justify-center pt-4"
                       >
-                        <button
-                          onClick={handleXAIDisconnect}
-                          className="flex items-center gap-2 px-6 py-3 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all duration-200"
-                        >
-                          <X className="w-4 h-4" />
-                          <span className="text-sm">End conversation</span>
-                        </button>
+                        <XAIEndConversationButton />
                       </motion.div>
                     </div>
                   </div>
@@ -680,6 +720,15 @@ export const Index = () => {
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.4, type: 'spring', stiffness: 200 }}
+                      className="w-full max-w-md mx-auto"
+                    >
+                      <OpenAIVoiceSelector />
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.45, type: 'spring', stiffness: 200 }}
                       className="py-8"
                     >
                       <OpenAIVoiceButton size="lg" onConnect={handleOpenAIConnect} />
@@ -721,6 +770,14 @@ export const Index = () => {
                       </motion.div>
 
                       <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.25 }}
+                      >
+                        <OpenAIVoiceSelector />
+                      </motion.div>
+
+                      <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
@@ -759,13 +816,7 @@ export const Index = () => {
                         transition={{ delay: 0.6 }}
                         className="flex justify-center pt-4"
                       >
-                        <button
-                          onClick={handleOpenAIDisconnect}
-                          className="flex items-center gap-2 px-6 py-3 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-all duration-200"
-                        >
-                          <X className="w-4 h-4" />
-                          <span className="text-sm">End conversation</span>
-                        </button>
+                        <OpenAIEndConversationButton />
                       </motion.div>
                     </div>
                   </div>

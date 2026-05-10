@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
+import type * as React from 'react';
+import { hasConfiguredValue } from '@/lib/configPlaceholders';
 
 // Declare custom element for TypeScript
-declare global {
+declare module 'react' {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace JSX {
     interface IntrinsicElements {
@@ -33,9 +35,12 @@ interface VoiceWidgetProps {
 
 export function VoiceWidget({ className }: VoiceWidgetProps) {
   const scriptLoaded = useRef(false);
+  const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
+  const isConfigured = hasConfiguredValue(agentId);
 
   // Load the widget script dynamically
   useEffect(() => {
+    if (!isConfigured) return;
     if (scriptLoaded.current) return;
 
     const existingScript = document.querySelector('script[src*="convai-widget-embed"]');
@@ -48,10 +53,9 @@ export function VoiceWidget({ className }: VoiceWidgetProps) {
     }
 
     scriptLoaded.current = true;
-  }, []);
+  }, [isConfigured]);
 
   // Read configuration from environment
-  const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
   const orbColor1 = import.meta.env.VITE_WIDGET_ORB_COLOR_1;
   const orbColor2 = import.meta.env.VITE_WIDGET_ORB_COLOR_2;
   const variant = import.meta.env.VITE_WIDGET_VARIANT;
@@ -64,6 +68,10 @@ export function VoiceWidget({ className }: VoiceWidgetProps) {
   const overrideVoiceId = import.meta.env.VITE_WIDGET_OVERRIDE_VOICE_ID;
   const overrideLanguage = import.meta.env.VITE_WIDGET_OVERRIDE_LANGUAGE;
   const overrideFirstMessage = import.meta.env.VITE_WIDGET_OVERRIDE_FIRST_MESSAGE;
+
+  if (!isConfigured) {
+    return null;
+  }
 
   return (
     <div className={className}>

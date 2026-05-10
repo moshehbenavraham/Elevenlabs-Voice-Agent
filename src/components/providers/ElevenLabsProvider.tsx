@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { AlertCircle, Settings } from 'lucide-react';
+import { hasConfiguredValue } from '@/lib/configPlaceholders';
 import { cn } from '@/lib/utils';
 
 /**
@@ -9,7 +10,7 @@ import { cn } from '@/lib/utils';
 // eslint-disable-next-line react-refresh/only-export-components
 export function checkElevenLabsConfiguration(): boolean {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
-  return Boolean(agentId && agentId !== 'your_agent_id_here');
+  return hasConfiguredValue(agentId);
 }
 
 /**

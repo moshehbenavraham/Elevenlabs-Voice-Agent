@@ -226,6 +226,8 @@ export function OpenAIVoiceButton({
         ref={buttonRef}
         onClick={handleClick}
         disabled={isLoading}
+        data-testid="voice-button"
+        data-state={state}
         className={cn(
           config.button,
           'relative z-10 rounded-full',
@@ -247,6 +249,7 @@ export function OpenAIVoiceButton({
         whileTap={{ scale: isLoading ? 1 : 0.98 }}
         aria-label={getAriaLabel()}
         aria-pressed={isConnected}
+        aria-busy={isLoading}
         role="button"
       >
         {/* Inner gradient */}
@@ -329,6 +332,7 @@ export function OpenAIVoiceButton({
         transition={{ delay: 0.2 }}
       >
         <span
+          data-testid="voice-button-status"
           className={cn('font-mono text-xs tracking-wide uppercase', {
             'text-zinc-500': state === 'idle',
             'text-violet-400/80': state === 'loading',
@@ -506,7 +510,7 @@ export function OpenAIVoiceVisualizer({
   responsive = true,
 }: OpenAIVoiceVisualizerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | null>(null);
   const smoothDataRef = useRef<number[]>(new Array(barCount).fill(0));
 
   const { isConnected, isSpeaking, getAnalyserNode } = useOpenAIVoice();

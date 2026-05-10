@@ -155,7 +155,7 @@ export function createAudioBuffer(
   sampleRate: number = XAI_SAMPLE_RATE
 ): AudioBuffer {
   const audioBuffer = audioContext.createBuffer(XAI_CHANNELS, float32Data.length, sampleRate);
-  audioBuffer.copyToChannel(float32Data, 0);
+  audioBuffer.copyToChannel(new Float32Array(float32Data), 0);
   return audioBuffer;
 }
 

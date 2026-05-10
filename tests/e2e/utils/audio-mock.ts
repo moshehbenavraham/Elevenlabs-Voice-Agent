@@ -99,6 +99,18 @@ export const audioMockScript = `
     dispatchEvent() { return true; }
   }
 
+  function createNativeMediaStream() {
+    try {
+      if (typeof window.MediaStream === 'function') {
+        return new window.MediaStream();
+      }
+    } catch (error) {
+      console.warn('[E2E Mock] Failed to create native MediaStream:', error);
+    }
+
+    return new MockMediaStream([new MockMediaStreamTrack('audio')]);
+  }
+
   // Mock MediaDevices.getUserMedia
   const originalGetUserMedia = navigator.mediaDevices?.getUserMedia?.bind(navigator.mediaDevices);
 
@@ -180,13 +192,43 @@ export const audioMockScript = `
     disconnect() {}
   }
 
-  class MockAudioContext {
+  class MockMediaStreamDestination {
     constructor() {
+      this.stream = createNativeMediaStream();
+      this.channelCount = 2;
+      this.channelCountMode = 'explicit';
+      this.channelInterpretation = 'speakers';
+    }
+
+    connect() { return this; }
+    disconnect() {}
+  }
+
+  class MockAudioWorkletNode {
+    constructor() {
+      this.port = {
+        onmessage: null,
+        postMessage: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        start: () => {}
+      };
+    }
+
+    connect() { return this; }
+    disconnect() {}
+  }
+
+  class MockAudioContext {
+    constructor(options = {}) {
       this.state = 'running';
-      this.sampleRate = 48000;
+      this.sampleRate = options.sampleRate || 48000;
       this.currentTime = 0;
       this.baseLatency = 0.01;
       this.destination = { maxChannelCount: 2 };
+      this.audioWorklet = {
+        addModule: () => Promise.resolve()
+      };
       this._intervalId = null;
 
       // Increment currentTime
@@ -205,6 +247,10 @@ export const audioMockScript = `
 
     createMediaStreamSource() {
       return new MockMediaStreamSource();
+    }
+
+    createMediaStreamDestination() {
+      return new MockMediaStreamDestination();
     }
 
     createOscillator() {
@@ -232,10 +278,10 @@ export const audioMockScript = `
     decodeAudioData(buffer) {
       return Promise.resolve({
         duration: 1,
-        length: 48000,
+        length: this.sampleRate,
         numberOfChannels: 1,
-        sampleRate: 48000,
-        getChannelData: () => new Float32Array(48000)
+        sampleRate: this.sampleRate,
+        getChannelData: () => new Float32Array(this.sampleRate)
       });
     }
 
@@ -263,12 +309,15 @@ export const audioMockScript = `
 
   window.AudioContext = MockAudioContext;
   window.webkitAudioContext = MockAudioContext;
+  window.AudioWorkletNode = MockAudioWorkletNode;
 
   // Expose for testing
   window.__E2E_AUDIO_MOCK__ = {
     MockMediaStream,
     MockMediaStreamTrack,
     MockAudioContext,
+    MockMediaStreamDestination,
+    MockAudioWorkletNode,
     originalGetUserMedia
   };
 
@@ -283,6 +332,8 @@ export interface E2EAudioMock {
   MockMediaStream: typeof MediaStream;
   MockMediaStreamTrack: typeof MediaStreamTrack;
   MockAudioContext: typeof AudioContext;
+  MockMediaStreamDestination: unknown;
+  MockAudioWorkletNode: typeof AudioWorkletNode;
   originalGetUserMedia?: typeof navigator.mediaDevices.getUserMedia;
 }
 

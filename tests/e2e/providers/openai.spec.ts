@@ -118,7 +118,7 @@ test.describe('OpenAI Provider', () => {
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
       // Voice selector should be disabled during active connection
-      await expect(voicePage.voiceSelector).toHaveAttribute('data-disabled', 'true');
+      await expect(voicePage.voiceSelector).toBeDisabled();
     });
   });
 

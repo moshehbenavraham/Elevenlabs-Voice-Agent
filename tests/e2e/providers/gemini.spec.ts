@@ -22,6 +22,12 @@ test.describe('Gemini Provider', () => {
 
     voicePage = new VoicePage(page);
     await voicePage.goto();
+
+    test.skip(
+      await voicePage.providerTabGemini.isDisabled(),
+      'Gemini provider is disabled by VITE_GEMINI_ENABLED=false'
+    );
+
     await voicePage.selectProvider('gemini');
   });
 
@@ -120,7 +126,7 @@ test.describe('Gemini Provider', () => {
       await voicePage.waitForVoiceButtonState('connected', 10000);
 
       // Voice selector should be disabled during active connection
-      await expect(voicePage.voiceSelector).toHaveAttribute('data-disabled', 'true');
+      await expect(voicePage.voiceSelector).toBeDisabled();
     });
   });
 

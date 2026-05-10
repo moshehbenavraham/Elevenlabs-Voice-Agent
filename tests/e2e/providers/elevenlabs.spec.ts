@@ -64,17 +64,8 @@ test.describe('ElevenLabs Provider', () => {
     });
 
     test('should display start conversation button', async ({ page }) => {
-      const startButton = page.getByRole('button', { name: /start|conversation/i });
-      // If configured, start button should be visible
-      // If not configured, may show setup message
-      const isConfigured = await page.evaluate(() => {
-        const agentId = import.meta.env?.VITE_ELEVENLABS_AGENT_ID;
-        return agentId && agentId !== 'your_agent_id_here';
-      });
-
-      if (isConfigured) {
-        await expect(startButton).toBeVisible();
-      }
+      const startButton = page.getByRole('button', { name: /begin conversation/i });
+      await expect(startButton).toBeVisible();
     });
   });
 

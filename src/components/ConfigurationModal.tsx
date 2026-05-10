@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, ExternalLink, X, Check, AlertTriangle } from 'lucide-react';
+import { hasConfiguredValue } from '@/lib/configPlaceholders';
 
 interface ConfigurationModalProps {
   isOpen: boolean;
@@ -9,7 +10,7 @@ interface ConfigurationModalProps {
 
 export const ConfigurationModal: FC<ConfigurationModalProps> = ({ isOpen, onClose }) => {
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
-  const isConfigured = agentId && agentId !== 'your_agent_id_here';
+  const isConfigured = hasConfiguredValue(agentId);
 
   return (
     <AnimatePresence>

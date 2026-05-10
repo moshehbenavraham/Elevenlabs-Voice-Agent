@@ -12,10 +12,8 @@ test.describe('Provider Render', () => {
     await mockedPage.goto('/');
     await mockedPage.waitForLoadState('networkidle');
 
-    // Find and click ElevenLabs tab if it exists
-    const elevenLabsTab = mockedPage.locator(
-      '[role="tab"]:has-text("ElevenLabs"), [role="tab"]:has-text("Eleven")'
-    );
+    // Find and click the primary ElevenLabs widget tab if it exists
+    const elevenLabsTab = mockedPage.getByTestId('provider-tab-elevenlabs');
 
     if ((await elevenLabsTab.count()) > 0) {
       await elevenLabsTab.click();
@@ -38,9 +36,7 @@ test.describe('Provider Render', () => {
     await mockedPage.waitForLoadState('networkidle');
 
     // Find and click OpenAI tab if it exists
-    const openAITab = mockedPage.locator(
-      '[role="tab"]:has-text("OpenAI"), [role="tab"]:has-text("GPT")'
-    );
+    const openAITab = mockedPage.getByTestId('provider-tab-openai');
 
     if ((await openAITab.count()) > 0) {
       await openAITab.click();
@@ -62,9 +58,7 @@ test.describe('Provider Render', () => {
     await mockedPage.waitForLoadState('networkidle');
 
     // Find and click xAI tab if it exists
-    const xAITab = mockedPage.locator(
-      '[role="tab"]:has-text("xAI"), [role="tab"]:has-text("Grok")'
-    );
+    const xAITab = mockedPage.getByTestId('provider-tab-xai');
 
     if ((await xAITab.count()) > 0) {
       await xAITab.click();

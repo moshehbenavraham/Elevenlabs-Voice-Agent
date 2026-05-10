@@ -22,7 +22,7 @@ export const mockResponses = {
     },
   },
   elevenlabs: {
-    signed_url:
+    signedUrl:
       'wss://api.elevenlabs.io/v1/convai/conversation?agent_id=mock-agent&signature=mock-sig',
   },
   gemini: {

@@ -13,6 +13,7 @@ import {
 import { VapiVoiceProvider, useVapiVoiceContext } from '@/contexts/VapiVoiceContext';
 import { VapiCallStatus } from '@/types/vapi';
 import { prepareAudioContext, getVapiDebugInfo } from '@/lib/vapi';
+import { hasConfiguredValue } from '@/lib/configPlaceholders';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 
@@ -26,7 +27,7 @@ const LOG_PREFIX = '[Vapi:UI]';
 // eslint-disable-next-line react-refresh/only-export-components
 export function checkVapiConfiguration(): boolean {
   const webToken = import.meta.env.VITE_VAPI_WEB_TOKEN;
-  const isConfigured = !!webToken && webToken !== 'your-vapi-web-token';
+  const isConfigured = hasConfiguredValue(webToken);
   console.log(`${LOG_PREFIX} checkVapiConfiguration():`, isConfigured);
   return isConfigured;
 }
@@ -323,6 +324,8 @@ export function VapiButton({ className, size = 'lg', onConnect, onDisconnect }: 
         ref={buttonRef}
         onClick={handleClick}
         disabled={isLoading}
+        data-testid="voice-button"
+        data-state={state}
         className={cn(
           config.button,
           'relative z-10 rounded-full',
@@ -345,6 +348,7 @@ export function VapiButton({ className, size = 'lg', onConnect, onDisconnect }: 
         whileTap={{ scale: isLoading ? 1 : 0.98 }}
         aria-label={getAriaLabel()}
         aria-pressed={isConnected}
+        aria-busy={isLoading}
         role="button"
       >
         {/* Inner gradient */}
@@ -428,6 +432,7 @@ export function VapiButton({ className, size = 'lg', onConnect, onDisconnect }: 
         transition={{ delay: 0.2 }}
       >
         <span
+          data-testid="voice-button-status"
           className={cn('font-mono text-xs tracking-wide uppercase', {
             'text-zinc-500': state === 'idle',
             'text-amber-400/80': state === 'loading',

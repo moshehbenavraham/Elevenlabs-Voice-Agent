@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, MicOff, Loader2, Phone } from 'lucide-react';
 import { useVoice } from '@/contexts/VoiceContext';
+import { hasConfiguredValue } from '@/lib/configPlaceholders';
 import { cn } from '@/lib/utils';
 
 interface VoiceButtonProps {
@@ -31,7 +32,7 @@ export function VoiceButton({ className, size = 'lg', onConnect, onDisconnect }:
       onDisconnect?.();
     } else {
       const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
-      if (!agentId || agentId === 'your_agent_id_here') {
+      if (!hasConfiguredValue(agentId)) {
         return;
       }
       await connect(agentId);

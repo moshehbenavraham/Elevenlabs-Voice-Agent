@@ -111,7 +111,7 @@ export class GeminiAudioStreamer extends EventEmitter<GeminiAudioStreamerEvents>
 
     // Create AudioBuffer from samples
     const buffer = this.audioContext.createBuffer(1, float32Data.length, this.config.sampleRate);
-    buffer.copyToChannel(float32Data, 0);
+    buffer.copyToChannel(new Float32Array(float32Data), 0);
 
     // Create source node
     const source = this.audioContext.createBufferSource();

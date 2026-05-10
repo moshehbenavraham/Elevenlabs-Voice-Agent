@@ -267,7 +267,7 @@ test.describe('Conversation Panel Component', () => {
 
       // Count should update
       countText = voicePage.conversationPanel.locator('text=/\\d+ messages?/');
-      // Should show 1 or more messages
+      await expect(countText).toContainText(/[1-9]\d*/);
     });
 
     test('should use singular "message" for 1 message', async ({ page }) => {

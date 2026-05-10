@@ -13,7 +13,7 @@ test.describe('Tab Navigation', () => {
     await mockedPage.waitForLoadState('networkidle');
 
     // Find tab buttons
-    const tabs = mockedPage.locator('[role="tab"]');
+    const tabs = mockedPage.locator('[role="tab"]:not([disabled])');
     const tabCount = await tabs.count();
 
     // Skip if no tabs (single provider mode)
@@ -40,7 +40,7 @@ test.describe('Tab Navigation', () => {
     await mockedPage.goto('/');
     await mockedPage.waitForLoadState('networkidle');
 
-    const tabs = mockedPage.locator('[role="tab"]');
+    const tabs = mockedPage.locator('[role="tab"]:not([disabled])');
     const tabCount = await tabs.count();
 
     if (tabCount < 2) {
@@ -76,7 +76,7 @@ test.describe('Tab Navigation', () => {
     await mockedPage.goto('/');
     await mockedPage.waitForLoadState('networkidle');
 
-    const tabs = mockedPage.locator('[role="tab"]');
+    const tabs = mockedPage.locator('[role="tab"]:not([disabled])');
     const tabCount = await tabs.count();
 
     if (tabCount < 2) {
@@ -102,7 +102,7 @@ test.describe('Tab Navigation', () => {
     await mockedPage.goto('/');
     await mockedPage.waitForLoadState('networkidle');
 
-    const tabs = mockedPage.locator('[role="tab"]');
+    const tabs = mockedPage.locator('[role="tab"]:not([disabled])');
     const tabCount = await tabs.count();
 
     if (tabCount < 2) {
@@ -130,7 +130,7 @@ test.describe('Tab Navigation', () => {
     await mockedPage.goto('/');
     await mockedPage.waitForLoadState('networkidle');
 
-    const tabs = mockedPage.locator('[role="tab"]');
+    const tabs = mockedPage.locator('[role="tab"]:not([disabled])');
     const tabCount = await tabs.count();
 
     if (tabCount < 2) {
@@ -162,7 +162,7 @@ test.describe('Tab Navigation', () => {
     await mockedPage.goto('/');
     await mockedPage.waitForLoadState('networkidle');
 
-    const tabs = mockedPage.locator('[role="tab"]');
+    const tabs = mockedPage.locator('[role="tab"]:not([disabled])');
     const tabCount = await tabs.count();
 
     if (tabCount === 0) {
@@ -208,7 +208,7 @@ test.describe('Tab Navigation', () => {
     await expect(tabList).toBeVisible();
 
     // Verify tabs have required ARIA attributes
-    const tabs = mockedPage.locator('[role="tab"]');
+    const tabs = mockedPage.locator('[role="tab"]:not([disabled])');
     const tabCount = await tabs.count();
 
     for (let i = 0; i < tabCount; i++) {

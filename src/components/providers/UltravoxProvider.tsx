@@ -225,6 +225,8 @@ export function UltravoxVoiceButton({
         ref={buttonRef}
         onClick={handleClick}
         disabled={isLoading}
+        data-testid="voice-button"
+        data-state={state}
         className={cn(
           config.button,
           'relative z-10 rounded-full',
@@ -246,6 +248,7 @@ export function UltravoxVoiceButton({
         whileTap={{ scale: isLoading ? 1 : 0.98 }}
         aria-label={getAriaLabel()}
         aria-pressed={isConnected}
+        aria-busy={isLoading}
         role="button"
       >
         {/* Inner gradient */}
@@ -328,6 +331,7 @@ export function UltravoxVoiceButton({
         transition={{ delay: 0.2 }}
       >
         <span
+          data-testid="voice-button-status"
           className={cn('font-mono text-xs tracking-wide uppercase', {
             'text-zinc-500': state === 'idle',
             'text-teal-400/80': state === 'loading',
