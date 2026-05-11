@@ -1,7 +1,7 @@
 # Security & Compliance
 
 > Cumulative security posture and GDPR compliance record. Updated between phases via /carryforward.
-> **Line budget**: 1000 max | **Last updated**: Phase 01 (2026-05-11)
+> **Line budget**: 1000 max | **Last updated**: Phase 02 (2026-05-11)
 
 ---
 
@@ -11,10 +11,10 @@
 
 | Metric           | Value |
 | ---------------- | ----- |
-| Open Findings    | 3     |
+| Open Findings    | 2     |
 | Critical/High    | 0     |
-| Medium/Low       | 3     |
-| Phases Audited   | 1     |
+| Medium/Low       | 2     |
+| Phases Audited   | 2     |
 | Last Clean Phase | P00   |
 
 ---
@@ -45,55 +45,49 @@ None.
   - Status: Open
   - Opened: P01 (2026-05-11)
 
-- **[P02-S01] Translation token exchange remains to be implemented**
-  - Severity: Low
-  - File: `.spec_system/PRD/PRD.md:1`
-  - Description: The next translation phase must mint short-lived client secrets server-side and keep `OPENAI_API_KEY` out of browser-visible state.
-  - Remediation: Add a browser-safe translation token route and keep the secret boundary server-only.
-  - Status: Open
-  - Opened: P02 (2026-05-11)
-
 ---
 
 ## GDPR And Privacy
 
 ### Overall: PASS
 
-| Category                   | Status | Details                                                                                                                                              |
-| -------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Data Collection & Purpose  | PASS   | Phase 01 did not add persistent user-data collection or storage.                                                                                     |
-| Consent Mechanism          | N/A    | No consumer-facing personal data collection flow was introduced.                                                                                     |
-| Data Minimization          | PASS   | Observability additions keep request metadata bounded and avoid bodies, cookies, authorization headers, provider keys, query strings, and raw audio. |
-| Right to Erasure           | N/A    | No new persistent personal-data store was added.                                                                                                     |
-| PII in Logs                | PASS   | Reviewed code paths avoid raw body logging and secret-bearing headers.                                                                               |
-| Third-Party Data Transfers | N/A    | No new external monitoring or error-tracking provider was added.                                                                                     |
+| Category                   | Status | Details                                                                                                                                                     |
+| -------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Data Collection & Purpose  | PASS   | Phase 02 did not add persistent user-data collection or storage.                                                                                            |
+| Consent Mechanism          | N/A    | No consumer-facing personal data collection flow was introduced.                                                                                            |
+| Data Minimization          | PASS   | Observability and translation-session changes keep request metadata bounded and avoid bodies, cookies, authorization headers, provider keys, and raw audio. |
+| Right to Erasure           | N/A    | No new persistent personal-data store was added.                                                                                                            |
+| PII in Logs                | PASS   | Reviewed code paths avoid raw body logging and secret-bearing headers.                                                                                      |
+| Third-Party Data Transfers | N/A    | No new external monitoring or error-tracking provider was added.                                                                                            |
 
 ### Personal Data Inventory
 
-None. Phase 01 did not add new personal data collection, persistent storage, or sharing paths.
+None. Phase 02 did not add new personal data collection, persistent storage, or sharing paths.
 
 ---
 
 ## Phase History
 
-| Phase | Result                   | Session Count | Summary                                                                                                                                                                                                                                      |
-| ----- | ------------------------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P01   | PASS with residual risks | 5             | Production deployment, CI/CD, cloud deployment, observability, and security hardening were reconciled and validated. Residual risks remain for horizontal rate limiting, CSP tightening, and future browser-safe translation token exchange. |
+| Phase | Result                   | Session Count | Summary                                                                                                                                                                                                                               |
+| ----- | ------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P02   | PASS with residual risks | 4             | Translation contract, shared config, provider scaffold, and backend/config tests were completed. The browser-safe translation boundary was implemented and validated, but process-local rate limiting and CSP tightening remain open. |
+| P01   | PASS with residual risks | 5             | Production deployment, CI/CD, cloud deployment, observability, and security hardening were reconciled and validated. Residual risks remain for horizontal rate limiting and CSP tightening.                                           |
 
 ---
 
 ## Resolved Findings
 
-| Phase | Finding                                             | Resolution                                                                                  |
-| ----- | --------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| P01   | Production CORS used an implicit localhost fallback | Replaced with strict exact-origin production CORS and same-origin defaults.                 |
-| P01   | Security headers were missing on API responses      | Added CSP, HSTS, frame prevention, no-sniff, referrer policy, permissions policy, and COOP. |
-| P01   | Stale token/session limiter paths                   | Centralized the real token/session routes and applied strict limiter coverage there.        |
-| P01   | Provider routes accepted unbounded input            | Added bounded validation before upstream calls.                                             |
-| P01   | Gemini returned a raw server API key                | Blocked raw key exposure in production.                                                     |
-| P01   | Raw upstream bodies could leak to clients or logs   | Replaced raw body handling with stable provider error mapping.                              |
-| P01   | Function execution logged raw arguments/results     | Replaced logs with sanitized summaries only.                                                |
-| P01   | Malformed JSON lacked request ID traceability       | Moved API request logging before JSON parsing.                                              |
+| Phase | Finding                                             | Resolution                                                                                                |
+| ----- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| P02   | Translation token exchange remained browser-visible | Added a dedicated translation client-secret route and kept `OPENAI_API_KEY` out of browser-visible state. |
+| P01   | Production CORS used an implicit localhost fallback | Replaced with strict exact-origin production CORS and same-origin defaults.                               |
+| P01   | Security headers were missing on API responses      | Added CSP, HSTS, frame prevention, no-sniff, referrer policy, permissions policy, and COOP.               |
+| P01   | Stale token/session limiter paths                   | Centralized the real token/session routes and applied strict limiter coverage there.                      |
+| P01   | Provider routes accepted unbounded input            | Added bounded validation before upstream calls.                                                           |
+| P01   | Gemini returned a raw server API key                | Blocked raw key exposure in production.                                                                   |
+| P01   | Raw upstream bodies could leak to clients or logs   | Replaced raw body handling with stable provider error mapping.                                            |
+| P01   | Function execution logged raw arguments/results     | Replaced logs with sanitized summaries only.                                                              |
+| P01   | Malformed JSON lacked request ID traceability       | Moved API request logging before JSON parsing.                                                            |
 
 ---
 

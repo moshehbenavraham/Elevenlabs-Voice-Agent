@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   OPENAI_TRANSLATION_BACKEND_SESSION_ROUTE,
   OPENAI_TRANSLATION_DEFAULT_AUDIO_MIX_PERCENT,
@@ -6,24 +6,46 @@ import {
   OPENAI_TRANSLATION_INPUT_TRANSCRIPTION_MODEL,
   OPENAI_TRANSLATION_LANGUAGE_COUNT,
   OPENAI_TRANSLATION_MODEL,
+  OPENAI_TRANSLATION_SOURCE_MODE_METADATA,
+  OPENAI_TRANSLATION_SOURCE_MODES,
   OPENAI_TRANSLATION_TARGET_LANGUAGES,
+  applyOpenAITranslationTranscriptEvent,
   assertTranslationTargetLanguage,
+  buildOpenAITranslationDisplayMediaOptions,
   buildTranslationAudioMixState,
   buildTranslationSessionConfig,
   buildTranslationSessionRequest,
   buildTranslationSessionRequestDescriptor,
   buildTranslationSessionUpdate,
   clampTranslationAudioMixPercent,
+  createOpenAITranslationMissingAudioTrackError,
+  createOpenAITranslationRuntimeError,
+  detectOpenAITranslationSourceCapabilities,
+  exchangeOpenAITranslationSdp,
+  getOpenAITranslationSourceCapability,
+  getOpenAITranslationSourceModeMetadata,
+  getOpenAITranslationSourceModes,
   getOriginalAudioVolume,
   getTranslationTargetLanguages,
   getTranslatedAudioVolume,
   getTranslationTargetLanguage,
   getTranslationTargetLanguageCodes,
+  isOpenAITranslationBusyStatus,
+  isOpenAITranslationRuntimeError,
+  isOpenAITranslationSourceError,
+  isOpenAITranslationSourceMode,
+  isOpenAITranslationStartingStatus,
+  isOpenAITranslationTerminalStatus,
+  mapOpenAITranslationSourceError,
   isTranslationTargetLanguage,
   normalizeTranslationTargetLanguage,
+  parseOpenAITranslationDataChannelMessage,
+  requestOpenAITranslationClientSecret,
+  shouldRetryOpenAITranslationStatus,
   validateTranslationTargetLanguage,
 } from '@/lib/openaiTranslation';
 import type {
+  OpenAITranslationFetch,
   OpenAITranslationSessionRequestDescriptor,
   OpenAITranslationTargetLanguage,
 } from '@/types/openai-translation';
@@ -82,6 +104,149 @@ describe('openaiTranslation', () => {
         }
         expect(language.label.length).toBeGreaterThan(0);
       }
+    });
+  });
+
+  describe('source capture helpers', () => {
+    it('exports stable source metadata in PRD order', () => {
+      expect(OPENAI_TRANSLATION_SOURCE_MODES).toEqual(['microphone', 'browser-tab']);
+      expect(getOpenAITranslationSourceModes()).toEqual(OPENAI_TRANSLATION_SOURCE_MODE_METADATA);
+      expect(getOpenAITranslationSourceModeMetadata('microphone')).toMatchObject({
+        mode: 'microphone',
+        label: 'Microphone',
+        actionLabel: 'Use microphone',
+      });
+      expect(getOpenAITranslationSourceModeMetadata('browser-tab')).toMatchObject({
+        mode: 'browser-tab',
+        label: 'Tab audio',
+        actionLabel: 'Use tab audio',
+      });
+      expect(isOpenAITranslationSourceMode('microphone')).toBe(true);
+      expect(isOpenAITranslationSourceMode('tab-audio')).toBe(false);
+
+      for (const sourceMode of OPENAI_TRANSLATION_SOURCE_MODE_METADATA) {
+        expect(sourceMode.label).toMatch(/^[\x20-\x7E]+$/);
+        expect(sourceMode.description).toMatch(/^[\x20-\x7E]+$/);
+      }
+    });
+
+    it('builds display-media options and rejects invalid option shapes', () => {
+      expect(buildOpenAITranslationDisplayMediaOptions()).toEqual({
+        audio: true,
+        video: true,
+        preferCurrentTab: true,
+        selfBrowserSurface: 'include',
+        surfaceSwitching: 'include',
+        systemAudio: 'include',
+      });
+      expect(
+        buildOpenAITranslationDisplayMediaOptions({
+          preferCurrentTab: false,
+          includeSystemAudio: false,
+          surfaceSwitching: false,
+        })
+      ).toEqual({
+        audio: true,
+        video: true,
+        preferCurrentTab: false,
+        selfBrowserSurface: 'include',
+        surfaceSwitching: 'exclude',
+        systemAudio: 'exclude',
+      });
+
+      let caughtError: unknown = null;
+      try {
+        buildOpenAITranslationDisplayMediaOptions({ includeSystemAudio: 'yes' });
+      } catch (error) {
+        caughtError = error;
+      }
+
+      expect(caughtError).toMatchObject({
+        kind: 'capture-failed',
+        mode: 'browser-tab',
+        code: 'invalid-display-media-options',
+      });
+      expect(isOpenAITranslationSourceError(caughtError)).toBe(true);
+    });
+
+    it('detects source capabilities without requesting media permissions', () => {
+      const mediaDevices = {
+        getUserMedia: vi.fn(),
+        getDisplayMedia: vi.fn(),
+      };
+
+      const available = detectOpenAITranslationSourceCapabilities(mediaDevices, true);
+      expect(available.microphone).toMatchObject({
+        mode: 'microphone',
+        supported: true,
+        canRequest: true,
+        status: 'available',
+        message: null,
+      });
+      expect(getOpenAITranslationSourceCapability(available, 'browser-tab')).toMatchObject({
+        mode: 'browser-tab',
+        supported: true,
+        canRequest: true,
+        status: 'available',
+      });
+      expect(mediaDevices.getUserMedia).not.toHaveBeenCalled();
+      expect(mediaDevices.getDisplayMedia).not.toHaveBeenCalled();
+
+      expect(detectOpenAITranslationSourceCapabilities(null, true).microphone).toMatchObject({
+        status: 'unavailable',
+        canRequest: false,
+      });
+      expect(
+        detectOpenAITranslationSourceCapabilities({ getUserMedia: vi.fn() }, true).browserTab
+      ).toMatchObject({
+        status: 'unsupported',
+        canRequest: false,
+      });
+      expect(
+        detectOpenAITranslationSourceCapabilities(mediaDevices, false).microphone
+      ).toMatchObject({
+        status: 'restricted',
+        supported: true,
+        canRequest: false,
+      });
+    });
+
+    it('maps browser capture failures to stable source errors', () => {
+      expect(
+        mapOpenAITranslationSourceError({ name: 'NotAllowedError' }, 'microphone')
+      ).toMatchObject({
+        kind: 'permission-denied',
+        mode: 'microphone',
+        code: 'permission-denied',
+        rawName: 'NotAllowedError',
+      });
+      expect(mapOpenAITranslationSourceError({ name: 'AbortError' }, 'browser-tab')).toMatchObject({
+        kind: 'capture-cancelled',
+        mode: 'browser-tab',
+        code: 'capture-cancelled',
+      });
+      expect(
+        mapOpenAITranslationSourceError({ name: 'NotFoundError' }, 'microphone')
+      ).toMatchObject({
+        kind: 'device-unavailable',
+        mode: 'microphone',
+        code: 'device-unavailable',
+      });
+      expect(mapOpenAITranslationSourceError({ name: 'TypeError' }, 'browser-tab')).toMatchObject({
+        kind: 'capture-failed',
+        mode: 'browser-tab',
+        code: 'capture-failed',
+      });
+      expect(mapOpenAITranslationSourceError(new Error('nope'), 'microphone')).toMatchObject({
+        kind: 'unknown',
+        mode: 'microphone',
+        code: 'unknown-capture-error',
+      });
+      expect(createOpenAITranslationMissingAudioTrackError('browser-tab')).toMatchObject({
+        kind: 'missing-audio-track',
+        mode: 'browser-tab',
+        code: 'missing-audio-track',
+      });
     });
   });
 
@@ -260,6 +425,311 @@ describe('openaiTranslation', () => {
         targetLanguage: 'vi',
       });
       expect(Object.keys(JSON.parse(descriptor.init.body))).toEqual(['targetLanguage']);
+    });
+  });
+
+  describe('runtime error and status helpers', () => {
+    it('builds stable typed runtime errors', () => {
+      const error = createOpenAITranslationRuntimeError('sdp-exchange', 'SDP failed', {
+        status: 502,
+        code: 'bad-gateway',
+      });
+
+      expect(error).toEqual({
+        kind: 'sdp-exchange',
+        message: 'SDP failed',
+        recoverable: true,
+        status: 502,
+        code: 'bad-gateway',
+      });
+      expect(isOpenAITranslationRuntimeError(error)).toBe(true);
+      expect(isOpenAITranslationRuntimeError(new Error('nope'))).toBe(false);
+    });
+
+    it('classifies runtime statuses and retryable HTTP responses', () => {
+      expect(isOpenAITranslationStartingStatus('requesting-client-secret')).toBe(true);
+      expect(isOpenAITranslationStartingStatus('connected')).toBe(false);
+      expect(isOpenAITranslationBusyStatus('stopping')).toBe(true);
+      expect(isOpenAITranslationBusyStatus('stopped')).toBe(false);
+      expect(isOpenAITranslationTerminalStatus('idle')).toBe(true);
+      expect(isOpenAITranslationTerminalStatus('connecting')).toBe(false);
+      expect(shouldRetryOpenAITranslationStatus(408)).toBe(true);
+      expect(shouldRetryOpenAITranslationStatus(429)).toBe(true);
+      expect(shouldRetryOpenAITranslationStatus(503)).toBe(true);
+      expect(shouldRetryOpenAITranslationStatus(400)).toBe(false);
+    });
+  });
+
+  describe('data-channel event parsing', () => {
+    it('parses known source transcript deltas', () => {
+      const parsed = parseOpenAITranslationDataChannelMessage(
+        JSON.stringify({
+          type: 'conversation.item.input_audio_transcription.delta',
+          item_id: 'source-1',
+          delta: 'hel',
+        })
+      );
+
+      expect(parsed).toEqual({
+        ok: true,
+        kind: 'transcript',
+        event: {
+          id: 'source-1',
+          stream: 'source',
+          phase: 'delta',
+          text: 'hel',
+          rawType: 'conversation.item.input_audio_transcription.delta',
+        },
+      });
+    });
+
+    it('parses known translated final transcripts', () => {
+      const parsed = parseOpenAITranslationDataChannelMessage({
+        type: 'response.audio_transcript.done',
+        response_id: 'translated-1',
+        transcript: 'hola',
+      });
+
+      expect(parsed).toEqual({
+        ok: true,
+        kind: 'transcript',
+        event: {
+          id: 'translated-1',
+          stream: 'translated',
+          phase: 'final',
+          text: 'hola',
+          rawType: 'response.audio_transcript.done',
+        },
+      });
+    });
+
+    it('ignores unknown event types without failing', () => {
+      const parsed = parseOpenAITranslationDataChannelMessage({
+        type: 'session.created',
+        session: { id: 'session-1' },
+      });
+
+      expect(parsed).toEqual({
+        ok: true,
+        kind: 'unknown',
+        eventType: 'session.created',
+        raw: {
+          type: 'session.created',
+          session: { id: 'session-1' },
+        },
+      });
+    });
+
+    it('returns typed parser errors for malformed or missing event data', () => {
+      const malformed = parseOpenAITranslationDataChannelMessage('{"type":');
+      const missingText = parseOpenAITranslationDataChannelMessage({
+        type: 'translation.source_transcript.delta',
+        item_id: 'source-1',
+      });
+
+      expect(malformed.ok).toBe(false);
+      if (!malformed.ok) {
+        expect(malformed.error).toMatchObject({
+          kind: 'parser',
+          code: 'malformed-json',
+        });
+      }
+
+      expect(missingText.ok).toBe(false);
+      if (!missingText.ok) {
+        expect(missingText.error).toMatchObject({
+          kind: 'parser',
+          code: 'missing-transcript-text',
+        });
+      }
+    });
+  });
+
+  describe('transcript normalization', () => {
+    it('appends partial entries and replaces final entries by id and stream', () => {
+      const first = applyOpenAITranslationTranscriptEvent(
+        [],
+        {
+          id: 'source-1',
+          stream: 'source',
+          phase: 'delta',
+          text: 'hel',
+          rawType: 'translation.source_transcript.delta',
+        },
+        10
+      );
+      const second = applyOpenAITranslationTranscriptEvent(
+        first,
+        {
+          id: 'source-1',
+          stream: 'source',
+          phase: 'delta',
+          text: 'lo',
+          rawType: 'translation.source_transcript.delta',
+        },
+        20
+      );
+      const final = applyOpenAITranslationTranscriptEvent(
+        second,
+        {
+          id: 'source-1',
+          stream: 'source',
+          phase: 'final',
+          text: 'hello',
+          rawType: 'translation.source_transcript.done',
+        },
+        30
+      );
+
+      expect(first).toEqual([
+        {
+          id: 'source-1',
+          stream: 'source',
+          text: 'hel',
+          isFinal: false,
+          updatedAt: 10,
+        },
+      ]);
+      expect(second[0]).toMatchObject({
+        text: 'hello',
+        isFinal: false,
+        updatedAt: 20,
+      });
+      expect(final[0]).toMatchObject({
+        text: 'hello',
+        isFinal: true,
+        updatedAt: 30,
+      });
+    });
+
+    it('keeps source and translated transcript entries separate', () => {
+      const entries = applyOpenAITranslationTranscriptEvent(
+        [
+          {
+            id: 'same-id',
+            stream: 'source',
+            text: 'hello',
+            isFinal: true,
+            updatedAt: 1,
+          },
+        ],
+        {
+          id: 'same-id',
+          stream: 'translated',
+          phase: 'final',
+          text: 'hola',
+          rawType: 'response.audio_transcript.done',
+        },
+        2
+      );
+
+      expect(entries).toHaveLength(2);
+      expect(entries[0].stream).toBe('source');
+      expect(entries[1]).toMatchObject({
+        stream: 'translated',
+        text: 'hola',
+        isFinal: true,
+      });
+    });
+  });
+
+  describe('runtime request helpers', () => {
+    it('requests a sanitized client secret through the backend route', async () => {
+      const fetcher = vi.fn(
+        async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+          new Response(
+            JSON.stringify({
+              clientSecret: 'ek_test',
+              expiresAt: '2026-05-11T18:30:00.000Z',
+              targetLanguage: 'es',
+              model: 'gpt-realtime-translate',
+            }),
+            { status: 200 }
+          )
+      ) satisfies OpenAITranslationFetch;
+
+      await expect(
+        requestOpenAITranslationClientSecret({
+          targetLanguage: 'es',
+          apiBaseUrl: 'http://localhost:3001',
+          fetcher,
+          retryDelayMs: 0,
+        })
+      ).resolves.toEqual({
+        clientSecret: 'ek_test',
+        expiresAt: '2026-05-11T18:30:00.000Z',
+        targetLanguage: 'es',
+        model: 'gpt-realtime-translate',
+      });
+      expect(fetcher).toHaveBeenCalledWith(
+        'http://localhost:3001/api/openai/translation-session',
+        expect.objectContaining({
+          method: 'POST',
+          body: '{"targetLanguage":"es"}',
+        })
+      );
+    });
+
+    it('retries retryable client-secret failures and returns typed errors', async () => {
+      const fetcher = vi
+        .fn(async (): Promise<Response> => new Response('service down', { status: 503 }))
+        .mockResolvedValueOnce(new Response('service down', { status: 503 }));
+
+      await expect(
+        requestOpenAITranslationClientSecret({
+          targetLanguage: 'fr',
+          fetcher,
+          retryCount: 1,
+          retryDelayMs: 0,
+        })
+      ).rejects.toMatchObject({
+        kind: 'client-secret',
+        status: 503,
+      });
+      expect(fetcher).toHaveBeenCalledTimes(2);
+    });
+
+    it('exchanges SDP with the translation calls endpoint', async () => {
+      const fetcher = vi.fn(
+        async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
+          new Response('answer-sdp', { status: 200 })
+      ) satisfies OpenAITranslationFetch;
+
+      await expect(
+        exchangeOpenAITranslationSdp({
+          clientSecret: 'ek_test',
+          offerSdp: 'offer-sdp',
+          fetcher,
+          retryDelayMs: 0,
+        })
+      ).resolves.toBe('answer-sdp');
+      expect(fetcher).toHaveBeenCalledWith(
+        'https://api.openai.com/v1/realtime/translations/calls',
+        expect.objectContaining({
+          method: 'POST',
+          body: 'offer-sdp',
+          headers: {
+            Authorization: 'Bearer ek_test',
+            'Content-Type': 'application/sdp',
+          },
+        })
+      );
+    });
+
+    it('rejects invalid SDP exchange inputs before fetching', async () => {
+      const fetcher = vi.fn(async (): Promise<Response> => new Response('answer-sdp'));
+
+      await expect(
+        exchangeOpenAITranslationSdp({
+          clientSecret: '',
+          offerSdp: 'offer-sdp',
+          fetcher,
+        })
+      ).rejects.toMatchObject({
+        kind: 'sdp-exchange',
+        code: 'missing-client-secret',
+      });
+      expect(fetcher).not.toHaveBeenCalled();
     });
   });
 });

@@ -11,7 +11,7 @@ Zero-to-hero checklist for new developers.
 - [ ] Microphone available for voice testing
 - [ ] ElevenLabs account (for ElevenLabs provider)
 - [ ] xAI account (for xAI Grok provider)
-- [ ] OpenAI account (for OpenAI Realtime provider)
+- [ ] OpenAI account (for OpenAI Realtime and OpenAI Translation)
 - [ ] Ultravox account (for Ultravox provider)
 - [ ] Vapi account (for Vapi provider)
 - [ ] Retell account (for Retell provider)
@@ -45,18 +45,18 @@ cp .env.example .env
 
 ### 4. Required Secrets
 
-| Variable                   | Where to Get                                                        | Description                      |
-| -------------------------- | ------------------------------------------------------------------- | -------------------------------- |
-| `VITE_ELEVENLABS_AGENT_ID` | [ElevenLabs Dashboard](https://elevenlabs.io/app/conversational-ai) | Agent ID for voice conversations |
-| `ELEVENLABS_API_KEY`       | [ElevenLabs API Keys](https://elevenlabs.io/app/settings/api-keys)  | Server-side API key              |
-| `XAI_API_KEY`              | [xAI Console](https://console.x.ai/)                                | Server-side API key for Grok     |
-| `OPENAI_API_KEY`           | [OpenAI API Keys](https://platform.openai.com/api-keys)             | Server-side API key for Realtime |
-| `ULTRAVOX_API_KEY`         | [Ultravox Dashboard](https://ultravox.ai/)                          | Server-side API key for Ultravox |
-| `VITE_VAPI_WEB_TOKEN`      | [Vapi Dashboard](https://dashboard.vapi.ai/)                        | Public web token (frontend-safe) |
-| `RETELL_API_KEY`           | [Retell Dashboard](https://dashboard.retellai.com/)                 | Server-side API key for Retell   |
-| `VITE_RETELL_AGENT_ID`     | [Retell Dashboard](https://dashboard.retellai.com/)                 | Retell Agent ID                  |
-| `GEMINI_API_KEY`           | [Google AI Studio](https://aistudio.google.com/apikey)              | Server-side API key for Gemini   |
-| `VITE_GEMINI_VOICE`        | Default: Zephyr                                                     | Gemini voice selection (30 opts) |
+| Variable                   | Where to Get                                                        | Description                                      |
+| -------------------------- | ------------------------------------------------------------------- | ------------------------------------------------ |
+| `VITE_ELEVENLABS_AGENT_ID` | [ElevenLabs Dashboard](https://elevenlabs.io/app/conversational-ai) | Agent ID for voice conversations                 |
+| `ELEVENLABS_API_KEY`       | [ElevenLabs API Keys](https://elevenlabs.io/app/settings/api-keys)  | Server-side API key                              |
+| `XAI_API_KEY`              | [xAI Console](https://console.x.ai/)                                | Server-side API key for Grok                     |
+| `OPENAI_API_KEY`           | [OpenAI API Keys](https://platform.openai.com/api-keys)             | Server-side API key for Realtime and translation |
+| `ULTRAVOX_API_KEY`         | [Ultravox Dashboard](https://ultravox.ai/)                          | Server-side API key for Ultravox                 |
+| `VITE_VAPI_WEB_TOKEN`      | [Vapi Dashboard](https://dashboard.vapi.ai/)                        | Public web token (frontend-safe)                 |
+| `RETELL_API_KEY`           | [Retell Dashboard](https://dashboard.retellai.com/)                 | Server-side API key for Retell                   |
+| `VITE_RETELL_AGENT_ID`     | [Retell Dashboard](https://dashboard.retellai.com/)                 | Retell Agent ID                                  |
+| `GEMINI_API_KEY`           | [Google AI Studio](https://aistudio.google.com/apikey)              | Server-side API key for Gemini                   |
+| `VITE_GEMINI_VOICE`        | Default: Zephyr                                                     | Gemini voice selection (30 opts)                 |
 
 ### 5. Start Development
 
@@ -76,6 +76,7 @@ npm run dev
 - [ ] ElevenLabs tab shows (if `VITE_ELEVENLABS_ENABLED=true`)
 - [ ] xAI tab shows (if `VITE_XAI_ENABLED=true`)
 - [ ] OpenAI tab shows (if `VITE_OPENAI_ENABLED=true`)
+- [ ] OpenAI Translation scaffold tab shows (if `VITE_OPENAI_TRANSLATION_ENABLED=true`)
 - [ ] Ultravox tab shows (if `VITE_ULTRAVOX_ENABLED=true`)
 - [ ] Vapi tab shows (if `VITE_VAPI_ENABLED=true`)
 - [ ] Retell tab shows (if `VITE_RETELL_ENABLED=true`)
@@ -96,7 +97,8 @@ Voice-Agent-PuPuPlatter/
 │   ├── hooks/              # Custom hooks
 │   ├── lib/
 │   │   ├── audio/          # Audio processing utilities
-│   │   └── gemini/         # Gemini Live audio and client
+│   │   ├── gemini/         # Gemini Live audio and client
+│   │   └── openaiTranslation.ts # OpenAI translation shared config
 │   ├── types/              # TypeScript definitions
 │   └── pages/              # Route components
 ├── server/

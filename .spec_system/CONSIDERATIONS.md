@@ -1,7 +1,7 @@
 # Considerations
 
 > Institutional memory for AI assistants. Updated between phases via /carryforward.
-> **Line budget**: 600 max | **Last updated**: Phase 01 (2026-05-11)
+> **Line budget**: 600 max | **Last updated**: Phase 02 (2026-05-11)
 
 ---
 
@@ -13,13 +13,13 @@ Items requiring attention in upcoming phases. Review before each session.
 
 <!-- Max 5 items -->
 
-- [P02] **Translation teardown coverage**: The next translation phase must prove cleanup for peer connections, data channels, source tracks, timers, and provider switches. Regressions here are user-visible and hard to debug.
+- [P02] **Translation teardown coverage**: Phase 03 must prove cleanup for peer connections, data channels, source tracks, translated audio elements, abort controllers, and timers on stop or provider switch.
 
 ### External Dependencies
 
 <!-- Max 5 items -->
 
-- [P02] **OpenAI translation endpoint volatility**: Live translation depends on `gpt-realtime-translate`, `/v1/realtime/translations/client_secrets`, and `/v1/realtime/translations/calls`. Re-check official docs before implementation sessions that touch protocol details.
+- [P02] **OpenAI translation endpoint volatility**: Live translation still depends on `gpt-realtime-translate`, `/v1/realtime/translations/client_secrets`, and `/v1/realtime/translations/calls`. Re-check official docs before any protocol changes.
 - [P01] **Public deployment verification**: External scanner and public HTTPS verification still need a real deployment URL. Do not treat localhost verification as the final production check.
 
 ### Performance / Security
@@ -28,14 +28,12 @@ Items requiring attention in upcoming phases. Review before each session.
 
 - [P01] **Process-local rate limiting**: Production rate limiting is still process-local. Multi-instance deployments need platform-level or shared-store enforcement.
 - [P01] **Production CSP compatibility**: Security headers deliberately keep some provider allowances for current SDK behavior. Tightening CSP should be tested provider by provider.
-- [P02] **Translation client secret boundary**: Browser translation must never receive `OPENAI_API_KEY`; only short-lived sanitized client secrets should cross the backend/frontend boundary.
 
 ### Architecture
 
 <!-- Max 5 items -->
 
-- [P01] **Same-origin production default**: The combined Express container is the production default. Keep docs, Compose, and runtime config aligned to avoid split-origin drift.
-- [P02] **Translation protocol separation**: OpenAI live translation is not a normal OpenAI voice-agent session. Do not reuse prompt/tool/`response.create` assumptions from the existing OpenAI provider.
+- [P02] **Translation protocol separation**: OpenAI live translation is not a normal OpenAI voice-agent session. Do not reuse prompt, tool, or `response.create` assumptions from the existing OpenAI provider.
 
 ---
 
@@ -47,6 +45,12 @@ Proven patterns and anti-patterns. Reference during implementation.
 
 <!-- Max 15 items -->
 
+- [P02] **Dedicated translation route isolation**: Keeping translation on its own backend route reduced risk to the existing voice-agent contract and made browser-safe response shaping straightforward.
+- [P02] **Pure helper module**: Putting translation config and payload builders in a side-effect-free TypeScript module made reuse in hooks and UI code simpler.
+- [P02] **Provider-flag gating at the list level**: Validating persisted selections against the visible provider set prevented hidden translation tabs from leaking into active state.
+- [P02] **Route tests as HTTP behavior**: Mounting the real router and mocking fetch produced durable coverage for validation, sanitization, timeout, and upstream failure paths.
+- [P02] **Node-environment guards in shared test setup**: Guarding DOM-specific globals let backend tests reuse the repository setup without jsdom leakage.
+- [P02] **Early response normalization**: Returning only a browser-safe translation client-secret shape avoided provider-specific payload details escaping into the frontend.
 - [P01] **Same-origin production default**: Keeping the combined Express container as the production default reduced config drift across Docker, Compose, docs, and runtime behavior.
 - [P01] **BuildKit cache isolation**: Separate cache IDs for build and install stages prevented dependency install races in the production Docker build.
 - [P01] **Server-only observability boundary**: Keeping request IDs, logging, and metrics under `server/utils/` avoided frontend bundle leakage.
@@ -77,13 +81,14 @@ Proven patterns and anti-patterns. Reference during implementation.
 
 Recently closed items (buffer - rotates out after 2 phases).
 
-| Phase | Item                                      | Resolution                                                                                              |
-| ----- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| P01   | Demo and production CORS permissiveness   | Replaced implicit localhost fallback with strict exact-origin production CORS and same-origin defaults. |
-| P01   | Stale token/session limiter paths         | Centralized the real token/session routes and applied strict limiter coverage there.                    |
-| P01   | Raw Gemini API key exposure in production | Blocked returning the raw server API key to browsers.                                                   |
-| P01   | Raw function arguments/results in logs    | Sanitized function execution logs to remove raw argument and result payloads.                           |
-| P00   | Unicode encoding in .env.example          | Replaced Unicode arrows with ASCII characters for shellcheck compliance.                                |
+| Phase | Item                                      | Resolution                                                                                                         |
+| ----- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| P02   | Translation token boundary                | Phase 02 added a dedicated translation client-secret route and kept `OPENAI_API_KEY` out of browser-visible state. |
+| P01   | Demo and production CORS permissiveness   | Replaced implicit localhost fallback with strict exact-origin production CORS and same-origin defaults.            |
+| P01   | Stale token/session limiter paths         | Centralized the real token/session routes and applied strict limiter coverage there.                               |
+| P01   | Raw Gemini API key exposure in production | Blocked returning the raw server API key to browsers.                                                              |
+| P01   | Raw function arguments/results in logs    | Sanitized function execution logs to remove raw argument and result payloads.                                      |
+| P00   | Unicode encoding in .env.example          | Replaced Unicode arrows with ASCII characters for shellcheck compliance.                                           |
 
 ---
 

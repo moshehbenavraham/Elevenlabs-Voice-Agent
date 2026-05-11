@@ -4,7 +4,7 @@ This document outlines the technical architecture of the Conversational Voice AI
 
 ## Architecture Overview
 
-A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), OpenAI, Ultravox, Vapi, Retell, and Google Gemini Live. The architecture emphasizes provider abstraction, performance, and accessibility.
+A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), OpenAI, Ultravox, Vapi, Retell, and Google Gemini Live. It also includes a gated OpenAI Translation scaffold for the next WebRTC translation phase. The architecture emphasizes provider abstraction, performance, and accessibility.
 
 ## Table of Contents
 
@@ -68,6 +68,7 @@ export type ProviderType =
   | 'elevenlabs-sdk'
   | 'xai'
   | 'openai'
+  | 'openai-translation'
   | 'ultravox'
   | 'vapi'
   | 'retell'
@@ -89,6 +90,7 @@ ProviderContext (active provider selection)
     ├── ElevenLabs VoiceContext (SDK with reconnection)
     ├── XAIVoiceContext (WebSocket + ephemeral token)
     ├── OpenAIVoiceContext (WebSocket + ephemeral token)
+    ├── OpenAITranslationProvider scaffold (feature-flagged)
     ├── UltravoxVoiceContext (SDK with joinUrl)
     ├── useVapiVoice (SDK with public web token)
     ├── useRetellVoice (SDK with backend access token)
@@ -130,6 +132,8 @@ App
 │   │   │   ├── GeminiVoiceStatus
 │   │   │   ├── GeminiVoiceSelector
 │   │   │   └── GeminiEmptyState
+│   │   ├── OpenAI Translation Provider # Feature-flagged scaffold
+│   │   │   └── OpenAITranslationProvider
 │   │   ├── BackgroundEffects
 │   │   └── ConfigurationDialog   # Settings modal (Phase 03)
 │   └── NotFound
@@ -402,7 +406,7 @@ server/
 ├── index.js              # Main Express server
 └── routes/
     ├── xai.js            # xAI ephemeral token endpoint
-    ├── openai.js         # OpenAI ephemeral token endpoint
+    ├── openai.js         # OpenAI voice and translation token endpoints
     ├── ultravox.js       # Ultravox call creation endpoint
     ├── retell.js         # Retell web call creation endpoint
     └── gemini.js         # Gemini ephemeral token endpoint
@@ -410,20 +414,38 @@ server/
 
 ### API Endpoints
 
-| Method | Endpoint                      | Description                     |
-| ------ | ----------------------------- | ------------------------------- |
-| GET    | `/api/health`                 | Server health check             |
-| GET    | `/api/elevenlabs/signed-url`  | ElevenLabs signed URL for SDK   |
-| POST   | `/api/xai/session`            | Create xAI ephemeral token      |
-| POST   | `/api/openai/session`         | Create OpenAI ephemeral token   |
-| POST   | `/api/ultravox/call`          | Create Ultravox call (joinUrl)  |
-| POST   | `/api/retell/create-web-call` | Create Retell call access token |
-| POST   | `/api/gemini/token`           | Create Gemini ephemeral token   |
-| GET    | `/api/gemini/health`          | Gemini service health check     |
-| GET    | `/api/gemini/voices`          | List available Gemini voices    |
+| Method | Endpoint                          | Description                             |
+| ------ | --------------------------------- | --------------------------------------- |
+| GET    | `/api/health`                     | Server health check                     |
+| GET    | `/api/elevenlabs/signed-url`      | ElevenLabs signed URL for SDK           |
+| POST   | `/api/xai/session`                | Create xAI ephemeral token              |
+| POST   | `/api/openai/session`             | Create OpenAI ephemeral token           |
+| POST   | `/api/openai/translation-session` | Create OpenAI translation client secret |
+| POST   | `/api/ultravox/call`              | Create Ultravox call (joinUrl)          |
+| POST   | `/api/retell/create-web-call`     | Create Retell call access token         |
+| POST   | `/api/gemini/token`               | Create Gemini ephemeral token           |
+| GET    | `/api/gemini/health`              | Gemini service health check             |
+| GET    | `/api/gemini/voices`              | List available Gemini voices            |
 
-For the detailed OpenAI Realtime voice-agent flow, including session events and
-audio format assumptions, see [OpenAI Realtime Voice Provider](./OPENAI_REALTIME.md).
+For the detailed OpenAI Realtime voice-agent flow, translation client-secret
+boundary, session events, and audio format assumptions, see
+[OpenAI Realtime Voice Provider](./OPENAI_REALTIME.md).
+
+### OpenAI Translation Foundation
+
+Phase 02 added the foundation for a dedicated OpenAI Translation provider
+without merging it into the existing OpenAI voice-agent context:
+
+- `POST /api/openai/translation-session` validates a target language and mints
+  a sanitized `gpt-realtime-translate` browser client secret.
+- `src/lib/openaiTranslation.ts` owns supported target languages, route request
+  descriptors, session config builders, and audio mix helpers.
+- `src/types/openai-translation.ts` defines the shared route, language, session,
+  and audio mix contracts.
+- `src/components/providers/OpenAITranslationProvider.tsx` renders a disabled
+  scaffold tab when `VITE_OPENAI_TRANSLATION_ENABLED=true`.
+- Phase 03 owns microphone/browser-tab capture, WebRTC SDP exchange, translated
+  audio playback, transcripts, export controls, and runtime cleanup.
 
 ### xAI Token Flow
 
@@ -769,6 +791,9 @@ src/test/
 ├── setup.ts                        # Test configuration and mocks
 ├── ProviderContext.test.tsx        # Provider context tests
 ├── ProviderTabs.test.tsx           # Tab component tests
+├── OpenAITranslationProvider.test.tsx # Translation scaffold tests
+├── openaiTranslation.test.ts       # Translation config helper tests
+├── openaiTranslationRoute.test.ts  # Translation backend route tests
 ├── settingsStorage.test.ts         # Settings persistence tests
 ├── ConfigurationDialog.test.tsx    # Modal accessibility tests
 ├── UltravoxVoiceContext.test.tsx   # Ultravox context tests
@@ -780,7 +805,7 @@ src/test/
 ├── useGeminiVoice.test.tsx         # Gemini hook tests (41 tests)
 ├── GeminiProvider.test.tsx         # Gemini provider tests (56 tests)
 ├── GeminiEmptyState.test.tsx       # Gemini empty state tests (11 tests)
-└── ... (623 tests total across 28 files)
+└── ... (679 tests total across 33 files)
 
 src/lib/gemini/__tests__/
 ├── audioUtils.test.ts              # PCM encoding/decoding tests (28 tests)

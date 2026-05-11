@@ -3,10 +3,14 @@ import { Clock3, Languages, Mic, Monitor, Play, Radio, ShieldCheck } from 'lucid
 import {
   OPENAI_TRANSLATION_DEFAULT_TARGET_LANGUAGE,
   OPENAI_TRANSLATION_LANGUAGE_COUNT,
+  detectOpenAITranslationSourceCapabilities,
+  getOpenAITranslationSourceCapability,
+  getOpenAITranslationSourceModes,
   getTranslationTargetLanguage,
   getTranslationTargetLanguages,
 } from '@/lib/openaiTranslation';
 import { cn } from '@/lib/utils';
+import type { OpenAITranslationSourceMode } from '@/types/openai-translation';
 
 interface OpenAITranslationProviderProps {
   className?: string;
@@ -16,24 +20,15 @@ interface OpenAITranslationProviderProps {
   errorMessage?: string | null;
 }
 
-const SOURCE_MODES = [
-  {
-    id: 'microphone',
-    label: 'Microphone',
-    description: 'Browser microphone capture will be added in Phase 03.',
-    icon: Mic,
-  },
-  {
-    id: 'tab-audio',
-    label: 'Tab audio',
-    description: 'Current tab audio capture will be added in Phase 03.',
-    icon: Monitor,
-  },
-] as const;
+const SOURCE_MODE_ICONS: Record<OpenAITranslationSourceMode, typeof Mic> = {
+  microphone: Mic,
+  'browser-tab': Monitor,
+};
 
 const STATUS_ITEMS = [
   'Client secret route is available through the backend boundary.',
-  'Media capture, SDP exchange, playback, and transcripts are deferred.',
+  'Source capability checks run without requesting microphone or tab permissions.',
+  'SDP exchange, playback, and transcripts are deferred.',
   'No microphone permissions or network requests are started from this scaffold.',
 ] as const;
 
@@ -48,6 +43,8 @@ export function OpenAITranslationProvider({
   const defaultLanguage = getTranslationTargetLanguage(OPENAI_TRANSLATION_DEFAULT_TARGET_LANGUAGE);
   const defaultLanguageLabel = defaultLanguage?.label ?? 'English';
   const previewLanguages = targetLanguages.slice(0, 5);
+  const sourceCapabilities = detectOpenAITranslationSourceCapabilities();
+  const sourceModes = getOpenAITranslationSourceModes();
   const isStartDeferred = true;
   const isStartPending = false;
   const scaffoldStates = [
@@ -107,23 +104,62 @@ export function OpenAITranslationProvider({
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {SOURCE_MODES.map(({ id, label, description, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  disabled
-                  aria-disabled="true"
-                  aria-label={`${label} source mode unavailable until Phase 03`}
-                  className={cn(
-                    'min-h-[112px] rounded-lg border border-zinc-800/80 bg-zinc-950/50 p-4',
-                    'text-left opacity-75 cursor-not-allowed'
-                  )}
-                >
-                  <Icon className="mb-3 h-5 w-5 text-zinc-500" aria-hidden="true" />
-                  <span className="block text-sm font-medium text-zinc-200">{label}</span>
-                  <span className="mt-1 block text-xs leading-5 text-zinc-500">{description}</span>
-                </button>
-              ))}
+              {sourceModes.map((sourceMode) => {
+                const Icon = SOURCE_MODE_ICONS[sourceMode.mode];
+                const capability = getOpenAITranslationSourceCapability(
+                  sourceCapabilities,
+                  sourceMode.mode
+                );
+                const capabilityLabel = capability.canRequest
+                  ? 'Available'
+                  : capability.status === 'restricted'
+                    ? 'Secure context required'
+                    : 'Unavailable';
+                const description = capability.canRequest
+                  ? sourceMode.description
+                  : (capability.message ?? sourceMode.unavailableDescription);
+
+                return (
+                  <button
+                    key={sourceMode.mode}
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    aria-label={`${sourceMode.label} source mode ${capabilityLabel.toLowerCase()}`}
+                    className={cn(
+                      'min-h-[124px] rounded-lg border bg-zinc-950/50 p-4',
+                      'text-left opacity-75 cursor-not-allowed',
+                      capability.canRequest ? 'border-emerald-500/25' : 'border-zinc-800/80'
+                    )}
+                  >
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <Icon
+                        className={cn(
+                          'h-5 w-5',
+                          capability.canRequest ? 'text-emerald-300' : 'text-zinc-500'
+                        )}
+                        aria-hidden="true"
+                      />
+                      <span
+                        className={cn(
+                          'rounded-full border px-2 py-0.5 text-[11px] leading-5',
+                          capability.canRequest
+                            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200/90'
+                            : 'border-zinc-800 bg-zinc-900/80 text-zinc-500'
+                        )}
+                      >
+                        {capabilityLabel}
+                      </span>
+                    </div>
+                    <span className="block text-sm font-medium text-zinc-200">
+                      {sourceMode.label}
+                    </span>
+                    <span className="mt-1 block text-xs leading-5 text-zinc-500">
+                      {description}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </section>
 

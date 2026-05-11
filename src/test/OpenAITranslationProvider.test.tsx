@@ -1,16 +1,25 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { OpenAITranslationProvider } from '@/components/providers/OpenAITranslationProvider';
-import { OPENAI_TRANSLATION_LANGUAGE_COUNT } from '@/lib/openaiTranslation';
+import {
+  OPENAI_TRANSLATION_LANGUAGE_COUNT,
+  getOpenAITranslationSourceModes,
+} from '@/lib/openaiTranslation';
 
 describe('OpenAITranslationProvider', () => {
   const fetchMock = vi.fn();
   const getUserMediaMock = vi.mocked(navigator.mediaDevices.getUserMedia);
+  const getDisplayMediaMock = vi.fn();
 
   beforeEach(() => {
     fetchMock.mockClear();
     getUserMediaMock.mockClear();
+    getDisplayMediaMock.mockClear();
+    Object.assign(navigator.mediaDevices, {
+      getDisplayMedia: getDisplayMediaMock,
+    });
     vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('isSecureContext', true);
   });
 
   afterEach(() => {
@@ -46,15 +55,31 @@ describe('OpenAITranslationProvider', () => {
     ).toBeInTheDocument();
   });
 
+  it('renders shared source metadata and capability-aware state without capture actions', () => {
+    const sourceModes = getOpenAITranslationSourceModes();
+
+    render(<OpenAITranslationProvider />);
+
+    for (const sourceMode of sourceModes) {
+      expect(
+        screen.getByRole('button', {
+          name: new RegExp(`${sourceMode.label} source mode available`, 'i'),
+        })
+      ).toBeDisabled();
+      expect(screen.getByText(sourceMode.description)).toBeInTheDocument();
+    }
+    expect(screen.getAllByText('Available')).toHaveLength(sourceModes.length);
+    expect(getUserMediaMock).not.toHaveBeenCalled();
+    expect(getDisplayMediaMock).not.toHaveBeenCalled();
+  });
+
   it('keeps source, language, and start controls disabled while runtime is deferred', () => {
     render(<OpenAITranslationProvider />);
 
     expect(
-      screen.getByRole('button', { name: /microphone source mode unavailable until phase 03/i })
+      screen.getByRole('button', { name: /microphone source mode available/i })
     ).toBeDisabled();
-    expect(
-      screen.getByRole('button', { name: /tab audio source mode unavailable until phase 03/i })
-    ).toBeDisabled();
+    expect(screen.getByRole('button', { name: /tab audio source mode available/i })).toBeDisabled();
     expect(screen.getByRole('combobox', { name: /deferred target language/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /start translation/i })).toBeDisabled();
   });
@@ -63,6 +88,7 @@ describe('OpenAITranslationProvider', () => {
     render(<OpenAITranslationProvider />);
 
     expect(getUserMediaMock).not.toHaveBeenCalled();
+    expect(getDisplayMediaMock).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

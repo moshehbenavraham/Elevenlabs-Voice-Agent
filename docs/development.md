@@ -79,7 +79,7 @@ env -u NO_COLOR npx playwright test --project=chromium --workers=1 --max-failure
 env -u NO_COLOR npx playwright test --workers=1 --max-failures=1
 ```
 
-The current post-update baseline is 623 Vitest tests and a full Playwright matrix
+The current post-update baseline is 679 Vitest tests and a full Playwright matrix
 that passes with expected skips for disabled or intentionally skipped scenarios.
 
 ## Dependency Maintenance
@@ -115,6 +115,9 @@ src/test/
 |-- App.test.tsx                    # Basic app tests
 |-- ProviderContext.test.tsx        # Provider context tests
 |-- ProviderTabs.test.tsx           # Tab component tests
+|-- OpenAITranslationProvider.test.tsx # Translation scaffold tests
+|-- openaiTranslation.test.ts       # Translation config helper tests
+|-- openaiTranslationRoute.test.ts  # Translation backend route tests
 |-- providers.test.tsx              # Voice provider tests
 |-- Index.test.tsx                  # Page tests
 |-- UltravoxVoiceContext.test.tsx   # Ultravox context tests (23 tests)
@@ -126,7 +129,7 @@ src/test/
 |-- useGeminiVoice.test.tsx         # Gemini hook tests (41 tests)
 |-- GeminiProvider.test.tsx         # Gemini provider tests (56 tests)
 |-- GeminiEmptyState.test.tsx       # Gemini empty state tests (11 tests)
-`-- ... (623 tests total across 28 files)
+`-- ... (679 tests total across 33 files)
 
 src/lib/audio/__tests__/
 `-- audioUtils.test.ts          # Audio utility tests

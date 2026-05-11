@@ -8,17 +8,19 @@ research.
 ## Scope
 
 The OpenAI provider is a voice-agent conversation tab. OpenAI live translation
-uses a separate protocol surface and currently has only the backend
-client-secret route needed by a future translation tab.
+uses a separate protocol surface. Phase 02 completed the translation
+client-secret route, shared frontend config, feature-flagged provider scaffold,
+and focused backend/config tests; browser media capture and WebRTC runtime work
+remain deferred.
 
-| Capability            | Current OpenAI voice provider  | Translation foundation                  |
-| --------------------- | ------------------------------ | --------------------------------------- |
-| Backend token route   | `/api/openai/session`          | `/api/openai/translation-session`       |
-| Endpoint family       | `/v1/realtime`                 | `/v1/realtime/translations`             |
-| Frontend transport    | WebSocket                      | Future WebRTC                           |
-| Default model in repo | `gpt-realtime`                 | `gpt-realtime-translate`                |
-| Main React state      | `OpenAIVoiceContext`           | Future translation hook/context         |
-| Event pattern         | Assistant turns and tool calls | Translation audio and transcript deltas |
+| Capability            | Current OpenAI voice provider  | Translation foundation               |
+| --------------------- | ------------------------------ | ------------------------------------ |
+| Backend token route   | `/api/openai/session`          | `/api/openai/translation-session`    |
+| Endpoint family       | `/v1/realtime`                 | `/v1/realtime/translations`          |
+| Frontend transport    | WebSocket                      | Scaffold now, future WebRTC          |
+| Default model in repo | `gpt-realtime`                 | `gpt-realtime-translate`             |
+| Main React state      | `OpenAIVoiceContext`           | `OpenAITranslationProvider` scaffold |
+| Event pattern         | Assistant turns and tool calls | Deferred translation runtime events  |
 
 Keep these implementations separate. Translation should not be built by adding
 translation behavior to the current voice-agent context.
@@ -90,8 +92,10 @@ strict token rate limiter and duplicate in-flight guard through
 `TOKEN_ENDPOINT_PATHS`.
 
 The route intentionally does not create a WebRTC call, post SDP to
-`/v1/realtime/translations/calls`, render transcripts, or add a translation
-provider tab. Those pieces are owned by later translation sessions.
+`/v1/realtime/translations/calls`, render transcripts, or start browser media
+capture. The provider tab exists as a disabled scaffold behind
+`VITE_OPENAI_TRANSLATION_ENABLED`; runtime behavior is owned by later
+translation sessions.
 
 ## Shared Translation Config
 
@@ -148,15 +152,23 @@ reduction adds `audio.input.noise_reduction.type`. Both are opt-in. The shared
 module does not expose or reference `OPENAI_API_KEY`; the backend remains the
 only owner of OpenAI API credentials.
 
+Completed foundation work:
+
+- `POST /api/openai/translation-session` validates target languages, calls the
+  OpenAI translation client-secret endpoint, and returns sanitized fields.
+- `src/lib/openaiTranslation.ts` owns the frontend-safe language list, session
+  payload builders, route request descriptor, and audio mix helpers.
+- `OpenAITranslationProvider` renders a disabled scaffold tab when
+  `VITE_OPENAI_TRANSLATION_ENABLED=true`.
+- Focused tests cover route validation, response sanitization, language list
+  drift, audio mix clamping, token limiter coverage, and scaffold rendering.
+
 Deferred runtime work:
 
-- Provider tab rendering and feature-flag wiring are owned by the next Phase 02
-  provider scaffold session.
 - WebRTC peer connection setup, SDP exchange, data channel events, translated
-  audio playback, transcript rendering, abort controllers, timers, and cleanup
-  are owned by Phase 03 runtime sessions.
-- Backend/frontend language-list drift tests and broader edge-case coverage are
-  owned by the Phase 02 backend and config test session.
+  audio playback, transcript rendering, abort controllers, timers, and cleanup.
+- Microphone and browser-tab source capture, permission errors, track-ended
+  handling, transcript export, and max-session guards.
 
 ## Configuration
 
