@@ -275,6 +275,23 @@ describe('OpenAITranslationProvider', () => {
     expect(diagnostic).not.toHaveTextContent(/OPENAI_API_KEY/i);
   });
 
+  it('renders offline provider status with disabled start and retry controls', () => {
+    render(<OpenAITranslationProvider isOffline />);
+
+    expect(screen.getByRole('button', { name: /start translation/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /export markdown/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /clear transcript/i })).toBeDisabled();
+    expect(screen.getByRole('heading', { name: /browser offline/i, level: 2 })).toBeInTheDocument();
+
+    const diagnostic = screen.getByRole('status', { name: /offline diagnostic/i });
+    expect(diagnostic).toHaveTextContent(/offline/i);
+    expect(screen.getByText(/reconnect before starting/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^retry$/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /^stop$/i })).toBeDisabled();
+    expect(captureMicrophoneMock).not.toHaveBeenCalled();
+    expect(runtimeStartMock).not.toHaveBeenCalled();
+  });
+
   it('surfaces translated audio playback diagnostics from the audio element', () => {
     runtimeResult = createRuntimeHookResult({
       status: 'connected',

@@ -1,146 +1,34 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useOpenAITranslation } from '@/hooks/useOpenAITranslation';
-
-class FakeMediaStreamTrack {
-  readonly kind: string;
-  readonly id: string;
-  readyState: MediaStreamTrackState = 'live';
-  stop = vi.fn();
-
-  constructor(kind = 'audio', id = `${kind}-track`) {
-    this.kind = kind;
-    this.id = id;
-    this.stop.mockImplementation(() => {
-      this.readyState = 'ended';
-    });
-  }
-}
-
-class FakeMediaStream {
-  private readonly tracks: FakeMediaStreamTrack[];
-
-  constructor(tracks: readonly FakeMediaStreamTrack[] = []) {
-    this.tracks = [...tracks];
-  }
-
-  getTracks(): readonly FakeMediaStreamTrack[] {
-    return this.tracks;
-  }
-
-  getAudioTracks(): readonly FakeMediaStreamTrack[] {
-    return this.tracks.filter((track) => track.kind === 'audio');
-  }
-
-  addTrack(track: FakeMediaStreamTrack): void {
-    this.tracks.push(track);
-  }
-}
-
-class FakeRTCDataChannel {
-  readonly label: string;
-  readyState: RTCDataChannelState = 'open';
-  onmessage: ((event: MessageEvent) => void) | null = null;
-  onerror: ((event: Event) => void) | null = null;
-  onopen: ((event: Event) => void) | null = null;
-  onclose: ((event: Event) => void) | null = null;
-  close = vi.fn(() => {
-    if (this.readyState === 'closed') {
-      return;
-    }
-
-    this.readyState = 'closed';
-    this.onclose?.({} as Event);
-  });
-
-  constructor(label: string) {
-    this.label = label;
-  }
-
-  emitMessage(data: string): void {
-    this.onmessage?.({ data } as MessageEvent);
-  }
-
-  emitError(): void {
-    this.onerror?.({} as Event);
-  }
-}
-
-class FakeRTCPeerConnection {
-  static instances: FakeRTCPeerConnection[] = [];
-
-  connectionState: RTCPeerConnectionState = 'new';
-  iceConnectionState: RTCIceConnectionState = 'new';
-  dataChannel: FakeRTCDataChannel | null = null;
-  ontrack: ((event: RTCTrackEvent) => void) | null = null;
-  onconnectionstatechange: ((event: Event) => void) | null = null;
-  oniceconnectionstatechange: ((event: Event) => void) | null = null;
-  addTrack = vi.fn((_track: FakeMediaStreamTrack, _stream: FakeMediaStream) => {
-    return { track: _track } as unknown as RTCRtpSender;
-  });
-  removeTrack = vi.fn((_sender: RTCRtpSender): void => {
-    return undefined;
-  });
-  createDataChannel = vi.fn((label: string) => {
-    this.dataChannel = new FakeRTCDataChannel(label);
-    return this.dataChannel as unknown as RTCDataChannel;
-  });
-  createOffer = vi.fn(async (): Promise<RTCSessionDescriptionInit> => {
-    return { type: 'offer', sdp: 'offer-sdp' };
-  });
-  setLocalDescription = vi.fn(async (_description: RTCSessionDescriptionInit): Promise<void> => {
-    return undefined;
-  });
-  setRemoteDescription = vi.fn(async (_description: RTCSessionDescriptionInit): Promise<void> => {
-    return undefined;
-  });
-  close = vi.fn(() => {
-    this.connectionState = 'closed';
-  });
-
-  constructor(_configuration?: RTCConfiguration) {
-    FakeRTCPeerConnection.instances.push(this);
-  }
-
-  dispatchTrack(track: FakeMediaStreamTrack, streams: readonly FakeMediaStream[] = []): void {
-    this.ontrack?.({
-      track,
-      streams,
-    } as unknown as RTCTrackEvent);
-  }
-
-  failConnection(): void {
-    this.connectionState = 'failed';
-    this.onconnectionstatechange?.({} as Event);
-  }
-
-  failIceConnection(): void {
-    this.iceConnectionState = 'failed';
-    this.oniceconnectionstatechange?.({} as Event);
-  }
-}
+import {
+  FakeOpenAITranslationMediaStream as FakeMediaStream,
+  FakeOpenAITranslationMediaStreamTrack as FakeMediaStreamTrack,
+  FakeOpenAITranslationRTCPeerConnection as FakeRTCPeerConnection,
+  createFakeOpenAITranslationStream,
+  createOpenAITranslationJsonResponse,
+} from '@/test/openaiTranslationTestUtils';
 
 const fetchMock = vi.fn();
+const RUNTIME_HOOK_FIXTURES = {
+  duplicateStartStatus: 'requesting-client-secret',
+  duplicateStopReason: 'manual',
+  partialStartupFailureStatus: 503,
+  abortErrorName: 'AbortError',
+  remoteTrackId: 'remote-track',
+  unknownEventType: 'session.created',
+} as const;
 
 function createSourceStream(): {
   readonly stream: MediaStream;
   readonly track: FakeMediaStreamTrack;
 } {
   const track = new FakeMediaStreamTrack('audio', 'source-track');
-  const stream = new FakeMediaStream([track]);
+  const { stream } = createFakeOpenAITranslationStream([track]);
   return {
-    stream: stream as unknown as MediaStream,
+    stream,
     track,
   };
-}
-
-function createJsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
 }
 
 function mockSuccessfulFetches(): void {
@@ -148,7 +36,7 @@ function mockSuccessfulFetches(): void {
     const url = String(input);
 
     if (url.includes('/api/openai/translation-session')) {
-      return createJsonResponse({
+      return createOpenAITranslationJsonResponse({
         clientSecret: 'ek_test',
         expiresAt: '2026-05-11T18:30:00.000Z',
         targetLanguage: 'es',
@@ -160,13 +48,13 @@ function mockSuccessfulFetches(): void {
       return new Response('answer-sdp', { status: 200 });
     }
 
-    return createJsonResponse({ message: 'not found' }, 404);
+    return createOpenAITranslationJsonResponse({ message: 'not found' }, 404);
   });
 }
 
 describe('useOpenAITranslation', () => {
   beforeEach(() => {
-    FakeRTCPeerConnection.instances = [];
+    FakeRTCPeerConnection.reset();
     fetchMock.mockReset();
     vi.stubGlobal('fetch', fetchMock);
     vi.stubGlobal('MediaStream', FakeMediaStream);
@@ -180,6 +68,17 @@ describe('useOpenAITranslation', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('keeps runtime fake fixtures aligned with cleanup-sensitive scenarios', () => {
+    expect(RUNTIME_HOOK_FIXTURES).toEqual({
+      duplicateStartStatus: 'requesting-client-secret',
+      duplicateStopReason: 'manual',
+      partialStartupFailureStatus: 503,
+      abortErrorName: 'AbortError',
+      remoteTrackId: 'remote-track',
+      unknownEventType: 'session.created',
+    });
   });
 
   it('exposes the reusable hook contract', async () => {
@@ -248,7 +147,7 @@ describe('useOpenAITranslation', () => {
 
   it('maps client-secret failures without creating a peer connection', async () => {
     fetchMock.mockResolvedValue(
-      createJsonResponse(
+      createOpenAITranslationJsonResponse(
         {
           error: 'OpenAI API error',
           message: 'OpenAI rate limit exceeded',
@@ -285,7 +184,7 @@ describe('useOpenAITranslation', () => {
       const url = String(input);
 
       if (url.includes('/api/openai/translation-session')) {
-        return createJsonResponse({
+        return createOpenAITranslationJsonResponse({
           clientSecret: 'ek_test',
           expiresAt: '2026-05-11T18:30:00.000Z',
           targetLanguage: 'es',
@@ -321,6 +220,37 @@ describe('useOpenAITranslation', () => {
     expect(peerConnection.dataChannel?.close).toHaveBeenCalledTimes(1);
     expect(peerConnection.removeTrack).toHaveBeenCalledTimes(1);
     expect(track.stop).not.toHaveBeenCalled();
+  });
+
+  it('stops owned source tracks when startup fails before peer resources are created', async () => {
+    class FailingRTCPeerConnection {
+      constructor(_configuration?: RTCConfiguration) {
+        throw new Error('peer constructor failed');
+      }
+    }
+
+    mockSuccessfulFetches();
+    vi.stubGlobal('RTCPeerConnection', FailingRTCPeerConnection);
+    const { stream, track } = createSourceStream();
+    const { result } = renderHook(() => useOpenAITranslation());
+
+    await act(async () => {
+      await expect(
+        result.current.start({
+          sourceStream: stream,
+          targetLanguage: 'es',
+          ownsSourceStream: true,
+        })
+      ).resolves.toBe(false);
+    });
+
+    expect(result.current.status).toBe('error');
+    expect(result.current.error).toMatchObject({
+      kind: 'webrtc',
+      code: 'peer-connection-create-failed',
+    });
+    expect(track.stop).toHaveBeenCalledTimes(1);
+    expect(FakeRTCPeerConnection.instances).toHaveLength(0);
   });
 
   it('fails fast while offline without requesting a client secret', async () => {
@@ -475,6 +405,77 @@ describe('useOpenAITranslation', () => {
       code: 'malformed-json',
     });
     expect(result.current.transcripts).toHaveLength(2);
+  });
+
+  it('ignores unknown data-channel events and retries after data-channel close', async () => {
+    mockSuccessfulFetches();
+    const { stream } = createSourceStream();
+    const { result } = renderHook(() => useOpenAITranslation());
+
+    await act(async () => {
+      await result.current.start({
+        sourceStream: stream,
+        targetLanguage: 'es',
+      });
+    });
+
+    const firstPeerConnection = FakeRTCPeerConnection.instances[0];
+    await act(async () => {
+      firstPeerConnection.dataChannel?.emitMessage(
+        JSON.stringify({
+          type: RUNTIME_HOOK_FIXTURES.unknownEventType,
+          session: { id: 'session-1' },
+        })
+      );
+      firstPeerConnection.dataChannel?.close();
+    });
+
+    expect(result.current.status).toBe('stopped');
+    expect(result.current.error).toBeNull();
+    expect(result.current.transcripts).toEqual([]);
+
+    await act(async () => {
+      await expect(
+        result.current.start({
+          sourceStream: stream,
+          targetLanguage: 'es',
+        })
+      ).resolves.toBe(true);
+    });
+
+    expect(FakeRTCPeerConnection.instances).toHaveLength(2);
+    expect(firstPeerConnection.close).toHaveBeenCalledTimes(1);
+    expect(firstPeerConnection.removeTrack).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe('connected');
+  });
+
+  it('maps peer connection failures to cleanup-backed retryable errors', async () => {
+    mockSuccessfulFetches();
+    const { stream, track } = createSourceStream();
+    const { result } = renderHook(() => useOpenAITranslation());
+
+    await act(async () => {
+      await result.current.start({
+        sourceStream: stream,
+        targetLanguage: 'es',
+      });
+    });
+
+    const peerConnection = FakeRTCPeerConnection.instances[0];
+    await act(async () => {
+      peerConnection.failConnection();
+    });
+
+    expect(result.current.status).toBe('error');
+    expect(result.current.error).toMatchObject({
+      kind: 'webrtc',
+      code: 'peer-connection-failed',
+      recoverable: true,
+    });
+    expect(peerConnection.close).toHaveBeenCalledTimes(1);
+    expect(peerConnection.dataChannel?.close).toHaveBeenCalledTimes(1);
+    expect(peerConnection.removeTrack).toHaveBeenCalledTimes(1);
+    expect(track.stop).not.toHaveBeenCalled();
   });
 
   it('cleans active runtime resources when the data channel errors', async () => {
@@ -632,7 +633,7 @@ describe('useOpenAITranslation', () => {
 
     await act(async () => {
       resolveToken?.(
-        createJsonResponse({
+        createOpenAITranslationJsonResponse({
           clientSecret: 'ek_test',
           expiresAt: '2026-05-11T18:30:00.000Z',
           targetLanguage: 'es',

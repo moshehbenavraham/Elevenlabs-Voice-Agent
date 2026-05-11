@@ -64,9 +64,9 @@
     "phase03-session04-transcript-and-caption-experience",
     "phase03-session05-audio-mix-and-export-controls",
     "phase04-session01-lifecycle-reliability",
-    "phase04-session02-error-states-and-diagnostics"
+    "phase04-session02-error-states-and-diagnostics",
+    "phase04-session03-unit-and-integration-coverage"
   ],
-  "current_session": null,
   "next_session_history": [
     {
       "date": "2026-01-18",
@@ -237,6 +237,16 @@
       "date": "2026-05-11",
       "session": "phase04-session02-error-states-and-diagnostics",
       "status": "completed"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase04-session03-unit-and-integration-coverage",
+      "status": "completed"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase04-session03-unit-and-integration-coverage",
+      "status": "planned"
     }
   ]
 }

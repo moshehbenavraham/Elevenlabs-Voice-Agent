@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import process from 'node:process';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { expectNoOpenAITranslationSecretLeak } from './openaiTranslationTestUtils';
 
 interface ExpressApp {
   (req: IncomingMessage, res: ServerResponse): void;
@@ -48,6 +49,87 @@ const TEST_OPENAI_API_KEY = 'sk-test-translation-route-key';
 const TEST_CLIENT_SECRET = 'translation-client-secret';
 const EXPECTED_LANGUAGE_ERROR =
   'targetLanguage: must be one of es, pt, fr, ja, ru, zh, de, ko, hi, id, vi, it, en';
+const ROUTE_SANITIZED_SUCCESS_FIXTURES = [
+  {
+    name: 'top-level value',
+    upstream: {
+      value: TEST_CLIENT_SECRET,
+      expires_at: 1893456000,
+      session: { model: OPENAI_TRANSLATION_MODEL },
+      authorization: `Bearer ${TEST_OPENAI_API_KEY}`,
+      raw_debug: 'raw-upstream-field',
+    },
+    expected: {
+      clientSecret: TEST_CLIENT_SECRET,
+      expiresAt: '2030-01-01T00:00:00.000Z',
+      targetLanguage: 'es',
+      model: OPENAI_TRANSLATION_MODEL,
+    },
+  },
+  {
+    name: 'nested client_secret value',
+    upstream: {
+      client_secret: {
+        value: 'nested-translation-client-secret',
+        expires_at: '1893456060',
+      },
+      session: { model: OPENAI_TRANSLATION_MODEL },
+      upstream_only: {
+        api_key: TEST_OPENAI_API_KEY,
+      },
+    },
+    expected: {
+      clientSecret: 'nested-translation-client-secret',
+      expiresAt: '2030-01-01T00:01:00.000Z',
+      targetLanguage: 'pt',
+      model: OPENAI_TRANSLATION_MODEL,
+    },
+  },
+] as const;
+const ROUTE_UPSTREAM_FAILURE_FIXTURES = [
+  {
+    status: 401,
+    message: 'Invalid OpenAI API key',
+    category: 'openai-auth',
+    code: 'openai-auth-failed',
+  },
+  {
+    status: 403,
+    message: 'Invalid OpenAI API key',
+    category: 'openai-auth',
+    code: 'openai-auth-failed',
+  },
+  {
+    status: 429,
+    message: 'OpenAI rate limit exceeded',
+    category: 'openai-rate-limit',
+    code: 'openai-rate-limited',
+  },
+  {
+    status: 503,
+    message: 'OpenAI service temporarily unavailable',
+    category: 'openai-service',
+    code: 'openai-service-error',
+  },
+] as const;
+const ROUTE_MALFORMED_SUCCESS_FIXTURES = [
+  {
+    name: 'missing client secret',
+    buildResponse: () => jsonResponse({ expires_at: 1893456000 }),
+    message: 'Translation client secret not found in response',
+    code: 'missing-client-secret',
+  },
+  {
+    name: 'non-JSON success body',
+    buildResponse: () =>
+      new Response('not-json', {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' },
+      }),
+    message: 'OpenAI translation response was not valid JSON',
+    code: 'invalid-openai-response-json',
+  },
+] as const;
 
 let originalOpenAIApiKey: string | undefined;
 let routeServer: RouteTestServer | undefined;
@@ -78,6 +160,31 @@ afterEach(async () => {
 });
 
 describe('POST /api/openai/translation-session', () => {
+  it('keeps route fixture matrices explicit and response-safe', () => {
+    expect(ROUTE_SANITIZED_SUCCESS_FIXTURES).toHaveLength(2);
+    expect(ROUTE_UPSTREAM_FAILURE_FIXTURES.map((fixture) => fixture.status)).toEqual([
+      401, 403, 429, 503,
+    ]);
+    expect(ROUTE_MALFORMED_SUCCESS_FIXTURES.map((fixture) => fixture.code)).toEqual([
+      'missing-client-secret',
+      'invalid-openai-response-json',
+    ]);
+
+    for (const fixture of ROUTE_SANITIZED_SUCCESS_FIXTURES) {
+      expect(Object.keys(fixture.expected).sort()).toEqual([
+        'clientSecret',
+        'expiresAt',
+        'model',
+        'targetLanguage',
+      ]);
+      expectNoOpenAITranslationSecretLeak(fixture.expected);
+    }
+
+    for (const fixture of ROUTE_UPSTREAM_FAILURE_FIXTURES) {
+      expectNoOpenAITranslationSecretLeak(fixture);
+    }
+  });
+
   it.each([
     ['missing targetLanguage', {}, 'targetLanguage: is required'],
     ['non-string targetLanguage', { targetLanguage: 42 }, 'targetLanguage: must be a string'],
@@ -187,6 +294,24 @@ describe('POST /api/openai/translation-session', () => {
     expect(JSON.stringify(result.body)).not.toContain('upstream_only');
   });
 
+  it.each(ROUTE_SANITIZED_SUCCESS_FIXTURES)(
+    'returns a sanitized client secret from fixture: $name',
+    async ({ upstream, expected }) => {
+      stubOpenAIFetch(async () => jsonResponse(upstream));
+
+      const result = await postTranslationSession({
+        targetLanguage: expected.targetLanguage,
+      });
+
+      expect(result.status).toBe(200);
+      expect(result.body).toEqual(expected);
+      expectNoOpenAITranslationSecretLeak(result.body);
+      expect(JSON.stringify(result.body)).not.toContain(TEST_OPENAI_API_KEY);
+      expect(JSON.stringify(result.body)).not.toContain('raw-upstream-field');
+      expect(JSON.stringify(result.body)).not.toContain('upstream_only');
+    }
+  );
+
   it('sends the OpenAI API key only in the upstream authorization header', async () => {
     const fetchMock = stubOpenAIFetch(async () =>
       jsonResponse({
@@ -247,6 +372,24 @@ describe('POST /api/openai/translation-session', () => {
     });
   });
 
+  it.each(ROUTE_MALFORMED_SUCCESS_FIXTURES)(
+    'maps malformed fixture success response: $name',
+    async ({ buildResponse, message, code }) => {
+      stubOpenAIFetch(async () => buildResponse());
+
+      const result = await postTranslationSession({ targetLanguage: 'de' });
+
+      expect(result.status).toBe(502);
+      expect(result.body).toEqual({
+        error: 'Invalid OpenAI response',
+        message,
+        category: 'openai-response',
+        code,
+      });
+      expectNoOpenAITranslationSecretLeak(result.body);
+    }
+  );
+
   it.each([
     [401, 'Invalid OpenAI API key'],
     [403, 'Invalid OpenAI API key'],
@@ -283,6 +426,33 @@ describe('POST /api/openai/translation-session', () => {
     expect(JSON.stringify(result.body)).not.toContain(TEST_OPENAI_API_KEY);
     expect(JSON.stringify(result.body)).not.toContain('raw upstream error');
   });
+
+  it.each(ROUTE_UPSTREAM_FAILURE_FIXTURES)(
+    'maps upstream fixture status $status without leaking upstream payloads',
+    async ({ status, message, category, code }) => {
+      stubOpenAIFetch(
+        async () =>
+          new Response(
+            `raw upstream error Authorization: Bearer ${TEST_OPENAI_API_KEY} offer-sdp v=0`,
+            {
+              status,
+              headers: { 'Content-Type': 'text/plain' },
+            }
+          )
+      );
+
+      const result = await postTranslationSession({ targetLanguage: 'fr' });
+
+      expect(result.status).toBe(status);
+      expect(result.body).toEqual({
+        error: 'OpenAI API error',
+        message,
+        category,
+        code,
+      });
+      expectNoOpenAITranslationSecretLeak(result.body);
+    }
+  );
 
   it('maps upstream aborts to a deterministic timeout error', async () => {
     stubOpenAIFetch(async () => {

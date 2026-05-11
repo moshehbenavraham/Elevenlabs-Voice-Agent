@@ -56,10 +56,12 @@ import {
   summarizeOpenAITranslationTranscripts,
   validateTranslationTargetLanguage,
 } from '@/lib/openaiTranslation';
+import { expectNoOpenAITranslationSecretLeak } from '@/test/openaiTranslationTestUtils';
 import type {
   OpenAITranslationFetch,
   OpenAITranslationSessionRequestDescriptor,
   OpenAITranslationTargetLanguage,
+  OpenAITranslationTranscriptExportPayload,
   OpenAITranslationTranscriptEntry,
 } from '@/types/openai-translation';
 
@@ -82,6 +84,87 @@ const EXPECTED_PRD_TARGET_LANGUAGES = [
 const EXPECTED_PRD_TARGET_LANGUAGE_CODES = EXPECTED_PRD_TARGET_LANGUAGES.map(
   (language) => language.code
 );
+
+const HELPER_TARGET_LANGUAGE_FIXTURES = [
+  { input: ' ES ', normalized: 'es', label: 'Spanish' },
+  { input: 'pt', normalized: 'pt', label: 'Portuguese' },
+  { input: 'JA', normalized: 'ja', label: 'Japanese' },
+  { input: 'en', normalized: 'en', label: 'English' },
+] as const;
+
+const HELPER_AUDIO_MIX_FIXTURES = [
+  { input: -20, translatedPercent: 0, originalPercent: 100 },
+  { input: '40.5', translatedPercent: 40.5, originalPercent: 59.5 },
+  { input: 150, translatedPercent: 100, originalPercent: 0 },
+] as const;
+
+const HELPER_MAX_SESSION_FIXTURES = [
+  { input: undefined, maxMinutes: 30, maxSeconds: 1800, source: 'default' },
+  { input: '0.5', maxMinutes: 0.5, maxSeconds: 30, source: 'configured' },
+  { input: 150, maxMinutes: 120, maxSeconds: 7200, source: 'capped' },
+] as const;
+
+const HELPER_REQUEST_DESCRIPTOR_FIXTURES = [
+  { input: ' ES ', targetLanguage: 'es' },
+  { input: ' VI ', targetLanguage: 'vi' },
+] as const;
+
+const HELPER_SOURCE_OPTION_FIXTURES = [
+  {
+    input: {},
+    expected: {
+      audio: true,
+      video: true,
+      preferCurrentTab: true,
+      selfBrowserSurface: 'include',
+      surfaceSwitching: 'include',
+      systemAudio: 'include',
+    },
+  },
+  {
+    input: {
+      preferCurrentTab: false,
+      includeSystemAudio: false,
+      surfaceSwitching: false,
+    },
+    expected: {
+      audio: true,
+      video: true,
+      preferCurrentTab: false,
+      selfBrowserSurface: 'include',
+      surfaceSwitching: 'exclude',
+      systemAudio: 'exclude',
+    },
+  },
+] as const;
+
+const HELPER_EXPORT_FIXTURE = {
+  generatedAt: Date.UTC(2026, 4, 11, 17, 0, 0),
+  metadata: {
+    startedAt: Date.UTC(2026, 4, 11, 16, 58, 55),
+    endedAt: Date.UTC(2026, 4, 11, 17, 0, 0),
+    durationSeconds: 65,
+    sourceMode: 'browser-tab',
+    targetLanguage: 'es',
+    endReason: 'manual',
+  },
+  entries: [
+    {
+      id: 'source-1',
+      stream: 'source',
+      text: 'hello',
+      isFinal: true,
+      updatedAt: 10,
+    },
+    {
+      id: 'translated-1',
+      stream: 'translated',
+      text: 'hola | mundo\nline 2',
+      isFinal: false,
+      updatedAt: 20,
+    },
+  ],
+} as const satisfies OpenAITranslationTranscriptExportPayload;
 
 function createDiagnosticInput(
   overrides: Partial<Parameters<typeof buildOpenAITranslationDiagnostic>[0]> = {}
@@ -121,6 +204,28 @@ function createDiagnosticInput(
 }
 
 describe('openaiTranslation', () => {
+  describe('session coverage fixtures', () => {
+    it('keeps pure helper fixtures contract-shaped and sanitized', () => {
+      for (const fixture of HELPER_TARGET_LANGUAGE_FIXTURES) {
+        expect(isTranslationTargetLanguage(fixture.normalized)).toBe(true);
+        expect(getTranslationTargetLanguage(fixture.input)?.label).toBe(fixture.label);
+      }
+
+      for (const fixture of HELPER_AUDIO_MIX_FIXTURES) {
+        expect(buildTranslationAudioMixState(fixture.input)).toMatchObject({
+          translatedPercent: fixture.translatedPercent,
+          originalPercent: fixture.originalPercent,
+        });
+      }
+
+      for (const fixture of HELPER_SOURCE_OPTION_FIXTURES) {
+        expect(buildOpenAITranslationDisplayMediaOptions(fixture.input)).toEqual(fixture.expected);
+      }
+
+      expectNoOpenAITranslationSecretLeak(HELPER_EXPORT_FIXTURE);
+    });
+  });
+
   describe('translation constants', () => {
     it('exports model, endpoint, and local route metadata', () => {
       expect(OPENAI_TRANSLATION_MODEL).toBe('gpt-realtime-translate');
@@ -259,6 +364,65 @@ describe('openaiTranslation', () => {
         supported: true,
         canRequest: false,
       });
+    });
+
+    it('uses source fixtures for capability and display-media edge cases', () => {
+      const mediaDevices = {
+        getUserMedia: vi.fn(),
+        getDisplayMedia: vi.fn(),
+      };
+
+      for (const fixture of HELPER_SOURCE_OPTION_FIXTURES) {
+        expect(buildOpenAITranslationDisplayMediaOptions(fixture.input)).toEqual(fixture.expected);
+      }
+
+      expect(detectOpenAITranslationSourceCapabilities(mediaDevices, true)).toEqual({
+        microphone: {
+          mode: 'microphone',
+          supported: true,
+          canRequest: true,
+          status: 'available',
+          message: null,
+        },
+        browserTab: {
+          mode: 'browser-tab',
+          supported: true,
+          canRequest: true,
+          status: 'available',
+          message: null,
+        },
+      });
+      expect(detectOpenAITranslationSourceCapabilities(mediaDevices, false)).toMatchObject({
+        microphone: {
+          status: 'restricted',
+          supported: true,
+          canRequest: false,
+        },
+        browserTab: {
+          status: 'restricted',
+          supported: true,
+          canRequest: false,
+        },
+      });
+      expect(detectOpenAITranslationSourceCapabilities(null, true)).toMatchObject({
+        microphone: {
+          status: 'unavailable',
+          canRequest: false,
+        },
+        browserTab: {
+          status: 'unavailable',
+          canRequest: false,
+        },
+      });
+      expect(
+        detectOpenAITranslationSourceCapabilities({ getDisplayMedia: vi.fn() }, true).microphone
+      ).toMatchObject({
+        status: 'unsupported',
+        canRequest: false,
+      });
+      expect(() =>
+        buildOpenAITranslationDisplayMediaOptions({ surfaceSwitching: 'include' })
+      ).toThrowError(/surfaceSwitching: must be a boolean/);
     });
 
     it('maps browser capture failures to stable source errors', () => {
@@ -492,9 +656,84 @@ describe('openaiTranslation', () => {
       expect(markdown).toContain('- End reason: In progress');
       expect(markdown).toContain('No transcript lines were available.');
     });
+
+    it('exports fixture Markdown with ASCII metadata, rows, and clear-ready summary state', () => {
+      const markdown = buildOpenAITranslationTranscriptMarkdown(HELPER_EXPORT_FIXTURE);
+      const summary = summarizeOpenAITranslationTranscripts(HELPER_EXPORT_FIXTURE.entries);
+      const emptyMarkdown = buildOpenAITranslationTranscriptMarkdown({
+        ...HELPER_EXPORT_FIXTURE,
+        metadata: {
+          ...HELPER_EXPORT_FIXTURE.metadata,
+          endedAt: null,
+          durationSeconds: 0,
+          sourceMode: null,
+          targetLanguage: 'en',
+          endReason: null,
+        },
+        entries: [],
+      });
+
+      expect(summary).toMatchObject({
+        hasEntries: true,
+        sourceCount: 1,
+        translatedCount: 1,
+      });
+      expect(markdown).toContain('- Generated: 2026-05-11T17:00:00.000Z');
+      expect(markdown).toContain('- Duration: 01:05');
+      expect(markdown).toContain('- Target language: Spanish (es)');
+      expect(markdown).toContain('| 1 | Source | Final | hello |');
+      expect(markdown).toContain('| 2 | Translated | Partial | hola \\| mundo<br>line 2 |');
+      expect(emptyMarkdown).toContain('- Target language: English (en)');
+      expect(emptyMarkdown).toContain('No transcript lines were available.');
+      expect([...markdown].every((character) => character.charCodeAt(0) <= 127)).toBe(true);
+      expectNoOpenAITranslationSecretLeak(markdown);
+    });
   });
 
   describe('payload builders', () => {
+    it('uses table fixtures for language, config, request, update, max-session, and mix contracts', () => {
+      for (const fixture of HELPER_TARGET_LANGUAGE_FIXTURES) {
+        expect(normalizeTranslationTargetLanguage(fixture.input)).toBe(fixture.normalized);
+        expect(
+          buildTranslationSessionConfig({ targetLanguage: fixture.input }).audio.output
+        ).toEqual({
+          language: fixture.normalized,
+        });
+        expect(
+          buildTranslationSessionUpdate({
+            targetLanguage: fixture.input,
+            enableInputTranscription: true,
+          }).session.audio.output
+        ).toEqual({
+          language: fixture.normalized,
+        });
+      }
+
+      for (const fixture of HELPER_REQUEST_DESCRIPTOR_FIXTURES) {
+        const descriptor = buildTranslationSessionRequestDescriptor(fixture.input);
+
+        expect(buildTranslationSessionRequest(fixture.input)).toEqual({
+          targetLanguage: fixture.targetLanguage,
+        });
+        expect(JSON.parse(descriptor.init.body)).toEqual({
+          targetLanguage: fixture.targetLanguage,
+        });
+        expect(descriptor.init.method).toBe('POST');
+      }
+
+      for (const fixture of HELPER_MAX_SESSION_FIXTURES) {
+        expect(normalizeOpenAITranslationMaxSessionConfig(fixture.input)).toMatchObject({
+          maxMinutes: fixture.maxMinutes,
+          maxSeconds: fixture.maxSeconds,
+          source: fixture.source,
+        });
+      }
+
+      for (const fixture of HELPER_AUDIO_MIX_FIXTURES) {
+        expect(clampTranslationAudioMixPercent(fixture.input)).toBe(fixture.translatedPercent);
+      }
+    });
+
     it('builds translation session config without voice-agent fields', () => {
       const config = buildTranslationSessionConfig({
         targetLanguage: ' ES ',
@@ -728,6 +967,97 @@ describe('openaiTranslation', () => {
           code: 'missing-transcript-text',
         });
       }
+    });
+
+    it('normalizes mixed transcript events while tolerating unknown event traffic', () => {
+      const inputs = [
+        {
+          type: 'translation.source_transcript.delta',
+          item_id: 'source-1',
+          delta: 'hel',
+        },
+        {
+          type: 'translation.source_transcript.delta',
+          item_id: 'source-1',
+          delta: 'lo',
+        },
+        {
+          type: 'translation.source_transcript.done',
+          item_id: 'source-1',
+          transcript: 'hello',
+        },
+        {
+          type: 'response.audio_transcript.delta',
+          response_id: 'translated-1',
+          delta: 'ho',
+        },
+        {
+          type: 'response.audio_transcript.done',
+          response_id: 'translated-1',
+          transcript: 'hola',
+        },
+      ];
+      let entries: readonly OpenAITranslationTranscriptEntry[] = [];
+
+      inputs.forEach((input, index) => {
+        const parsed = parseOpenAITranslationDataChannelMessage(input);
+        expect(parsed.ok).toBe(true);
+        if (parsed.ok && parsed.kind === 'transcript') {
+          entries = applyOpenAITranslationTranscriptEvent(entries, parsed.event, index + 1);
+        }
+      });
+
+      const unknown = parseOpenAITranslationDataChannelMessage({
+        type: 'session.created',
+        session: { id: 'session-1' },
+      });
+      const malformedKnown = parseOpenAITranslationDataChannelMessage({
+        type: 'translation.source_transcript.done',
+        item_id: 'source-2',
+      });
+
+      expect(unknown).toMatchObject({
+        ok: true,
+        kind: 'unknown',
+        eventType: 'session.created',
+      });
+      expect(malformedKnown).toMatchObject({
+        ok: false,
+        kind: 'invalid',
+        error: {
+          kind: 'parser',
+          code: 'missing-transcript-text',
+        },
+      });
+      expect(getOpenAITranslationTranscriptDisplayEntries(entries)).toMatchObject([
+        {
+          id: 'source-1',
+          sequence: 1,
+          stream: 'source',
+          text: 'hello',
+          statusLabel: 'Final',
+        },
+        {
+          id: 'translated-1',
+          sequence: 2,
+          stream: 'translated',
+          text: 'hola',
+          statusLabel: 'Final',
+        },
+      ]);
+      expect(getLatestOpenAITranslationCaption(entries)).toMatchObject({
+        id: 'translated-1',
+        text: 'hola',
+      });
+      expect(summarizeOpenAITranslationTranscripts(entries)).toEqual({
+        totalCount: 2,
+        sourceCount: 1,
+        translatedCount: 1,
+        finalCount: 2,
+        partialCount: 0,
+        hasEntries: true,
+        hasTranslatedCaption: true,
+      });
     });
   });
 

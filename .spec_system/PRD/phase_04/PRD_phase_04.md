@@ -4,7 +4,7 @@
 **Sessions**: 5
 **Estimated Duration**: 5-8 days
 
-**Progress**: 2/5 sessions (40%)
+**Progress**: 3/5 sessions (60%)
 
 ---
 
@@ -20,7 +20,7 @@ Phase 04 hardens the browser translation MVP for repeated local demos. It focuse
 | ------- | ------------------------------------ | ----------- | ---------- | ---------- |
 | 01      | Lifecycle Reliability                | Complete    | 16-22      | 2026-05-11 |
 | 02      | Error States and Diagnostics         | Complete    | 14-20      | 2026-05-11 |
-| 03      | Unit and Integration Coverage        | Not Started | 18-24      | -          |
+| 03      | Unit and Integration Coverage        | Complete    | 18-24      | 2026-05-11 |
 | 04      | E2E and Browser Smoke Tests          | Not Started | 16-22      | -          |
 | 05      | Documentation and Demo Configuration | Not Started | 12-18      | -          |
 
@@ -30,12 +30,12 @@ Phase 04 hardens the browser translation MVP for repeated local demos. It focuse
 
 1. Session 01: Lifecycle Reliability (validated 2026-05-11)
 2. Session 02: Error States and Diagnostics (validated 2026-05-11)
+3. Session 03: Unit and Integration Coverage (validated 2026-05-11)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 03: Unit and Integration Coverage
 - Session 04: E2E and Browser Smoke Tests
 - Session 05: Documentation and Demo Configuration
 

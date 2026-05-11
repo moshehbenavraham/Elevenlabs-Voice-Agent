@@ -1,102 +1,27 @@
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useOpenAITranslationSource } from '@/hooks/useOpenAITranslationSource';
-
-type TrackEventHandler = (event: Event) => void;
-
-class FakeMediaStreamTrack {
-  readonly kind: string;
-  readonly id: string;
-  readyState: MediaStreamTrackState = 'live';
-  readonly cleanupEvents: string[] = [];
-  readonly stop = vi.fn(() => {
-    this.cleanupEvents.push(`stop:${this.id}`);
-    this.readyState = 'ended';
-  });
-  readonly addEventListener = vi.fn((type: string, listener: TrackEventHandler): void => {
-    if (type !== 'ended') {
-      return;
-    }
-
-    this.endedListeners.add(listener);
-  });
-  readonly removeEventListener = vi.fn((type: string, listener: TrackEventHandler): void => {
-    if (type !== 'ended') {
-      return;
-    }
-
-    this.cleanupEvents.push(`remove:${this.id}`);
-    this.endedListeners.delete(listener);
-  });
-  private readonly endedListeners = new Set<TrackEventHandler>();
-
-  constructor(kind = 'audio', id = `${kind}-track`) {
-    this.kind = kind;
-    this.id = id;
-  }
-
-  dispatchEnded(): void {
-    this.readyState = 'ended';
-    for (const listener of Array.from(this.endedListeners)) {
-      listener({ type: 'ended' } as Event);
-    }
-  }
-
-  getEndedListenerCount(): number {
-    return this.endedListeners.size;
-  }
-
-  getCleanupEvents(): readonly string[] {
-    return this.cleanupEvents;
-  }
-}
-
-class FakeMediaStream {
-  private readonly tracks: FakeMediaStreamTrack[];
-
-  constructor(tracks: readonly FakeMediaStreamTrack[] = []) {
-    this.tracks = [...tracks];
-  }
-
-  getTracks(): readonly FakeMediaStreamTrack[] {
-    return this.tracks;
-  }
-
-  getAudioTracks(): readonly FakeMediaStreamTrack[] {
-    return this.tracks.filter((track) => track.kind === 'audio');
-  }
-
-  addTrack(track: FakeMediaStreamTrack): void {
-    this.tracks.push(track);
-  }
-}
+import {
+  FakeOpenAITranslationMediaStreamTrack as FakeMediaStreamTrack,
+  createFakeOpenAITranslationStream as createFakeStream,
+  createOpenAITranslationNamedError as createNamedError,
+} from '@/test/openaiTranslationTestUtils';
 
 const getUserMediaMock = vi.fn();
 const getDisplayMediaMock = vi.fn();
-
-function createFakeStream(
-  tracks: readonly FakeMediaStreamTrack[] = [new FakeMediaStreamTrack('audio')]
-): {
-  readonly stream: MediaStream;
-  readonly tracks: readonly FakeMediaStreamTrack[];
-} {
-  return {
-    stream: new FakeMediaStream(tracks) as unknown as MediaStream,
-    tracks,
-  };
-}
+const SOURCE_HOOK_FIXTURES = {
+  deniedErrorName: 'NotAllowedError',
+  cancelledErrorName: 'AbortError',
+  missingAudioMode: 'browser-tab',
+  endedTrackCode: 'source-track-ended',
+  cleanupOrder: ['remove:cleanup-audio', 'stop:cleanup-audio'],
+} as const;
 
 function installMediaDevices(): void {
   Object.assign(navigator.mediaDevices, {
     getUserMedia: getUserMediaMock,
     getDisplayMedia: getDisplayMediaMock,
   });
-}
-
-function createNamedError(name: string): Error {
-  const error = new Error(name);
-  error.name = name;
-  return error;
 }
 
 describe('useOpenAITranslationSource', () => {
@@ -109,6 +34,16 @@ describe('useOpenAITranslationSource', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it('keeps source fake fixtures aligned with capture and cleanup scenarios', () => {
+    expect(SOURCE_HOOK_FIXTURES).toEqual({
+      deniedErrorName: 'NotAllowedError',
+      cancelledErrorName: 'AbortError',
+      missingAudioMode: 'browser-tab',
+      endedTrackCode: 'source-track-ended',
+      cleanupOrder: ['remove:cleanup-audio', 'stop:cleanup-audio'],
+    });
   });
 
   it('exposes the stable source contract without requesting permissions on render', () => {
@@ -317,6 +252,38 @@ describe('useOpenAITranslationSource', () => {
 
     expect(getUserMediaMock).toHaveBeenCalledTimes(1);
     expect(result.current.status).toBe('ready');
+  });
+
+  it('stops stale capture streams when reset wins an in-flight source request', async () => {
+    const audioTrack = new FakeMediaStreamTrack('audio', 'stale-audio');
+    const { stream } = createFakeStream([audioTrack]);
+    let resolveCapture: ((stream: MediaStream) => void) | null = null;
+    getUserMediaMock.mockImplementation(
+      () =>
+        new Promise<MediaStream>((resolve) => {
+          resolveCapture = resolve;
+        })
+    );
+    const { result } = renderHook(() => useOpenAITranslationSource());
+    let capturePromise: Promise<boolean>;
+
+    await act(async () => {
+      capturePromise = result.current.captureMicrophone();
+      await Promise.resolve();
+    });
+    expect(result.current.status).toBe('requesting');
+
+    await act(async () => {
+      result.current.reset();
+      resolveCapture?.(stream);
+      await expect(capturePromise).resolves.toBe(false);
+    });
+
+    expect(result.current.status).toBe('idle');
+    expect(result.current.stream).toBeNull();
+    expect(result.current.source).toBeNull();
+    expect(audioTrack.addEventListener).not.toHaveBeenCalled();
+    expect(audioTrack.stop).toHaveBeenCalledTimes(1);
   });
 
   it('cleans previous streams during capture replacement', async () => {
