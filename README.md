@@ -178,6 +178,7 @@ This project includes comprehensive documentation:
 - **[Quick Start Guide](#-quick-start)** - Get up and running in minutes
 - **[Installation & Configuration](#configuration)** - Detailed setup instructions
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Docker/Coolify production deployment and split-hosting notes
+- **[CI/CD Operations Guide](docs/CI_CD.md)** - GitHub Actions workflows, required checks, branch protection, GHCR deployment, and release notes
 
 ### Technical Documentation
 
@@ -204,18 +205,19 @@ This project includes comprehensive documentation:
 
 ### Quick Links
 
-| Type      | Documentation                                   | Description                    |
-| --------- | ----------------------------------------------- | ------------------------------ |
-| [DEPLOY]  | **[Deployment](docs/DEPLOYMENT.md)**            | Production deployment guides   |
-| [DEMO]    | **[Demo Mode](docs/DEMO_MODE.md)**              | ngrok demo mode setup          |
-| [ARCH]    | **[Architecture](docs/ARCHITECTURE.md)**        | Technical system design        |
-| [VOICE]   | **[Voice Features](docs/VOICE_FEATURES.md)**    | Voice AI functionality         |
-| [MOBILE]  | **[Mobile Guide](docs/MOBILE_OPTIMIZATION.md)** | Mobile optimization            |
-| [API]     | **[API Integration](docs/API_INTEGRATION.md)**  | Voice SDK integration guide    |
-| [HELP]    | **[Troubleshooting](docs/TROUBLESHOOTING.md)**  | Problem resolution             |
-| [AI]      | **[Claude Integration](CLAUDE.md)**             | AI assistant development guide |
-| [CONTRIB] | **[Contributing](CONTRIBUTING.md)**             | Development guidelines         |
-| [SECURE]  | **[Security](docs/SECURITY.md)**                | Security policies              |
+| Type      | Documentation                                   | Description                     |
+| --------- | ----------------------------------------------- | ------------------------------- |
+| [DEPLOY]  | **[Deployment](docs/DEPLOYMENT.md)**            | Production deployment guides    |
+| [CI]      | **[CI/CD](docs/CI_CD.md)**                      | Workflow checks and GHCR deploy |
+| [DEMO]    | **[Demo Mode](docs/DEMO_MODE.md)**              | ngrok demo mode setup           |
+| [ARCH]    | **[Architecture](docs/ARCHITECTURE.md)**        | Technical system design         |
+| [VOICE]   | **[Voice Features](docs/VOICE_FEATURES.md)**    | Voice AI functionality          |
+| [MOBILE]  | **[Mobile Guide](docs/MOBILE_OPTIMIZATION.md)** | Mobile optimization             |
+| [API]     | **[API Integration](docs/API_INTEGRATION.md)**  | Voice SDK integration guide     |
+| [HELP]    | **[Troubleshooting](docs/TROUBLESHOOTING.md)**  | Problem resolution              |
+| [AI]      | **[Claude Integration](CLAUDE.md)**             | AI assistant development guide  |
+| [CONTRIB] | **[Contributing](CONTRIBUTING.md)**             | Development guidelines          |
+| [SECURE]  | **[Security](docs/SECURITY.md)**                | Security policies               |
 
 ## [START] Quick Start
 
@@ -365,9 +367,30 @@ npm run test:ui
 # Run E2E tests
 npm run test:e2e
 
+# Run the bounded CI E2E subset
+npm run test:e2e:ci
+
 # Run E2E tests with UI
 npm run test:e2e:ui
 ```
+
+### CI/CD Entry Points
+
+GitHub Actions workflows are configured for pull request checks, security
+scans, GHCR image publication, deployment triggers, releases, and Dependabot:
+
+| Workflow                                      | Purpose                                                     |
+| --------------------------------------------- | ----------------------------------------------------------- |
+| [Code Quality](.github/workflows/quality.yml) | Lint, format, and TypeScript checks                         |
+| [Build & Test](.github/workflows/test.yml)    | Production build and unit tests                             |
+| [E2E Tests](.github/workflows/e2e.yml)        | Playwright browser coverage                                 |
+| [Security](.github/workflows/security.yml)    | Gitleaks, CodeQL, dependency review, and npm audit          |
+| [Deploy](.github/workflows/deploy.yml)        | GHCR image build/push, deployment trigger, and health check |
+| [Release](.github/workflows/release.yml)      | Tag-based release artifact publication                      |
+| [Dependabot](.github/dependabot.yml)          | Weekly npm and GitHub Actions dependency updates            |
+
+See [docs/CI_CD.md](docs/CI_CD.md) for required branch protection checks,
+repository variables, environment secrets, and failure diagnostics.
 
 ### Test Coverage
 
@@ -423,6 +446,18 @@ npm run docker:down
 ```
 
 The combined Docker container serves the React app and Express API from `http://localhost:3001` by default.
+
+### GitHub Actions And GHCR
+
+Pushes to `main` run the Deploy workflow, publish the production image to
+`ghcr.io/<owner>/<repo>`, and then trigger webhook or SSH deployment when the
+required GitHub variables and secrets are configured. If no deployment target
+is configured yet, the workflow still publishes the image and exits with a
+notice.
+
+Deployment workflow details, required GitHub settings, and health-check
+behavior are documented in [docs/CI_CD.md](docs/CI_CD.md) and
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ### Deployment Options
 

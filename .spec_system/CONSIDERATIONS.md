@@ -1,7 +1,7 @@
 # Considerations
 
 > Institutional memory for AI assistants. Updated between phases via /carryforward.
-> **Line budget**: 600 max | **Last updated**: Phase 00 (2026-01-18)
+> **Line budget**: 600 max | **Last updated**: PRD translation overhaul (2026-05-11)
 
 ---
 
@@ -21,6 +21,7 @@ Items requiring attention in upcoming phases. Review before each session.
 
 - [P00] **ngrok tunnel stability**: Demo mode depends on ngrok service availability. Tunnel URLs change on restart, requiring re-sharing.
 - [P00] **jq availability varies**: Some systems don't have jq installed; scripts include grep/sed fallbacks but jq is preferred for reliable JSON parsing.
+- [P02] **OpenAI translation endpoint volatility**: Live translation depends on `gpt-realtime-translate`, `/v1/realtime/translations/client_secrets`, and `/v1/realtime/translations/calls`. Re-check official docs before implementation sessions that touch protocol details.
 
 ### Performance / Security
 
@@ -28,12 +29,14 @@ Items requiring attention in upcoming phases. Review before each session.
 
 - [P00] **Demo mode CORS configuration**: Demo mode now uses a single same-origin ngrok tunnel. Ensure production split deployments still use strict CORS settings and never inherit demo-only permissiveness.
 - [P00] **15-minute Gemini session limit**: Gemini Live API enforces 15-minute session limits with warnings at 12min/14min.
+- [P02] **Translation client secret boundary**: Browser translation must never receive `OPENAI_API_KEY`; only short-lived sanitized client secrets should cross the backend/frontend boundary.
 
 ### Architecture
 
 <!-- Max 5 items -->
 
 - [P00] **Runtime config injection pattern**: Frontend uses `window.__DEMO_CONFIG__` for demo mode runtime API configuration. This pattern could be extended for other runtime-configurable settings.
+- [P02] **Translation protocol separation**: OpenAI live translation is not a normal OpenAI voice-agent session. Do not reuse prompt/tool/`response.create` assumptions from the existing OpenAI provider.
 
 ---
 

@@ -8,16 +8,18 @@ on:
   schedule:
     # Run bi-weekly on 1st and 15th
     - cron: '0 0 1,15 * *'
+  workflow_dispatch:
 
 permissions:
   contents: read
-  security-events: write
-  actions: read
 
 jobs:
   gitleaks:
     name: Secrets Scanning
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -32,6 +34,11 @@ jobs:
   codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -54,7 +61,10 @@ jobs:
     name: Dependency Review
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    continue-on-error: true  # Don't block PR if dependency graph is not enabled
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -68,6 +78,9 @@ jobs:
   npm-audit:
     name: NPM Audit
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -75,12 +88,22 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: "22"
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
       - name: Run npm audit
-        run: npm audit --audit-level=high
-        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm audit --audit-level=high 2>&1 | tee npm-audit.txt
+
+      - name: Upload npm audit report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: npm-audit-report
+          path: npm-audit.txt
+          retention-days: 7
+          if-no-files-found: ignore

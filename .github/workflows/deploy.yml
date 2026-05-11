@@ -22,18 +22,20 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 permissions:
   contents: read
   packages: write
+  issues: write
 
 jobs:
   build:
     name: Build & Push Image
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     outputs:
-      image-tag: ${{ steps.meta.outputs.tags }}
+      image-ref: ${{ steps.deploy-image.outputs.image-ref }}
+      image-tags: ${{ steps.meta.outputs.tags }}
       image-digest: ${{ steps.build.outputs.digest }}
 
     steps:
@@ -42,6 +44,12 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
+
+      - name: Prepare image name
+        id: image
+        run: |
+          image_name="${GITHUB_REPOSITORY,,}"
+          echo "name=${REGISTRY}/${image_name}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to Container Registry
         uses: docker/login-action@v4
@@ -54,11 +62,12 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ steps.image.outputs.name }}
           tags: |
-            type=sha,prefix=
+            type=sha,prefix=sha-
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
+            type=ref,event=tag
 
       - name: Build and push Docker image
         id: build
@@ -68,41 +77,88 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          # Build args passed at build time (not runtime secrets)
-          build-args: |
-            NODE_ENV=production
+          pull: true
+          cache-from: type=gha,scope=voice-agent-production
+          cache-to: type=gha,mode=max,scope=voice-agent-production
+
+      - name: Select deploy image reference
+        id: deploy-image
+        env:
+          IMAGE_TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          image_ref="$(printf '%s\n' "$IMAGE_TAGS" | head -n 1)"
+          if [ -z "$image_ref" ]; then
+            echo "No Docker image tag was generated for deployment."
+            exit 1
+          fi
+          echo "image-ref=$image_ref" >> "$GITHUB_OUTPUT"
+          echo "Selected deploy image: $image_ref"
 
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: build
+    timeout-minutes: 15
     environment: production
 
     steps:
       - name: Deploy via webhook
         if: ${{ vars.DEPLOY_WEBHOOK_URL != '' }}
+        env:
+          DEPLOY_WEBHOOK_URL: ${{ vars.DEPLOY_WEBHOOK_URL }}
+          DEPLOY_WEBHOOK_TOKEN: ${{ secrets.DEPLOY_WEBHOOK_TOKEN }}
+          IMAGE_REF: ${{ needs.build.outputs.image-ref }}
+          IMAGE_DIGEST: ${{ needs.build.outputs.image-digest }}
+          COMMIT_SHA: ${{ github.sha }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          echo "Triggering deployment webhook..."
-          response=$(curl -s -w "\n%{http_code}" -X POST \
+          if [ -z "$DEPLOY_WEBHOOK_TOKEN" ]; then
+            echo "::error::DEPLOY_WEBHOOK_URL is configured, but DEPLOY_WEBHOOK_TOKEN is missing."
+            exit 1
+          fi
+
+          payload=$(printf '{"image":"%s","digest":"%s","sha":"%s","run_url":"%s"}' \
+            "$IMAGE_REF" "$IMAGE_DIGEST" "$COMMIT_SHA" "$RUN_URL")
+
+          echo "Triggering deployment webhook for $IMAGE_REF..."
+          if ! response=$(curl --silent --show-error --max-time 30 --retry 2 --retry-delay 5 -w "\n%{http_code}" -X POST \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer ${{ secrets.DEPLOY_WEBHOOK_TOKEN }}" \
-            -d '{"image": "${{ needs.build.outputs.image-tag }}", "sha": "${{ github.sha }}"}' \
-            "${{ vars.DEPLOY_WEBHOOK_URL }}")
+            -H "Authorization: Bearer $DEPLOY_WEBHOOK_TOKEN" \
+            -d "$payload" \
+            "$DEPLOY_WEBHOOK_URL"); then
+            echo "::error::Deployment webhook request failed before receiving an HTTP response."
+            exit 1
+          fi
 
           http_code=$(echo "$response" | tail -n1)
           body=$(echo "$response" | sed '$d')
 
-          echo "Response: $body"
           echo "HTTP Status: $http_code"
+          echo "Response preview:"
+          printf '%s\n' "$body" | head -c 2000
+          printf '\n'
 
           if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
-            echo "Deployment webhook failed with status $http_code"
+            echo "::error::Deployment webhook failed with status $http_code."
             exit 1
           fi
 
           echo "Deployment triggered successfully"
+
+      - name: Validate SSH deployment configuration
+        if: ${{ vars.DEPLOY_WEBHOOK_URL == '' && vars.DEPLOY_SSH_HOST != '' }}
+        env:
+          DEPLOY_SSH_USER: ${{ vars.DEPLOY_SSH_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          if [ -z "$DEPLOY_SSH_USER" ]; then
+            echo "::error::DEPLOY_SSH_HOST is configured, but DEPLOY_SSH_USER is missing."
+            exit 1
+          fi
+          if [ -z "$DEPLOY_SSH_KEY" ]; then
+            echo "::error::DEPLOY_SSH_HOST is configured, but DEPLOY_SSH_KEY is missing."
+            exit 1
+          fi
 
       - name: Deploy via SSH (alternative)
         if: ${{ vars.DEPLOY_WEBHOOK_URL == '' && vars.DEPLOY_SSH_HOST != '' }}
@@ -112,60 +168,82 @@ jobs:
           username: ${{ vars.DEPLOY_SSH_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
+            set -euo pipefail
             cd ${{ vars.DEPLOY_PATH || '/opt/voice-agent' }}
+            export IMAGE_REF='${{ needs.build.outputs.image-ref }}'
+            echo "Deploying image ${IMAGE_REF}"
             docker compose pull
             docker compose up -d --remove-orphans
+            docker compose ps
             docker image prune -f
 
       - name: Skip deployment (no config)
         if: ${{ vars.DEPLOY_WEBHOOK_URL == '' && vars.DEPLOY_SSH_HOST == '' }}
         run: |
           echo "::notice::No deployment configuration found. Image built and pushed to registry."
+          echo "Image: ${{ needs.build.outputs.image-ref }}"
+          echo "Digest: ${{ needs.build.outputs.image-digest }}"
           echo "To enable deployment, configure one of:"
           echo "  - DEPLOY_WEBHOOK_URL (vars) + DEPLOY_WEBHOOK_TOKEN (secrets)"
           echo "  - DEPLOY_SSH_HOST, DEPLOY_SSH_USER (vars) + DEPLOY_SSH_KEY (secrets)"
 
-  health-check:
+  health_check:
     name: Post-Deploy Health Check
     runs-on: ubuntu-latest
-    needs: deploy
+    needs: [build, deploy]
     if: ${{ vars.HEALTH_CHECK_URL != '' }}
+    timeout-minutes: 10
 
     steps:
       - name: Wait for deployment
         run: sleep 30
 
       - name: Check health endpoint
+        env:
+          HEALTH_CHECK_URL: ${{ vars.HEALTH_CHECK_URL }}
         run: |
-          max_attempts=5
+          max_attempts=6
           attempt=1
+          last_status="000"
 
           while [ $attempt -le $max_attempts ]; do
             echo "Health check attempt $attempt of $max_attempts..."
 
-            response=$(curl -s -w "\n%{http_code}" "${{ vars.HEALTH_CHECK_URL }}")
-            http_code=$(echo "$response" | tail -n1)
-            body=$(echo "$response" | sed '$d')
+            if response=$(curl --silent --show-error --max-time 15 -w "\n%{http_code}" "$HEALTH_CHECK_URL"); then
+              http_code=$(echo "$response" | tail -n1)
+              body=$(echo "$response" | sed '$d')
+            else
+              http_code="000"
+              body="curl failed before receiving an HTTP response"
+            fi
+
+            last_status="$http_code"
 
             if [ "$http_code" -eq 200 ]; then
-              echo "Health check passed!"
-              echo "$body" | jq . || echo "$body"
+              echo "Health check passed."
+              echo "Response preview:"
+              printf '%s\n' "$body" | head -c 2000
+              printf '\n'
               exit 0
             fi
 
-            echo "Health check failed (HTTP $http_code), retrying in 10s..."
+            echo "Health check failed (HTTP $http_code)."
+            echo "Response preview:"
+            printf '%s\n' "$body" | head -c 2000
+            printf '\n'
+            echo "Retrying in 10s..."
             sleep 10
             attempt=$((attempt + 1))
           done
 
-          echo "Health check failed after $max_attempts attempts"
+          echo "::error::Health check failed after $max_attempts attempts. Last HTTP status: $last_status."
           exit 1
 
   notify-failure:
     name: Notify on Failure
     runs-on: ubuntu-latest
-    needs: [build, deploy]
-    if: failure()
+    needs: [build, deploy, health_check]
+    if: ${{ always() && (needs.build.result == 'failure' || needs.deploy.result == 'failure' || needs.health_check.result == 'failure') }}
 
     steps:
       - name: Create failure issue
@@ -173,10 +251,17 @@ jobs:
         with:
           script: |
             const title = `Deployment failed for ${context.sha.substring(0, 7)}`;
+            const needs = ${{ toJson(needs) }};
+            const jobSummary = Object.entries(needs)
+              .map(([name, job]) => `- ${name}: ${job.result}`)
+              .join('\n');
             const body = `The deployment workflow failed.\n\n` +
               `**Commit:** ${context.sha}\n` +
               `**Branch:** ${context.ref}\n` +
+              `**Image:** ${{ needs.build.outputs.image-ref }}\n` +
+              `**Digest:** ${{ needs.build.outputs.image-digest }}\n` +
               `**Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}\n\n` +
+              `**Job results:**\n${jobSummary}\n\n` +
               `Please investigate and fix the deployment.`;
 
             await github.rest.issues.create({

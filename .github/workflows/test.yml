@@ -6,10 +6,14 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -25,6 +29,8 @@ jobs:
 
       - name: Build production
         run: npm run build
+        env:
+          CI: true
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v7
@@ -32,10 +38,25 @@ jobs:
           name: dist
           path: dist/
           retention-days: 7
+          if-no-files-found: error
+
+      - name: Upload build diagnostics
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: build-diagnostics
+          path: |
+            dist/
+            *.log
+            npm-debug.log*
+            ~/.npm/_logs/
+          retention-days: 7
+          if-no-files-found: ignore
 
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -51,3 +72,19 @@ jobs:
 
       - name: Run unit tests
         run: npm run test:run
+        env:
+          CI: true
+
+      - name: Upload test diagnostics
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: unit-test-diagnostics
+          path: |
+            test-results/
+            coverage/
+            *.log
+            npm-debug.log*
+            ~/.npm/_logs/
+          retention-days: 7
+          if-no-files-found: ignore

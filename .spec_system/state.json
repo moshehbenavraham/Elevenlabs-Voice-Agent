@@ -1,7 +1,9 @@
 {
   "version": "2.0",
   "project_name": "Voice-Agent-PuPuPlatter",
-  "description": "A multi-provider voice AI demo platform showcasing integrations with ElevenLabs, OpenAI, xAI, Ultravox, Vapi, Retell, and Gemini Live APIs",
+  "description": "A multi-provider voice AI demo platform showcasing integrations with ElevenLabs, OpenAI, xAI, Ultravox, Vapi, Retell, Gemini Live APIs, and planned OpenAI live translation",
+  "monorepo": false,
+  "packages": [],
   "current_phase": 1,
   "current_session": null,
   "phases": {
@@ -16,6 +18,30 @@
       "description": "Establish production-grade deployment infrastructure with Docker optimization, CI/CD pipelines, cloud deployment, monitoring, and security hardening",
       "status": "in_progress",
       "session_count": 5
+    },
+    "2": {
+      "name": "Translation Foundation",
+      "description": "Establish the OpenAI Translation API contract, backend token route, shared frontend config, provider-tab scaffold, and focused backend/config tests",
+      "status": "planned",
+      "session_count": 4
+    },
+    "3": {
+      "name": "Browser Translation MVP",
+      "description": "Deliver the first usable in-app translation tab for microphone and browser-tab audio using browser WebRTC, translated audio playback, transcripts, and export controls",
+      "status": "planned",
+      "session_count": 5
+    },
+    "4": {
+      "name": "Hardening, Quality, and Demo Readiness",
+      "description": "Harden translation lifecycle cleanup, diagnostics, unit/integration/E2E coverage, and documentation for repeated local demos",
+      "status": "planned",
+      "session_count": 5
+    },
+    "5": {
+      "name": "Production Extensions and Media Variants",
+      "description": "Document or prototype production safety controls, evaluation workflow, raw-audio bridge, room/telephony architecture, and optional subtitle overlay posture",
+      "status": "planned",
+      "session_count": 5
     }
   },
   "completed_sessions": [
@@ -23,7 +49,8 @@
     "phase00-session02-demo-startup-orchestration",
     "phase00-session03-dynamic-url-configuration",
     "phase00-session04-terminal-output-demo-card",
-    "phase01-session01-docker-production-optimization"
+    "phase01-session01-docker-production-optimization",
+    "phase01-session02-github-actions-cicd-pipeline"
   ],
   "next_session_history": [
     {
@@ -59,6 +86,16 @@
     {
       "date": "2026-05-11",
       "session": "phase01-session01-docker-production-optimization",
+      "status": "completed"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase01-session02-github-actions-cicd-pipeline",
+      "status": "validated"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase01-session02-github-actions-cicd-pipeline",
       "status": "completed"
     }
   ]

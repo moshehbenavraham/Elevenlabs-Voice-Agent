@@ -6,10 +6,14 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -29,6 +33,7 @@ jobs:
   format:
     name: Format
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -48,6 +53,7 @@ jobs:
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -62,4 +68,4 @@ jobs:
         run: npm ci
 
       - name: Run TypeScript type check
-        run: npx tsc --noEmit
+        run: npm run type-check

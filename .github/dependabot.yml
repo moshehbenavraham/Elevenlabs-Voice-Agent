@@ -5,11 +5,14 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+      time: "08:00"
+      timezone: "Etc/UTC"
     open-pull-requests-limit: 10
     commit-message:
       prefix: "chore(deps)"
     labels:
       - "dependencies"
+      - "npm"
     groups:
       dev-dependencies:
         dependency-type: "development"
@@ -26,7 +29,16 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+      time: "08:30"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
     commit-message:
       prefix: "chore(ci)"
     labels:
+      - "dependencies"
       - "ci"
+      - "github-actions"
+    groups:
+      github-actions:
+        patterns:
+          - "*"

@@ -59,13 +59,10 @@ test.describe('ElevenLabs Reconnection Behavior', () => {
         return;
       }
 
-      // Should show connecting/loading state
-      const statusText = page.locator('[data-testid="voice-status-text"]');
-
-      // Wait for either connecting or connected state
-      await expect(
-        statusText.or(page.locator('text=/Establishing|Connecting|Connected/'))
-      ).toBeVisible({ timeout: 10000 });
+      // The voice button is the single source of truth for the connection transition.
+      await expect(voicePage.voiceButton).toHaveAttribute('data-state', 'loading', {
+        timeout: 10000,
+      });
     });
   });
 

@@ -7,11 +7,13 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -29,28 +31,49 @@ jobs:
 
       - name: Build production
         run: npm run build
+        env:
+          CI: true
 
       - name: Generate release notes
         id: changelog
         run: |
-          # Get the previous tag
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          tag_name="${GITHUB_REF_NAME}"
+          prev_tag=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
 
-          if [ -n "$PREV_TAG" ]; then
-            echo "## Changes since $PREV_TAG" > RELEASE_NOTES.md
-            git log --pretty=format:"- %s (%h)" $PREV_TAG..HEAD >> RELEASE_NOTES.md
+          echo "## Release $tag_name" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+
+          if [ -n "$prev_tag" ]; then
+            echo "### Changes since $prev_tag" >> RELEASE_NOTES.md
+            git log --pretty=format:"- %s (%h)" "$prev_tag"..HEAD >> RELEASE_NOTES.md
           else
-            echo "## Initial Release" > RELEASE_NOTES.md
+            echo "### Initial release notes" >> RELEASE_NOTES.md
             git log --pretty=format:"- %s (%h)" >> RELEASE_NOTES.md
           fi
+
+          if [ "$(wc -l < RELEASE_NOTES.md)" -le 3 ]; then
+            echo "- No commit subjects found for this tag." >> RELEASE_NOTES.md
+          fi
+
+      - name: Package release artifacts
+        run: tar -czf voice-agent-dist.tar.gz dist RELEASE_NOTES.md
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: voice-agent-dist
+          path: voice-agent-dist.tar.gz
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           body_path: RELEASE_NOTES.md
-          generate_release_notes: true
+          generate_release_notes: false
+          fail_on_unmatched_files: true
           files: |
-            dist/**
+            voice-agent-dist.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -58,7 +81,7 @@ jobs:
     name: Notify on Failure
     runs-on: ubuntu-latest
     needs: [release]
-    if: failure()
+    if: ${{ always() && needs.release.result == 'failure' }}
     steps:
       - name: Create failure issue
         uses: actions/github-script@v8

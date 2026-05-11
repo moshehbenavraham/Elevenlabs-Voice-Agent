@@ -14,7 +14,7 @@ cp .env.example .env
 # Test locally
 npm run docker:prod
 
-# Push to Coolify via Git integration
+# Push to Coolify via Git integration, or let GitHub Actions publish to GHCR
 git push origin main
 ```
 
@@ -22,6 +22,7 @@ git push origin main
 
 - [Deployment Philosophy](#deployment-philosophy)
 - [Coolify Deployment (Recommended)](#coolify-deployment-recommended)
+- [GitHub Actions CI/CD](#github-actions-cicd)
 - [Local Production Testing](#local-production-testing)
 - [Environment Configuration](#environment-configuration)
 - [Alternative Platforms](#alternative-platforms)
@@ -131,6 +132,77 @@ The production default is one combined full-stack container:
 - Split frontend/backend hosting is supported only when a platform requires it; then set `VITE_API_BASE_URL` to the backend URL and configure `CORS_ORIGIN` for the frontend URL.
 
 Image size target: keep the production image under 325 MB decimal. The pre-optimization baseline was 302.4 MB decimal; a larger final image should be justified by runtime dependencies or platform requirements.
+
+## GitHub Actions CI/CD
+
+GitHub Actions owns the repository CI/CD baseline. See
+[CI/CD Operations Guide](CI_CD.md) for branch protection checks, required
+secrets, repository variables, and workflow behavior.
+
+### Workflow Names
+
+| Workflow     | File                             | Purpose                                           |
+| ------------ | -------------------------------- | ------------------------------------------------- |
+| Code Quality | `.github/workflows/quality.yml`  | Lint, format, and TypeScript checks               |
+| Build & Test | `.github/workflows/test.yml`     | Production build and unit tests                   |
+| E2E Tests    | `.github/workflows/e2e.yml`      | Playwright browser tests                          |
+| Security     | `.github/workflows/security.yml` | Secrets, CodeQL, dependency review, and npm audit |
+| Deploy       | `.github/workflows/deploy.yml`   | GHCR image publication and deployment trigger     |
+| Release      | `.github/workflows/release.yml`  | Tag-based release artifact publication            |
+
+### GHCR Image Tags
+
+Pushes to `main` run the Deploy workflow and publish a production image to:
+
+```text
+ghcr.io/<owner>/<repo>
+```
+
+Generated tags include:
+
+- `sha-<commit>` for immutable deployments.
+- `latest` on the default branch.
+- The branch reference tag.
+- Tag reference metadata when applicable.
+
+The workflow selects one image reference for deployment and also reports the
+image digest in logs and failure issues.
+
+### Deployment Variables
+
+Webhook deployment uses:
+
+| Name                   | Type                               | Required        | Notes                                |
+| ---------------------- | ---------------------------------- | --------------- | ------------------------------------ |
+| `DEPLOY_WEBHOOK_URL`   | Repository or environment variable | Yes for webhook | HTTPS endpoint to trigger deployment |
+| `DEPLOY_WEBHOOK_TOKEN` | Environment secret                 | Yes for webhook | Bearer token sent to the webhook     |
+
+SSH deployment uses:
+
+| Name              | Type                               | Required    | Notes                          |
+| ----------------- | ---------------------------------- | ----------- | ------------------------------ |
+| `DEPLOY_SSH_HOST` | Repository or environment variable | Yes for SSH | Remote host                    |
+| `DEPLOY_SSH_USER` | Repository or environment variable | Yes for SSH | Remote SSH user                |
+| `DEPLOY_SSH_KEY`  | Environment secret                 | Yes for SSH | Private key for remote access  |
+| `DEPLOY_PATH`     | Repository or environment variable | Optional    | Defaults to `/opt/voice-agent` |
+
+Optional post-deploy health checks use:
+
+| Name               | Type                               | Required | Notes                                        |
+| ------------------ | ---------------------------------- | -------- | -------------------------------------------- |
+| `HEALTH_CHECK_URL` | Repository or environment variable | Optional | Usually `https://your-domain.com/api/health` |
+
+If neither webhook nor SSH settings are configured, the Deploy workflow still
+builds and pushes the GHCR image, then exits with a notice. That no-config path
+is expected before the final deployment target exists.
+
+### Health Check Behavior
+
+When `HEALTH_CHECK_URL` is configured, the Deploy workflow waits for the
+deployment, retries the URL, and treats HTTP 200 as success. The endpoint may
+return `healthy` or `degraded`; both mean the app is serving. Non-200 responses
+or network failures fail the health-check job and create a deployment failure
+issue with the image reference, digest, run URL, and failed job summary.
 
 ## Local Production Testing
 
@@ -263,12 +335,12 @@ For manual Docker deployment:
 
 ```bash
 # On your server
-docker pull your-registry/voice-agent:latest
+docker pull ghcr.io/owner/repo:latest
 docker run -d \
   --name voice-agent \
   -p 3001:3001 \
   --env-file /path/to/.env \
-  your-registry/voice-agent:latest
+  ghcr.io/owner/repo:latest
 ```
 
 Configure Nginx/Caddy for reverse proxy and SSL.
@@ -354,10 +426,12 @@ docker exec voice-agent printenv | grep -E 'API|CORS|NODE'
 - [ ] Docker build completes successfully
 - [ ] Docker image is under 325 MB decimal or variance is justified
 - [ ] Environment variables documented
+- [ ] Required GitHub branch protection checks are configured
 
 ### Deployment
 
 - [ ] Environment variables configured in Coolify
+- [ ] GitHub deployment variables and secrets configured when using the Deploy workflow
 - [ ] Domain/DNS configured
 - [ ] SSL certificate generated
 - [ ] Health check passing
@@ -383,4 +457,4 @@ For deployment issues:
 
 ---
 
-**Last Updated**: 2025-12-31
+**Last Updated**: 2026-05-11
