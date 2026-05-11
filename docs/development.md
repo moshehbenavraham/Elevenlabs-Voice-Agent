@@ -111,30 +111,30 @@ npm run test
 
 ```
 src/test/
-├── setup.ts                        # Test configuration and mocks
-├── App.test.tsx                    # Basic app tests
-├── ProviderContext.test.tsx        # Provider context tests
-├── ProviderTabs.test.tsx           # Tab component tests
-├── providers.test.tsx              # Voice provider tests
-├── Index.test.tsx                  # Page tests
-├── UltravoxVoiceContext.test.tsx   # Ultravox context tests (23 tests)
-├── UltravoxProvider.test.tsx       # Ultravox provider tests (21 tests)
-├── useVapiVoice.test.ts            # Vapi hook tests (41 tests)
-├── VapiProvider.test.tsx           # Vapi provider tests (41 tests)
-├── useRetellVoice.test.ts          # Retell hook tests (35 tests)
-├── RetellProvider.test.tsx         # Retell provider tests (25 tests)
-├── useGeminiVoice.test.tsx         # Gemini hook tests (41 tests)
-├── GeminiProvider.test.tsx         # Gemini provider tests (56 tests)
-├── GeminiEmptyState.test.tsx       # Gemini empty state tests (11 tests)
-└── ... (623 tests total across 28 files)
+|-- setup.ts                        # Test configuration and mocks
+|-- App.test.tsx                    # Basic app tests
+|-- ProviderContext.test.tsx        # Provider context tests
+|-- ProviderTabs.test.tsx           # Tab component tests
+|-- providers.test.tsx              # Voice provider tests
+|-- Index.test.tsx                  # Page tests
+|-- UltravoxVoiceContext.test.tsx   # Ultravox context tests (23 tests)
+|-- UltravoxProvider.test.tsx       # Ultravox provider tests (21 tests)
+|-- useVapiVoice.test.ts            # Vapi hook tests (41 tests)
+|-- VapiProvider.test.tsx           # Vapi provider tests (41 tests)
+|-- useRetellVoice.test.ts          # Retell hook tests (35 tests)
+|-- RetellProvider.test.tsx         # Retell provider tests (25 tests)
+|-- useGeminiVoice.test.tsx         # Gemini hook tests (41 tests)
+|-- GeminiProvider.test.tsx         # Gemini provider tests (56 tests)
+|-- GeminiEmptyState.test.tsx       # Gemini empty state tests (11 tests)
+`-- ... (623 tests total across 28 files)
 
 src/lib/audio/__tests__/
-└── audioUtils.test.ts          # Audio utility tests
+`-- audioUtils.test.ts          # Audio utility tests
 
 src/lib/gemini/__tests__/
-├── audioUtils.test.ts          # Gemini PCM encoding tests (28 tests)
-├── genai-live-client.test.ts   # WebSocket client tests (26 tests)
-└── config.test.ts              # Voice/model config tests (43 tests)
+|-- audioUtils.test.ts          # Gemini PCM encoding tests (28 tests)
+|-- genai-live-client.test.ts   # WebSocket client tests (26 tests)
+`-- config.test.ts              # Voice/model config tests (43 tests)
 ```
 
 ## E2E Testing (Playwright)
@@ -163,33 +163,33 @@ npx playwright show-report
 
 ```
 tests/e2e/
-├── fixtures/                   # Playwright fixtures
-│   ├── audio-mock.fixture.ts   # Combined audio/websocket mock
-│   └── index.ts                # Fixture exports
-├── page-objects/
-│   └── VoicePage.ts            # Page object model
-├── providers/                  # Provider-specific tests
-│   ├── elevenlabs.spec.ts      # ElevenLabs widget/SDK tests
-│   ├── openai.spec.ts          # OpenAI provider tests
-│   ├── xai.spec.ts             # xAI provider tests
-│   └── gemini.spec.ts          # Gemini provider tests (19 tests)
-├── voice-ui/                   # Voice UI component tests
-│   ├── voice-button.spec.ts
-│   ├── voice-selector.spec.ts
-│   ├── conversation-panel.spec.ts
-│   └── function-calling.spec.ts
-├── error-handling/             # Error and reconnection tests
-│   ├── api-errors.spec.ts
-│   ├── reconnection.spec.ts
-│   └── elevenlabs-reconnection.spec.ts
-├── smoke/                      # Quick smoke tests
-│   ├── app-load.spec.ts
-│   ├── tab-navigation.spec.ts
-│   └── provider-render.spec.ts
-└── utils/                      # Mock utilities
-    ├── audio-mock.ts           # MediaDevices/AudioContext mock
-    ├── websocket-mock.ts       # WebSocket simulation
-    └── mock-server.ts          # API route interception
+|-- fixtures/                   # Playwright fixtures
+|   |-- audio-mock.fixture.ts   # Combined audio/websocket mock
+|   `-- index.ts                # Fixture exports
+|-- page-objects/
+|   `-- VoicePage.ts            # Page object model
+|-- providers/                  # Provider-specific tests
+|   |-- elevenlabs.spec.ts      # ElevenLabs widget/SDK tests
+|   |-- openai.spec.ts          # OpenAI provider tests
+|   |-- xai.spec.ts             # xAI provider tests
+|   `-- gemini.spec.ts          # Gemini provider tests (19 tests)
+|-- voice-ui/                   # Voice UI component tests
+|   |-- voice-button.spec.ts
+|   |-- voice-selector.spec.ts
+|   |-- conversation-panel.spec.ts
+|   `-- function-calling.spec.ts
+|-- error-handling/             # Error and reconnection tests
+|   |-- api-errors.spec.ts
+|   |-- reconnection.spec.ts
+|   `-- elevenlabs-reconnection.spec.ts
+|-- smoke/                      # Quick smoke tests
+|   |-- app-load.spec.ts
+|   |-- tab-navigation.spec.ts
+|   `-- provider-render.spec.ts
+`-- utils/                      # Mock utilities
+    |-- audio-mock.ts           # MediaDevices/AudioContext mock
+    |-- websocket-mock.ts       # WebSocket simulation
+    `-- mock-server.ts          # API route interception
 ```
 
 ### Browser Coverage
@@ -321,10 +321,52 @@ Check console for `[XAIVoice]` prefixed messages.
 
 ## Mode Switching (Local vs Demo)
 
-This project supports two development modes:
+This project supports two runtime modes during development:
 
-- **Local mode**: `npm run dev:all` - Dual-port with HMR (8082 + 3001)
-- **Demo mode**: `npm run demo` - Single-port production build (3001 only)
+| Aspect         | Local development                | Demo mode                        |
+| -------------- | -------------------------------- | -------------------------------- |
+| Command        | `npm run dev:all`                | `npm run demo`                   |
+| Frontend       | Vite HMR on port 8082            | Production build from `dist/`    |
+| Backend        | Express on port 3001             | Express on port 3001             |
+| Public access  | None                             | Single ngrok tunnel to port 3001 |
+| API routing    | Cross-origin frontend to backend | Same-origin relative API paths   |
+| Runtime config | `public/config.js` local stub    | `dist/config.js` demo config     |
+| Hot reload     | Yes                              | No                               |
+
+### Switching Modes
+
+Before starting demo mode:
+
+1. Stop local servers.
+2. Verify ports 3001 and 4041 are free.
+3. Confirm `.env` has the provider credentials needed for the demo.
+4. Run `npm run demo`.
+
+After stopping demo mode, run the full reset when returning to local work:
+
+```bash
+./scripts/reset-dev-mode.sh
+npm run dev:all
+```
+
+`npm run dev:all` recreates the local `public/config.js` stub through the npm
+`predev` hook, but the reset script is the full cleanup path for stale ngrok
+files, old demo environment overrides, and occupied ports.
+
+### API URL Pattern
+
+Frontend code that calls backend routes should resolve the API base URL at call
+time:
+
+```typescript
+import { getApiBaseUrl } from '@/lib/apiConfig';
+
+const response = await fetch(`${getApiBaseUrl()}/api/endpoint`);
+```
+
+Avoid hardcoded `localhost` API URLs in provider code. In demo mode,
+`getApiBaseUrl()` can intentionally return an empty string so requests use
+same-origin relative paths.
 
 ### Quick Cleanup
 
@@ -334,24 +376,45 @@ After running demo mode, reset to local development:
 ./scripts/reset-dev-mode.sh
 ```
 
-### Generated Files to Watch For
+### Generated Files
 
 These files can cause issues if they persist after mode switching:
 
-| File               | Created By                | Safe to Delete                                    |
-| ------------------ | ------------------------- | ------------------------------------------------- |
-| `dist/config.js`   | Demo mode                 | Yes                                               |
-| `public/config.js` | Local/demo runtime config | Yes - npm lifecycle hooks recreate the local stub |
-| `server/.env.demo` | Old demo mode             | Yes                                               |
+| File                      | Created By                                | Cleanup                                                             |
+| ------------------------- | ----------------------------------------- | ------------------------------------------------------------------- |
+| `dist/config.js`          | Demo mode                                 | Deleted by `npm run demo` shutdown or `./scripts/reset-dev-mode.sh` |
+| `public/config.js`        | npm lifecycle hooks and older ngrok flows | Reset to a local stub by npm lifecycle hooks or reset script        |
+| `server/.env.demo`        | Older ngrok URL configuration flow        | Deleted by `./scripts/reset-dev-mode.sh`                            |
+| `scripts/ngrok/ngrok.yml` | ngrok tunnel startup                      | Deleted by `./scripts/reset-dev-mode.sh`                            |
 
-### More Information
+### High-Risk Files
 
-See [DUAL-MODE-DEVELOPMENT-GUIDELINES.md](./ongoing-projects/DUAL-MODE-DEVELOPMENT-GUIDELINES.md) for:
+Changes in these files should be tested in both local and demo mode:
 
-- Complete mode switching checklists
-- Code patterns that work in both modes
-- Troubleshooting guide
-- Emergency recovery steps
+| File                             | Risk                                                 |
+| -------------------------------- | ---------------------------------------------------- |
+| `src/lib/apiConfig.ts`           | API route resolution can break local or demo mode    |
+| `server/index.js`                | Static serving, CORS, and demo environment loading   |
+| `vite.config.ts`                 | Build output, dev server, and proxy behavior         |
+| `scripts/demo.sh`                | Demo startup, runtime config, and cleanup            |
+| `src/contexts/*VoiceContext.tsx` | Provider-specific connection lifecycle and API calls |
+
+### Mode Verification
+
+For API routing, server, Vite, or demo-script changes, verify:
+
+```bash
+npm run lint
+npm run test:run
+npm run build
+```
+
+Then smoke-test both modes:
+
+1. Local: `npm run dev:all`, open `http://localhost:8082`, and confirm API calls
+   target `http://localhost:3001`.
+2. Demo: `npm run demo`, open the ngrok URL, and confirm API calls use relative
+   `/api/*` paths on the same origin.
 
 ## Common Gotchas
 

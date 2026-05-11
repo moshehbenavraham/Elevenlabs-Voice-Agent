@@ -25,6 +25,7 @@ git push origin main
 - [GitHub Actions CI/CD](#github-actions-cicd)
 - [Local Production Testing](#local-production-testing)
 - [Environment Configuration](#environment-configuration)
+- [Observability](#observability)
 - [Alternative Platforms](#alternative-platforms)
 - [SSL/HTTPS Setup](#ssl-https-setup)
 - [Troubleshooting](#troubleshooting)
@@ -99,6 +100,9 @@ Set these in Coolify for both deployment options:
 NODE_ENV=production
 SERVER_PORT=3001
 CORS_ORIGIN=https://voice.example.com
+LOG_LEVEL=info
+REQUEST_LOGGING_ENABLED=true
+METRICS_ENABLED=true
 
 ELEVENLABS_API_KEY=CHANGE_ME_ELEVENLABS_API_KEY
 XAI_API_KEY=CHANGE_ME_XAI_API_KEY
@@ -320,6 +324,9 @@ open http://localhost:3001
 # Check health directly
 npm run docker:health
 
+# Check metrics
+curl -s http://localhost:3001/api/metrics
+
 # Follow logs
 npm run docker:logs
 
@@ -349,6 +356,18 @@ NODE_ENV=production node server/index.js
 | `CORS_ORIGIN` | Frontend URL for CORS | `https://voice.example.com` |
 | `SERVER_PORT` | Container server port | `3001`                      |
 | `HOST_PORT`   | Local Compose port    | `3001`                      |
+
+### Observability Variables
+
+| Variable                       | Description                                   | Default                                |
+| ------------------------------ | --------------------------------------------- | -------------------------------------- |
+| `LOG_LEVEL`                    | Server logger verbosity                       | `info`                                 |
+| `REQUEST_LOGGING_ENABLED`      | Enable structured API completion logs         | `true`                                 |
+| `METRICS_ENABLED`              | Enable `/api/metrics` collection and endpoint | `true`                                 |
+| `UPTIME_MONITOR_URL`           | Operator-owned uptime probe URL               | `https://voice.example.com/api/health` |
+| `UPTIME_ALERT_DESTINATION`     | Operator-owned alert destination              | `ops@example.com`                      |
+| `VITE_ERROR_TRACKING_ENABLED`  | Frontend build-time external tracking flag    | `false`                                |
+| `VITE_ERROR_TRACKING_PROVIDER` | Frontend build-time provider label            | `console`                              |
 
 ### Provider API Keys (at least one required)
 
@@ -399,6 +418,8 @@ The script checks:
 1. The root page returns HTML.
 2. `/api/health` returns valid JSON.
 3. The health status is `healthy` or intentionally `degraded`.
+4. API responses include `X-Request-Id`.
+5. `/api/metrics` returns valid JSON unless skipped or disabled.
 
 `/api/health` returns:
 
@@ -417,6 +438,21 @@ The script checks:
 `degraded` is not acceptable when the production launch expectation is that every enabled provider can connect. In that case, inspect the `providerSummary` and `services` fields in the health response and configure the missing variables.
 
 Docker and Compose health checks use `/api/health`. A container with no provider keys should start and report `degraded`; provider tabs should show their unconfigured states instead of making the container unhealthy. `unhealthy` means the app is not ready, commonly because production static assets are missing or the server cannot serve the app.
+
+### Metrics And Request IDs
+
+Every `/api/*` response includes an `X-Request-Id` header. If a client supplies a safe `X-Request-Id` or `X-Correlation-Id`, the server propagates it; otherwise the server generates one. Use this value to correlate failed API calls with container logs.
+
+Check metrics:
+
+```bash
+curl -s https://your-domain.com/api/metrics
+curl -s "https://your-domain.com/api/metrics?details=true"
+```
+
+`/api/metrics` returns process-local request counters, error counters, status counts, uptime, and latency summary data. Metrics reset when the container restarts. Route-level counts are included only with `details=true`. Unsupported query parameters return HTTP 400 so monitors do not silently rely on invalid filters.
+
+If `METRICS_ENABLED=false`, `/api/metrics` returns a structured disabled response with HTTP 503. The production verifier reports this as a warning; use `--skip-metrics` only when metrics are intentionally disabled.
 
 ### Gemini Live Session Limit
 
@@ -452,6 +488,55 @@ If token endpoints fail, check runtime provider secrets and `CORS_ORIGIN`. If to
 - Use Coolify's built-in secrets management
 - Rotate API keys periodically
 - Restrict CORS to your domain only
+
+## Observability
+
+See [Observability Guide](OBSERVABILITY.md) for the full monitoring contract.
+
+### Health Contract
+
+Use `/api/health` for Docker, GitHub Actions, uptime monitors, and manual readiness checks. Accept HTTP 200 with `healthy` or intentionally `degraded`; alert on HTTP 503, network failures, timeouts, or unexpected `unhealthy` responses.
+
+Health includes provider configuration status, static asset readiness, runtime posture, request ID, and observability toggles. It does not expose provider key values, alert destinations, or internal filesystem paths.
+
+### Uptime Monitor Setup
+
+Configure your uptime provider with:
+
+| Field                 | Value                                                  |
+| --------------------- | ------------------------------------------------------ |
+| URL                   | `https://voice.example.com/api/health`                 |
+| Method                | `GET`                                                  |
+| Timeout               | 10-15 seconds                                          |
+| Interval              | 1-5 minutes                                            |
+| Expected HTTP         | 200                                                    |
+| Accepted app statuses | `healthy`, `degraded`                                  |
+| Alert destination     | Team email, Slack channel, or monitoring contact group |
+
+The repository cannot complete external monitor provisioning without the real production URL, selected monitoring provider, and alert destination.
+
+### Log Access
+
+Request logs are written to container stdout. They include request ID, method, path, status, duration, completion event, and safe client metadata. They exclude authorization headers, cookies, request bodies, provider keys, and raw audio.
+
+Useful commands:
+
+```bash
+docker compose logs -f voice-agent
+docker compose logs voice-agent | grep '<request-id>'
+```
+
+Coolify users can also inspect the application log stream in the Coolify dashboard.
+
+### Production Verification
+
+Run:
+
+```bash
+npm run deploy:verify -- --url https://voice.example.com
+```
+
+Use `--skip-root` for local server-only checks and `--skip-metrics` only when `METRICS_ENABLED=false` is intentional.
 
 ## Alternative Platforms
 
@@ -616,6 +701,9 @@ docker build --no-cache -t voice-agent .
 ```bash
 # Test health endpoint
 curl -f https://your-domain.com/api/health
+
+# Test metrics endpoint
+curl -f https://your-domain.com/api/metrics
 
 # Check container logs
 docker logs voice-agent

@@ -51,7 +51,8 @@
     "phase00-session04-terminal-output-demo-card",
     "phase01-session01-docker-production-optimization",
     "phase01-session02-github-actions-cicd-pipeline",
-    "phase01-session03-cloud-deployment-configuration"
+    "phase01-session03-cloud-deployment-configuration",
+    "phase01-session04-monitoring-observability"
   ],
   "next_session_history": [
     {
@@ -102,6 +103,11 @@
     {
       "date": "2026-05-11",
       "session": "phase01-session03-cloud-deployment-configuration",
+      "status": "completed"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase01-session04-monitoring-observability",
       "status": "completed"
     }
   ]

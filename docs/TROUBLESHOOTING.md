@@ -2,15 +2,16 @@
 
 This comprehensive guide helps you diagnose and resolve common issues with the ElevenLabs Voice Agent.
 
-## 🔍 Overview
+## Overview
 
 This troubleshooting guide covers common issues, error messages, and solutions for the ElevenLabs Voice Agent. Use the table of contents to quickly find solutions for your specific issue.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Quick Diagnostics](#quick-diagnostics)
 - [Voice and Audio Issues](#voice-and-audio-issues)
 - [API Integration Issues](#api-integration-issues)
+- [Vapi WebRTC Issues](#vapi-webrtc-issues)
 - [Browser Compatibility Issues](#browser-compatibility-issues)
 - [Mobile-Specific Issues](#mobile-specific-issues)
 - [Performance Issues](#performance-issues)
@@ -20,7 +21,7 @@ This troubleshooting guide covers common issues, error messages, and solutions f
 - [Advanced Diagnostics](#advanced-diagnostics)
 - [Getting Additional Help](#getting-additional-help)
 
-## ⚡ Quick Diagnostics
+## Quick Diagnostics
 
 ### System Health Check
 
@@ -80,7 +81,7 @@ Before diving into specific issues, try these quick fixes:
 - [ ] **Restart browser** - Clears browser-level issues
 - [ ] **Clear browser cache** - Removes cached files that might be corrupted
 
-## 🎤 Voice and Audio Issues
+## Voice and Audio Issues
 
 ### Microphone Not Working
 
@@ -224,7 +225,7 @@ Before diving into specific issues, try these quick fixes:
    console.log('Audio latency:', audioContext.baseLatency);
    ```
 
-## 🔌 API Integration Issues
+## API Integration Issues
 
 ### ElevenLabs API Connection Issues
 
@@ -369,7 +370,23 @@ Before diving into specific issues, try these quick fixes:
    };
    ```
 
-## 🌐 Browser Compatibility Issues
+### Vapi WebRTC Issues
+
+Vapi uses a frontend web token and establishes media through Daily.co WebRTC. If
+the Vapi tab shows `daily-call-join-error`, `call-start-failed`, or Krisp
+`AudioWorkletNode` errors, use the focused
+[Vapi Troubleshooting](./VAPI_TROUBLESHOOTING.md) guide before changing provider
+code.
+
+Quick checks:
+
+- Confirm `VITE_VAPI_WEB_TOKEN` was present when the frontend bundle was built.
+- Confirm the page is HTTPS or localhost and microphone permission is granted.
+- Reproduce once in local mode and once in demo mode to separate browser/WebRTC
+  failures from demo routing issues.
+- Capture `call-start-progress`, `call-start-failed`, and `error` console logs.
+
+## Browser Compatibility Issues
 
 ### Chrome Issues
 
@@ -423,6 +440,7 @@ Before diving into specific issues, try these quick fixes:
 **Solutions:**
 
 1. **Resume Audio Context on User Interaction**
+
    ```javascript
    const handleSafariAudio = () => {
      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -466,7 +484,7 @@ Before diving into specific issues, try these quick fixes:
    }
    ```
 
-## 📱 Mobile-Specific Issues
+## Mobile-Specific Issues
 
 ### iOS Issues
 
@@ -584,7 +602,7 @@ Before diving into specific issues, try these quick fixes:
    };
    ```
 
-## ⚡ Performance Issues
+## Performance Issues
 
 ### High CPU Usage
 
@@ -628,6 +646,7 @@ Before diving into specific issues, try these quick fixes:
    ```
 
 3. **Implement Performance Monitoring**
+
    ```javascript
    const monitorPerformance = () => {
      const observer = new PerformanceObserver((list) => {
@@ -687,7 +706,7 @@ Before diving into specific issues, try these quick fixes:
    };
    ```
 
-## 🔧 Installation and Setup Issues
+## Installation and Setup Issues
 
 ### Development Server Issues
 
@@ -766,7 +785,7 @@ Before diving into specific issues, try these quick fixes:
    rm -rf dist
    ```
 
-## 🌐 Network and Connectivity Issues
+## Network and Connectivity Issues
 
 ### API Connection Issues
 
@@ -848,7 +867,7 @@ Before diving into specific issues, try these quick fixes:
    };
    ```
 
-## ❌ Error Messages Reference
+## Error Messages Reference
 
 ### Common Error Codes
 
@@ -903,7 +922,7 @@ const handleError = (error) => {
 };
 ```
 
-## 🔬 Advanced Diagnostics
+## Advanced Diagnostics
 
 ### Comprehensive System Check
 
@@ -1023,7 +1042,7 @@ const profilePerformance = () => {
 };
 ```
 
-## 🆘 Getting Additional Help
+## Getting Additional Help
 
 ### Before Seeking Help
 
@@ -1115,5 +1134,5 @@ What actually happens
 **Last Updated**: January 8, 2025
 **Next Review**: April 8, 2025
 
-This troubleshooting guide is regularly updated based on user feedback and common issues. If you can't find a solution here, please create an issue or reach out through our support channels. 🔧✨
+This troubleshooting guide is regularly updated based on user feedback and common issues. If you can't find a solution here, please create an issue or reach out through our support channels.
 ```

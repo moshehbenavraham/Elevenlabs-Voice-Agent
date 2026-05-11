@@ -186,9 +186,9 @@ Session details in `.spec_system/archive/phases/phase_00/`.
 | Session | Name                           | Status          | Tasks | Validated  |
 | ------- | ------------------------------ | --------------- | ----- | ---------- |
 | 01      | Docker Production Optimization | Complete        | ~15   | 2026-05-11 |
-| 02      | GitHub Actions CI/CD Pipeline  | Baseline Exists | ~18   | -          |
-| 03      | Cloud Deployment Configuration | Baseline Exists | ~20   | -          |
-| 04      | Monitoring & Observability     | Baseline Exists | ~16   | -          |
+| 02      | GitHub Actions CI/CD Pipeline  | Complete        | ~18   | 2026-05-11 |
+| 03      | Cloud Deployment Configuration | Complete        | ~20   | 2026-05-11 |
+| 04      | Monitoring & Observability     | Complete        | ~16   | 2026-05-11 |
 | 05      | Production Security Hardening  | Baseline Exists | ~14   | -          |
 
 `Baseline Exists` means relevant files exist in the repository from out-of-band work, but the session is not complete until it is audited, reconciled, implemented where needed, validated, and marked complete through the spec workflow.
@@ -198,6 +198,9 @@ Session details in `.spec_system/PRD/phase_01/`.
 ### Completed Sessions
 
 1. Session 01: Docker Production Optimization (validated 2026-05-11)
+2. Session 02: GitHub Actions CI/CD Pipeline (validated 2026-05-11)
+3. Session 03: Cloud Deployment Configuration (validated 2026-05-11)
+4. Session 04: Monitoring & Observability (validated 2026-05-11)
 
 ## Phase 02: Translation Foundation
 

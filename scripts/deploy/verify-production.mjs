@@ -2,6 +2,7 @@
 
 const DEFAULT_TIMEOUT_MS = 15000;
 const DEFAULT_HEALTH_PATH = '/api/health';
+const DEFAULT_METRICS_PATH = '/api/metrics';
 const USER_AGENT = 'voice-agent-production-verifier/1.0';
 
 function printUsage() {
@@ -11,7 +12,9 @@ Options:
   --url <url>              Production origin, or a direct /api/health URL.
   --timeout <ms>           Per-request timeout in milliseconds. Default: ${DEFAULT_TIMEOUT_MS}.
   --health-path <path>     Health endpoint path. Default: ${DEFAULT_HEALTH_PATH}.
+  --metrics-path <path>    Metrics endpoint path. Default: ${DEFAULT_METRICS_PATH}.
   --skip-root              Skip the root page HTML check.
+  --skip-metrics           Skip the metrics endpoint check.
   --help                   Show this help text.
 
 Environment fallback:
@@ -32,7 +35,9 @@ function parseArgs(argv) {
     url: process.env.PRODUCTION_URL || process.env.HEALTH_CHECK_URL || '',
     timeoutMs: DEFAULT_TIMEOUT_MS,
     healthPath: DEFAULT_HEALTH_PATH,
+    metricsPath: DEFAULT_METRICS_PATH,
     skipRoot: false,
+    skipMetrics: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -66,8 +71,20 @@ function parseArgs(argv) {
       continue;
     }
 
+    if (arg === '--metrics-path') {
+      const value = readValue(argv, index, '--metrics-path');
+      options.metricsPath = value.startsWith('/') ? value : `/${value}`;
+      index += 1;
+      continue;
+    }
+
     if (arg === '--skip-root') {
       options.skipRoot = true;
+      continue;
+    }
+
+    if (arg === '--skip-metrics') {
+      options.skipMetrics = true;
       continue;
     }
 
@@ -93,13 +110,14 @@ function normalizeInputUrl(value) {
   }
 }
 
-function getVerificationUrls(inputUrl, healthPath) {
+function getVerificationUrls(inputUrl, healthPath, metricsPath) {
   const normalized = normalizeInputUrl(inputUrl);
   const isHealthUrl = normalized.pathname.endsWith('/api/health');
   const rootUrl = new URL('/', normalized.origin);
   const healthUrl = isHealthUrl ? normalized : new URL(healthPath, normalized.origin);
+  const metricsUrl = new URL(metricsPath, normalized.origin);
 
-  return { rootUrl, healthUrl };
+  return { rootUrl, healthUrl, metricsUrl };
 }
 
 function createBodyPreview(body) {
@@ -126,6 +144,7 @@ async function fetchText(url, timeoutMs) {
       status: response.status,
       statusText: response.statusText,
       contentType: response.headers.get('content-type') || '',
+      requestId: response.headers.get('x-request-id') || '',
       body,
     };
   } catch (error) {
@@ -182,6 +201,51 @@ function parseHealth(result) {
   return json;
 }
 
+function validateApiRequestId(result, json, label) {
+  if (!result.requestId) {
+    throw new Error(`${label} response did not include X-Request-Id.`);
+  }
+
+  if (json.requestId && json.requestId !== result.requestId) {
+    throw new Error(`${label} requestId body/header mismatch.`);
+  }
+}
+
+function parseMetrics(result) {
+  let json;
+  try {
+    json = JSON.parse(result.body);
+  } catch (error) {
+    throw new Error(
+      `Metrics endpoint did not return valid JSON. Preview: ${createBodyPreview(result.body)}`
+    );
+  }
+
+  if (result.status === 503 && json.status === 'disabled') {
+    return { disabled: true, json };
+  }
+
+  if (!result.ok) {
+    throw new Error(`Metrics endpoint returned HTTP ${result.status} ${result.statusText}.`);
+  }
+
+  if (json.status !== 'ok' || !json.metrics || typeof json.metrics !== 'object') {
+    throw new Error(`Metrics endpoint returned an unexpected shape. Preview: ${createBodyPreview(result.body)}`);
+  }
+
+  const requests = json.metrics.requests;
+  const latency = json.metrics.latencyMs;
+  if (!requests || typeof requests.total !== 'number') {
+    throw new Error('Metrics endpoint did not include numeric request totals.');
+  }
+
+  if (!latency || typeof latency.average !== 'number') {
+    throw new Error('Metrics endpoint did not include latency summary.');
+  }
+
+  return { disabled: false, json };
+}
+
 function formatProviderSummary(health) {
   const summary = health.providerSummary;
   if (!summary || typeof summary !== 'object') {
@@ -193,11 +257,16 @@ function formatProviderSummary(health) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const { rootUrl, healthUrl } = getVerificationUrls(options.url, options.healthPath);
+  const { rootUrl, healthUrl, metricsUrl } = getVerificationUrls(
+    options.url,
+    options.healthPath,
+    options.metricsPath
+  );
 
   console.log('Production verification');
   console.log(`Root URL: ${rootUrl.href}`);
   console.log(`Health URL: ${healthUrl.href}`);
+  console.log(`Metrics URL: ${metricsUrl.href}`);
   console.log(`Timeout: ${options.timeoutMs} ms`);
 
   if (!options.skipRoot) {
@@ -210,6 +279,7 @@ async function main() {
 
   const healthResult = await fetchText(healthUrl, options.timeoutMs);
   const health = parseHealth(healthResult);
+  validateApiRequestId(healthResult, health, 'Health');
   const providerSummary = formatProviderSummary(health);
 
   if (health.status === 'degraded') {
@@ -217,6 +287,25 @@ async function main() {
     console.log('[WARN] The app is serving, but one or more providers are not configured.');
   } else {
     console.log(`[PASS] Health status: healthy (${providerSummary}).`);
+  }
+
+  console.log(`[PASS] Health response included X-Request-Id: ${healthResult.requestId}`);
+
+  if (options.skipMetrics) {
+    console.log('[SKIP] Metrics endpoint check skipped.');
+  } else {
+    const metricsResult = await fetchText(metricsUrl, options.timeoutMs);
+    const metrics = parseMetrics(metricsResult);
+    validateApiRequestId(metricsResult, metrics.json, 'Metrics');
+
+    if (metrics.disabled) {
+      console.log('[WARN] Metrics endpoint is disabled by configuration.');
+    } else {
+      console.log(
+        `[PASS] Metrics endpoint returned ${metrics.json.metrics.requests.total} total requests.`
+      );
+      console.log(`[PASS] Metrics response included X-Request-Id: ${metricsResult.requestId}`);
+    }
   }
 
   console.log('Production verification complete.');

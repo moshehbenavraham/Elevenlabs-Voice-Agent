@@ -179,6 +179,7 @@ This project includes comprehensive documentation:
 - **[Installation & Configuration](#configuration)** - Detailed setup instructions
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Coolify, GHCR image, SSH Docker-host, domain, CORS, and provider verification guide
 - **[CI/CD Operations Guide](docs/CI_CD.md)** - GitHub Actions workflows, required checks, branch protection, GHCR deployment, SSH layout, and release notes
+- **[Observability Guide](docs/OBSERVABILITY.md)** - Health, metrics, request IDs, logs, uptime probes, and incident triage
 
 ### Technical Documentation
 
@@ -209,6 +210,7 @@ This project includes comprehensive documentation:
 | --------- | ----------------------------------------------- | ------------------------------- |
 | [DEPLOY]  | **[Deployment](docs/DEPLOYMENT.md)**            | Coolify, GHCR, SSH deployment   |
 | [CI]      | **[CI/CD](docs/CI_CD.md)**                      | Workflow checks and GHCR deploy |
+| [OBS]     | **[Observability](docs/OBSERVABILITY.md)**      | Health, metrics, logs, alerts   |
 | [DEMO]    | **[Demo Mode](docs/DEMO_MODE.md)**              | ngrok demo mode setup           |
 | [ARCH]    | **[Architecture](docs/ARCHITECTURE.md)**        | Technical system design         |
 | [VOICE]   | **[Voice Features](docs/VOICE_FEATURES.md)**    | Voice AI functionality          |
@@ -461,6 +463,12 @@ npm run docker:prod
 
 # Check health
 npm run docker:health
+
+# Check metrics
+curl -s http://localhost:3001/api/metrics
+
+# Verify health, metrics, and request IDs
+npm run deploy:verify -- --url http://localhost:3001 --skip-root
 
 # Follow service logs
 npm run docker:logs
@@ -793,6 +801,7 @@ npm run docker:build   # Build local image
 npm run docker:up      # Build and start Compose stack
 npm run docker:prod    # Start stack and run health probe
 npm run docker:health  # Check /api/health
+curl -s http://localhost:3001/api/metrics  # Check /api/metrics
 npm run docker:logs    # Follow Compose service logs
 npm run docker:down    # Stop containers
 ```

@@ -12,6 +12,13 @@ import ultravoxRoutes from './routes/ultravox.js';
 import retellRoutes from './routes/retell.js';
 import geminiRoutes from './routes/gemini.js';
 import functionsRoutes from './routes/functions.js';
+import {
+  REQUEST_ID_HEADER,
+  createRequestLoggingMiddleware,
+  isMetricsEnabled,
+  isRequestLoggingEnabled,
+  requestMetrics,
+} from './utils/observability.js';
 
 // ES module __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
@@ -128,6 +135,85 @@ function getHealthStatus({ isAppReady, providerSummary }) {
   return 'degraded';
 }
 
+function getHealthMessage({ status, providerSummary, isStaticReady }) {
+  if (status === 'unhealthy') {
+    return isStaticReady
+      ? 'Application readiness failed.'
+      : 'Production static assets are missing or unavailable.';
+  }
+
+  if (status === 'degraded') {
+    return `Application is serving, but ${providerSummary.unconfigured} of ${providerSummary.total} providers are not fully configured.`;
+  }
+
+  return 'Application is serving and all provider runtime variables are configured.';
+}
+
+function getObservabilityStatus() {
+  const frontendErrorTrackingProvider =
+    process.env.VITE_ERROR_TRACKING_PROVIDER || 'console';
+  const frontendErrorTrackingRequested =
+    process.env.VITE_ERROR_TRACKING_ENABLED === 'true' &&
+    frontendErrorTrackingProvider !== 'console';
+
+  return {
+    requestIds: {
+      enabled: true,
+      header: REQUEST_ID_HEADER,
+    },
+    requestLogging: {
+      enabled: isRequestLoggingEnabled(),
+      sink: 'stdout',
+    },
+    metrics: {
+      enabled: isMetricsEnabled(),
+      endpoint: '/api/metrics',
+      storage: 'in-memory',
+    },
+    frontendErrorTracking: {
+      status: 'deferred',
+      provider: frontendErrorTrackingProvider,
+      externalReportingEnabled: false,
+      externalServiceStatus: frontendErrorTrackingRequested ? 'deferred' : 'not-configured',
+      fallback: 'structured-console',
+    },
+    uptimeMonitoring: {
+      configured: isEnvConfigured('UPTIME_MONITOR_URL'),
+      alertDestinationConfigured: isEnvConfigured('UPTIME_ALERT_DESTINATION'),
+    },
+  };
+}
+
+function parseMetricsQuery(query) {
+  const allowedKeys = new Set(['details']);
+  const unknownKeys = Object.keys(query).filter(key => !allowedKeys.has(key));
+
+  if (unknownKeys.length > 0) {
+    return {
+      ok: false,
+      error: `Unsupported metrics query parameter: ${unknownKeys[0]}`,
+    };
+  }
+
+  const details = query.details;
+  if (details === undefined) {
+    return { ok: true, includeRoutes: false };
+  }
+
+  if (details === 'true') {
+    return { ok: true, includeRoutes: true };
+  }
+
+  if (details === 'false') {
+    return { ok: true, includeRoutes: false };
+  }
+
+  return {
+    ok: false,
+    error: 'Metrics query parameter "details" must be "true" or "false".',
+  };
+}
+
 // Middleware
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:8082',
@@ -137,6 +223,9 @@ app.use(express.json());
 
 // Compression for all responses (improves static file delivery)
 app.use(compression());
+
+// Attach request IDs, request completion logs, and in-memory API metrics.
+app.use('/api', createRequestLoggingMiddleware());
 
 // Serve static files in production mode (BEFORE API routes)
 if (isProduction) {
@@ -173,6 +262,7 @@ app.get('/api/health', (req, res) => {
   const isAppReady = isStaticReady;
   const status = getHealthStatus({ isAppReady, providerSummary });
   const httpStatus = status === 'unhealthy' ? 503 : 200;
+  const message = getHealthMessage({ status, providerSummary, isStaticReady });
 
   // Security features status
   const security = {
@@ -189,8 +279,10 @@ app.get('/api/health', (req, res) => {
   };
 
   const healthResponse = {
+    requestId: req.requestId,
     status,
     ready: isAppReady,
+    message,
     statusMapping: {
       healthy: 'Application is serving and all provider runtime variables are configured.',
       degraded: 'Application is serving, but one or more providers are not configured.',
@@ -208,18 +300,54 @@ app.get('/api/health', (req, res) => {
     },
     runtime: {
       nodeEnv: process.env.NODE_ENV || 'development',
+      pid: process.pid,
+      processUptimeSeconds: Math.floor(process.uptime()),
       staticAssets: {
         required: isProduction,
         ready: isStaticReady,
+        indexPath: isStaticReady ? 'available' : 'missing',
+      },
+      readiness: {
+        app: isAppReady,
+        staticAssets: isStaticReady,
+        providersConfigured: providerSummary.configured,
+        providersTotal: providerSummary.total,
       },
     },
     providerSummary,
     services,
     security,
+    observability: getObservabilityStatus(),
     version: process.env.npm_package_version || '1.0.0',
   };
 
   res.status(httpStatus).json(healthResponse);
+});
+
+// Metrics endpoint for lightweight production diagnostics
+app.get('/api/metrics', (req, res) => {
+  if (!isMetricsEnabled()) {
+    return res.status(503).json({
+      requestId: req.requestId,
+      status: 'disabled',
+      message: 'Metrics endpoint is disabled by METRICS_ENABLED=false.',
+    });
+  }
+
+  const options = parseMetricsQuery(req.query);
+  if (!options.ok) {
+    return res.status(400).json({
+      requestId: req.requestId,
+      error: 'Invalid metrics query',
+      message: options.error,
+    });
+  }
+
+  res.json({
+    requestId: req.requestId,
+    status: 'ok',
+    metrics: requestMetrics.getSnapshot({ includeRoutes: options.includeRoutes }),
+  });
 });
 
 // Get signed URL for ElevenLabs conversation

@@ -62,6 +62,11 @@ services:
       NODE_ENV: production
       SERVER_PORT: ${SERVER_PORT:-3001}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      REQUEST_LOGGING_ENABLED: ${REQUEST_LOGGING_ENABLED:-true}
+      METRICS_ENABLED: ${METRICS_ENABLED:-true}
+      UPTIME_MONITOR_URL: ${UPTIME_MONITOR_URL:-}
+      UPTIME_ALERT_DESTINATION: ${UPTIME_ALERT_DESTINATION:-}
       # Runtime provider credentials and public identifiers loaded from .env.
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
       VITE_ELEVENLABS_AGENT_ID: ${VITE_ELEVENLABS_AGENT_ID:-}
