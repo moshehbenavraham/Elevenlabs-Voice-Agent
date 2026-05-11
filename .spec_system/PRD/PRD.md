@@ -4,7 +4,7 @@
 
 Voice-Agent-PuPuPlatter is a multi-provider voice AI demo platform showcasing real-time voice integrations with ElevenLabs, OpenAI Realtime, xAI Grok, Ultravox, Vapi, Retell, and Google Gemini Live APIs. The platform provides a unified glassmorphism UI for demonstrating and comparing voice AI providers with WebSocket-based real-time conversations, audio visualization, and function calling capabilities.
 
-This PRD was reconciled against the repository on 2026-05-11 after out-of-band implementation work. Phase 00 is complete. Phase 01 is in progress, with several CI/CD, deployment, monitoring, and security baselines already present in the codebase but not yet validated through formal Phase 01 spec sessions.
+This PRD was reconciled against the repository on 2026-05-11 after out-of-band implementation work. Phase 00 is complete. Phase 01 is complete after formal Phase 01 validation and update workflow closure.
 
 The next product expansion is a dedicated OpenAI live language translation tab using `gpt-realtime-translate`. This feature is intentionally separate from the existing OpenAI voice-agent provider because OpenAI's live translation API uses dedicated `/v1/realtime/translations` sessions, browser WebRTC media, translated audio as a remote track, and transcript deltas over an `oai-events` data channel instead of normal assistant turns, tools, prompts, or `response.create`.
 
@@ -141,14 +141,14 @@ The next product expansion is a dedicated OpenAI live language translation tab u
 
 This system delivers the product via phases. Each phase is implemented via multiple 2-4 hour sessions (12-25 tasks each).
 
-| Phase | Name                                     | Sessions | Status      | Completed  |
-| ----- | ---------------------------------------- | -------- | ----------- | ---------- |
-| 00    | Ngrok Demo Mode Integration              | 4        | Complete    | 2026-01-18 |
-| 01    | Production Deployment & DevOps           | 5        | In Progress | -          |
-| 02    | Translation Foundation                   | 4        | Planned     | -          |
-| 03    | Browser Translation MVP                  | 5        | Planned     | -          |
-| 04    | Hardening, Quality, and Demo Readiness   | 5        | Planned     | -          |
-| 05    | Production Extensions and Media Variants | 5        | Planned     | -          |
+| Phase | Name                                     | Sessions | Status   | Completed  |
+| ----- | ---------------------------------------- | -------- | -------- | ---------- |
+| 00    | Ngrok Demo Mode Integration              | 4        | Complete | 2026-01-18 |
+| 01    | Production Deployment & DevOps           | 5        | Complete | 2026-05-11 |
+| 02    | Translation Foundation                   | 4        | Planned  | -          |
+| 03    | Browser Translation MVP                  | 5        | Planned  | -          |
+| 04    | Hardening, Quality, and Demo Readiness   | 5        | Planned  | -          |
+| 05    | Production Extensions and Media Variants | 5        | Planned  | -          |
 
 ## Phase 00: Ngrok Demo Mode Integration
 
@@ -183,17 +183,17 @@ Session details in `.spec_system/archive/phases/phase_00/`.
 
 ### Sessions
 
-| Session | Name                           | Status          | Tasks | Validated  |
-| ------- | ------------------------------ | --------------- | ----- | ---------- |
-| 01      | Docker Production Optimization | Complete        | ~15   | 2026-05-11 |
-| 02      | GitHub Actions CI/CD Pipeline  | Complete        | ~18   | 2026-05-11 |
-| 03      | Cloud Deployment Configuration | Complete        | ~20   | 2026-05-11 |
-| 04      | Monitoring & Observability     | Complete        | ~16   | 2026-05-11 |
-| 05      | Production Security Hardening  | Baseline Exists | ~14   | -          |
+| Session | Name                           | Status   | Tasks | Validated  |
+| ------- | ------------------------------ | -------- | ----- | ---------- |
+| 01      | Docker Production Optimization | Complete | ~15   | 2026-05-11 |
+| 02      | GitHub Actions CI/CD Pipeline  | Complete | ~18   | 2026-05-11 |
+| 03      | Cloud Deployment Configuration | Complete | ~20   | 2026-05-11 |
+| 04      | Monitoring & Observability     | Complete | ~16   | 2026-05-11 |
+| 05      | Production Security Hardening  | Complete | ~14   | 2026-05-11 |
 
-`Baseline Exists` means relevant files exist in the repository from out-of-band work, but the session is not complete until it is audited, reconciled, implemented where needed, validated, and marked complete through the spec workflow.
+`Complete` means the out-of-band baseline was audited, reconciled, implemented where needed, validated, and marked complete through the spec workflow.
 
-Session details in `.spec_system/PRD/phase_01/`.
+Session details archived in `.spec_system/archive/phases/phase_01/`.
 
 ### Completed Sessions
 
@@ -201,6 +201,7 @@ Session details in `.spec_system/PRD/phase_01/`.
 2. Session 02: GitHub Actions CI/CD Pipeline (validated 2026-05-11)
 3. Session 03: Cloud Deployment Configuration (validated 2026-05-11)
 4. Session 04: Monitoring & Observability (validated 2026-05-11)
+5. Session 05: Production Security Hardening (validated 2026-05-11)
 
 ## Phase 02: Translation Foundation
 
