@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: "Deployment environment"
+        description: 'Deployment environment'
         required: true
-        default: "production"
+        default: 'production'
         type: choice
         options:
           - production
@@ -170,11 +170,18 @@ jobs:
           script: |
             set -euo pipefail
             cd ${{ vars.DEPLOY_PATH || '/opt/voice-agent' }}
+            for required_file in docker-compose.deploy.yml .env.production; do
+              if [ ! -f "$required_file" ]; then
+                echo "::error::Missing $required_file in $PWD. Upload docker-compose.deploy.yml and create .env.production from .env.production.example before SSH deployment."
+                exit 1
+              fi
+            done
             export IMAGE_REF='${{ needs.build.outputs.image-ref }}'
+            compose_cmd="docker compose --env-file .env.production -f docker-compose.deploy.yml"
             echo "Deploying image ${IMAGE_REF}"
-            docker compose pull
-            docker compose up -d --remove-orphans
-            docker compose ps
+            $compose_cmd pull
+            $compose_cmd up -d --remove-orphans
+            $compose_cmd ps
             docker image prune -f
 
       - name: Skip deployment (no config)
@@ -186,6 +193,7 @@ jobs:
           echo "To enable deployment, configure one of:"
           echo "  - DEPLOY_WEBHOOK_URL (vars) + DEPLOY_WEBHOOK_TOKEN (secrets)"
           echo "  - DEPLOY_SSH_HOST, DEPLOY_SSH_USER (vars) + DEPLOY_SSH_KEY (secrets)"
+          echo "For SSH, prepare DEPLOY_PATH with docker-compose.deploy.yml and .env.production."
 
   health_check:
     name: Post-Deploy Health Check

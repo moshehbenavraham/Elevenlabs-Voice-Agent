@@ -1,0 +1,35 @@
+# Remote production Compose file for hosts that pull a published GHCR image.
+# Build public VITE_* values into the image before publishing it. Runtime
+# provider secrets stay in .env.production and are injected only at container
+# start.
+services:
+  voice-agent:
+    image: ${IMAGE_REF:?Set IMAGE_REF to ghcr.io/<owner>/<repo>:<tag>}
+    pull_policy: always
+    ports:
+      - '${HOST_PORT:-3001}:${SERVER_PORT:-3001}'
+    environment:
+      NODE_ENV: production
+      SERVER_PORT: ${SERVER_PORT:-3001}
+      CORS_ORIGIN: ${CORS_ORIGIN:?Set CORS_ORIGIN to the public HTTPS origin}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      VITE_ELEVENLABS_AGENT_ID: ${VITE_ELEVENLABS_AGENT_ID:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ULTRAVOX_API_KEY: ${ULTRAVOX_API_KEY:-}
+      VITE_VAPI_WEB_TOKEN: ${VITE_VAPI_WEB_TOKEN:-}
+      RETELL_API_KEY: ${RETELL_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      XAI_SESSION_EXPIRY_SECONDS: ${XAI_SESSION_EXPIRY_SECONDS:-300}
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'wget --quiet --tries=1 --timeout=5 --spider "http://127.0.0.1:$${SERVER_PORT:-3001}/api/health" || exit 1',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s

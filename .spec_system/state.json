@@ -50,7 +50,8 @@
     "phase00-session03-dynamic-url-configuration",
     "phase00-session04-terminal-output-demo-card",
     "phase01-session01-docker-production-optimization",
-    "phase01-session02-github-actions-cicd-pipeline"
+    "phase01-session02-github-actions-cicd-pipeline",
+    "phase01-session03-cloud-deployment-configuration"
   ],
   "next_session_history": [
     {
@@ -96,6 +97,11 @@
     {
       "date": "2026-05-11",
       "session": "phase01-session02-github-actions-cicd-pipeline",
+      "status": "completed"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase01-session03-cloud-deployment-configuration",
       "status": "completed"
     }
   ]

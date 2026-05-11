@@ -1,15 +1,15 @@
 # Deployment Guide
 
-This guide covers deploying Voice-Agent-PuPuPlatter to production. The recommended platform is **Coolify** (self-hosted), with alternative options for other deployment scenarios.
+This guide covers deploying Voice-Agent-PuPuPlatter to production. The recommended platform is **Coolify** with the combined full-stack Docker container. GHCR image deployments and SSH-based Docker hosts are supported automation paths.
 
 ## Quick Deploy (Coolify)
 
 ```bash
-# Copy and configure environment
-cp .env.example .env
+# Copy and configure production environment
+cp .env.production.example .env.production
 
 # For combined same-origin Docker production
-# set VITE_API_BASE_URL=/ before building.
+# keep VITE_API_BASE_URL=/ before building.
 
 # Test locally
 npm run docker:prod
@@ -61,61 +61,69 @@ This project is a **full-stack application** with:
 - [Coolify](https://coolify.io) instance (self-hosted or managed)
 - Docker installed on Coolify server
 - Git repository access
-- Custom domain (optional but recommended for HTTPS)
+- Custom domain with DNS control
+- At least one provider credential for a fully configured health response
 
-### Step 1: Prepare Repository
+### Option A: Repository Build
 
-Ensure your repository has:
+Use this path when Coolify can access the repository and build the image itself.
 
-- `Dockerfile` (multi-stage build)
-- `docker-compose.yml` (for local testing)
-- `.env.example` (document required variables)
+1. Create a Coolify application from the Git repository.
+2. Select the root `Dockerfile` as the build source.
+3. Set public build-time `VITE_*` variables from `.env.production.example`.
+4. Set runtime provider secrets and `CORS_ORIGIN` in Coolify environment variables.
+5. Expose port `3001` or the value of `SERVER_PORT`.
+6. Add the production domain and enable SSL.
 
-### Step 2: Connect to Coolify
+Repository builds are the easiest way to change frontend values such as provider toggles, ElevenLabs agent ID, Vapi web token, Retell agent ID, voice labels, and `VITE_API_BASE_URL`. These values are compiled into the Vite bundle during the Docker build.
 
-1. Log into Coolify dashboard
-2. Add new application -> Select "Docker"
-3. Connect your Git repository
-4. Select branch (usually `main`)
+### Option B: GHCR Image
 
-### Step 3: Configure Environment Variables
+Use this path when GitHub Actions publishes the image and Coolify should only pull and run it.
 
-In Coolify's environment configuration:
+1. Make the GHCR package visible to the Coolify host, or configure a GHCR registry credential in Coolify.
+2. Create a Docker image application in Coolify.
+3. Set the image to `ghcr.io/<owner>/<repo>:latest` or an immutable `sha-<commit>` tag from the Deploy workflow.
+4. Configure runtime variables from `.env.production.example`.
+5. Set `CORS_ORIGIN` to the exact HTTPS origin, for example `https://voice.example.com`.
+6. Expose the container port `3001`.
+7. Add the production domain and enable SSL.
+
+When using a prebuilt GHCR image, changing frontend `VITE_*` values requires rebuilding and republishing the image. Runtime server secrets can change without rebuilding.
+
+### Required Runtime Variables
+
+Set these in Coolify for both deployment options:
 
 ```bash
-# Required - Node environment
 NODE_ENV=production
-
-# Required - At least one provider
-ELEVENLABS_API_KEY=sk_your_key_here
-
-# Optional - Additional providers
-XAI_API_KEY=xai-your_key_here
-OPENAI_API_KEY=sk-your_key_here
-ULTRAVOX_API_KEY=your_ultravox_key_here
-RETELL_API_KEY=key_your_retell_key_here
-GEMINI_API_KEY=your_gemini_key_here
-
-# Required - CORS configuration
-CORS_ORIGIN=https://your-domain.com
-
-# Optional - Server port (default: 3001)
 SERVER_PORT=3001
+CORS_ORIGIN=https://voice.example.com
+
+ELEVENLABS_API_KEY=CHANGE_ME_ELEVENLABS_API_KEY
+XAI_API_KEY=CHANGE_ME_XAI_API_KEY
+OPENAI_API_KEY=CHANGE_ME_OPENAI_API_KEY
+ULTRAVOX_API_KEY=CHANGE_ME_ULTRAVOX_API_KEY
+RETELL_API_KEY=CHANGE_ME_RETELL_API_KEY
+GEMINI_API_KEY=CHANGE_ME_GEMINI_API_KEY
+VITE_ELEVENLABS_AGENT_ID=CHANGE_ME_ELEVENLABS_AGENT_ID
+VITE_VAPI_WEB_TOKEN=CHANGE_ME_VAPI_PUBLIC_WEB_TOKEN
 ```
 
-### Step 4: Configure Domain & SSL
+### Domain And SSL
 
 1. Add custom domain in Coolify
 2. Configure DNS (A record pointing to Coolify server)
 3. Enable automatic SSL (Let's Encrypt)
 4. Verify HTTPS is working (required for microphone access)
 
-### Step 5: Deploy
+### Deploy And Verify
 
 1. Click "Deploy" or push to your connected branch
 2. Monitor build logs in Coolify dashboard
 3. Verify health endpoint: `https://your-domain.com/api/health`
-4. Test voice connection in browser
+4. Run `npm run deploy:verify -- --url https://your-domain.com`
+5. Test voice connection in browser
 
 ### Dockerfile Reference
 
@@ -195,6 +203,98 @@ Optional post-deploy health checks use:
 If neither webhook nor SSH settings are configured, the Deploy workflow still
 builds and pushes the GHCR image, then exits with a notice. That no-config path
 is expected before the final deployment target exists.
+
+### Webhook Deployment Contract
+
+Configure webhook deployment when a platform such as Coolify, a deploy proxy, or a custom automation service should receive the image reference and redeploy the app.
+
+Required GitHub settings:
+
+| Name                   | Type                               | Notes                                           |
+| ---------------------- | ---------------------------------- | ----------------------------------------------- |
+| `DEPLOY_WEBHOOK_URL`   | Repository or environment variable | HTTPS endpoint called by the Deploy workflow    |
+| `DEPLOY_WEBHOOK_TOKEN` | Environment secret                 | Bearer token sent in the `Authorization` header |
+| `HEALTH_CHECK_URL`     | Repository or environment variable | Optional post-deploy `/api/health` URL          |
+
+The workflow sends a JSON payload:
+
+```json
+{
+  "image": "ghcr.io/<owner>/<repo>:sha-<commit>",
+  "digest": "sha256:<image-digest>",
+  "sha": "<commit-sha>",
+  "run_url": "https://github.com/<owner>/<repo>/actions/runs/<run-id>"
+}
+```
+
+The webhook target must:
+
+1. Authenticate `Authorization: Bearer <DEPLOY_WEBHOOK_TOKEN>`.
+2. Pull and run the `image` value from the payload.
+3. Treat the payload as a deployment request, not as trusted user input.
+4. Return an HTTP 2xx response within 30 seconds.
+5. Complete long-running deployment work asynchronously if the platform cannot finish within the webhook timeout.
+6. Preserve runtime secrets on the target host or platform; the webhook payload never includes provider API keys.
+
+### SSH Deployment With Remote Compose
+
+Use SSH deployment when the target is a Docker host that should pull the image published by GitHub Actions.
+
+Remote directory layout:
+
+```text
+/opt/voice-agent/
+|-- docker-compose.deploy.yml
+|-- .env.production
+```
+
+Initial host setup:
+
+```bash
+sudo mkdir -p /opt/voice-agent
+sudo chown "$USER":"$USER" /opt/voice-agent
+cd /opt/voice-agent
+
+# Upload docker-compose.deploy.yml from this repository.
+# Create .env.production from .env.production.example and fill in values.
+cp .env.production.example .env.production
+```
+
+If the GHCR package is private, log in on the host before the first pull:
+
+```bash
+echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+```
+
+Manual deploy command on the host:
+
+```bash
+cd /opt/voice-agent
+export IMAGE_REF=ghcr.io/<owner>/<repo>:sha-<commit>
+docker compose --env-file .env.production -f docker-compose.deploy.yml pull
+docker compose --env-file .env.production -f docker-compose.deploy.yml up -d --remove-orphans
+docker compose --env-file .env.production -f docker-compose.deploy.yml ps
+```
+
+GitHub SSH deployment runs the same Compose file. Configure:
+
+| Name               | Type                               | Notes                                  |
+| ------------------ | ---------------------------------- | -------------------------------------- |
+| `DEPLOY_SSH_HOST`  | Repository or environment variable | Remote Docker host                     |
+| `DEPLOY_SSH_USER`  | Repository or environment variable | User that can run Docker Compose       |
+| `DEPLOY_SSH_KEY`   | Environment secret                 | Private key for the SSH user           |
+| `DEPLOY_PATH`      | Repository or environment variable | Defaults to `/opt/voice-agent`         |
+| `HEALTH_CHECK_URL` | Repository or environment variable | Optional post-deploy `/api/health` URL |
+
+Rollback to a previous image by exporting the prior immutable tag or digest and running `docker compose up` again:
+
+```bash
+cd /opt/voice-agent
+export IMAGE_REF=ghcr.io/<owner>/<repo>:sha-<previous-commit>
+docker compose --env-file .env.production -f docker-compose.deploy.yml up -d
+```
+
+Keep at least the last known-good image tag in deployment notes or release notes. Avoid rolling back only to `latest`, because it may already point at the failed version.
 
 ### Health Check Behavior
 
@@ -288,6 +388,18 @@ NODE_ENV=production node server/index.js
 
 ### Health Checks
 
+Run the repeatable verifier after deployment:
+
+```bash
+npm run deploy:verify -- --url https://voice.example.com
+```
+
+The script checks:
+
+1. The root page returns HTML.
+2. `/api/health` returns valid JSON.
+3. The health status is `healthy` or intentionally `degraded`.
+
 `/api/health` returns:
 
 | Status      | HTTP | Meaning                                                       |
@@ -296,11 +408,43 @@ NODE_ENV=production node server/index.js
 | `degraded`  | 200  | App is serving but one or more providers are not configured   |
 | `unhealthy` | 503  | App is not ready to serve production traffic                  |
 
-Docker and Compose health checks use `/api/health`. A container with no provider keys should start and report `degraded`; provider tabs should show their unconfigured states instead of making the container unhealthy.
+`degraded` is acceptable when:
+
+- The app is intentionally deployed with only a subset of providers.
+- A provider tab is disabled at build time but its runtime key is not set.
+- A staging deployment is checking platform readiness before all provider keys are configured.
+
+`degraded` is not acceptable when the production launch expectation is that every enabled provider can connect. In that case, inspect the `providerSummary` and `services` fields in the health response and configure the missing variables.
+
+Docker and Compose health checks use `/api/health`. A container with no provider keys should start and report `degraded`; provider tabs should show their unconfigured states instead of making the container unhealthy. `unhealthy` means the app is not ready, commonly because production static assets are missing or the server cannot serve the app.
 
 ### Gemini Live Session Limit
 
 Gemini Live sessions are limited to 15 minutes by the provider/API behavior used by this app. This is not a Docker or reverse-proxy failure. Users should expect the Gemini tab to require a new session after that limit.
+
+### WebSocket Provider Verification
+
+Before testing providers, confirm the browser page is loaded over HTTPS and the backend health endpoint is `healthy` or intentionally `degraded`.
+
+Proxy requirements:
+
+- Preserve `Upgrade` and `Connection` headers for WebSocket traffic.
+- Avoid short idle timeouts for voice sessions.
+- Use `wss://` provider connections from HTTPS pages.
+- Keep token endpoints under `/api/*` on the same origin for combined Docker deployments.
+
+Provider checks:
+
+| Provider | Verification path                                                                               | Expected result                                                                                                                          |
+| -------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| OpenAI   | Open the OpenAI tab, grant microphone permission, start a conversation, then stop it.           | `/api/openai/token` returns an ephemeral token and the browser WebSocket reaches connected state.                                        |
+| xAI      | Open the xAI tab, start a conversation, speak one short sentence, then stop it.                 | `/api/xai/token` returns an ephemeral token and the WebSocket remains connected long enough for a response.                              |
+| Gemini   | Enable Gemini at build time, open the Gemini tab, start a session, and watch the session timer. | `/api/gemini/token` returns an ephemeral token and the Gemini Live WebSocket connects; session expiration around 15 minutes is expected. |
+| Ultravox | Open the Ultravox tab and start a call.                                                         | `/api/ultravox/call` returns a join URL and the Ultravox client connects to the provider WebSocket.                                      |
+| Vapi     | Open the Vapi tab with `VITE_VAPI_WEB_TOKEN` built into the frontend and start a call.          | The Vapi SDK starts a WebRTC session; no backend token endpoint is required.                                                             |
+| Retell   | Open the Retell tab with `VITE_RETELL_AGENT_ID` built into the frontend and start a call.       | `/api/retell/create-web-call` returns an access token and the Retell client connects through LiveKit.                                    |
+
+If token endpoints fail, check runtime provider secrets and `CORS_ORIGIN`. If token endpoints pass but media does not connect, check HTTPS, microphone permission, provider dashboard configuration, proxy timeouts, and WebSocket/WebRTC support on the host.
 
 ### Security Notes
 
@@ -311,23 +455,56 @@ Gemini Live sessions are limited to 15 minutes by the provider/API behavior used
 
 ## Alternative Platforms
 
-### Railway / Render
+Coolify remains the recommended path because it supports a single full-stack Docker container, HTTPS, reverse proxying, environment management, and persistent WebSocket connections. Use the alternatives below only when the hosting constraints are acceptable.
 
-Full-stack platforms with Docker support:
+### Railway
 
-1. Connect Git repository
-2. Configure environment variables
-3. Set build command: `docker build`
-4. Deploy
+Railway can run the full-stack Docker image from the repository or a container image.
 
-### Vercel + External Backend
+Required settings:
 
-If you must use Vercel for frontend:
+1. Use the root `Dockerfile` or the published GHCR image.
+2. Set `SERVER_PORT=3001` and expose that port through Railway.
+3. Set `VITE_API_BASE_URL=/` before repository builds.
+4. Configure `CORS_ORIGIN` to the Railway domain or custom domain.
+5. Verify WebSocket and WebRTC provider behavior after deploy.
 
-1. Deploy frontend to Vercel
-2. Deploy backend to Railway/Render/Fly.io
-3. Configure `VITE_API_BASE_URL` to point to backend
-4. Handle CORS between services
+### Fly.io
+
+Fly.io can run the combined Docker app close to users, but it requires explicit app and proxy configuration.
+
+Required settings:
+
+1. Use the root `Dockerfile` as the image source.
+2. Map the internal service port to `3001`.
+3. Configure secrets with `fly secrets set`, keeping provider API keys runtime-only.
+4. Use a custom domain with HTTPS for microphone permissions.
+5. Confirm proxy idle timeouts are compatible with voice sessions.
+
+### Render
+
+Render Docker services can run the combined app when configured as a web service.
+
+Required settings:
+
+1. Select Docker runtime and the repository root `Dockerfile`.
+2. Set `SERVER_PORT=3001` unless Render injects a required port variable.
+3. Set all runtime secrets in Render environment variables.
+4. Use `VITE_API_BASE_URL=/` for same-origin builds.
+5. Test provider connections because platform idle timeouts can interrupt long voice sessions.
+
+### Vercel Frontend With External Backend
+
+Use split hosting only when a frontend-only platform is required.
+
+1. Deploy the Vite frontend to Vercel.
+2. Deploy the Express backend to Coolify, Railway, Fly.io, Render, or another Docker host.
+3. Build the frontend with `VITE_API_BASE_URL=https://api.voice.example.com`.
+4. Set backend `CORS_ORIGIN=https://voice.example.com`.
+5. Ensure the backend host supports WebSocket upgrades and long-lived provider connections.
+6. Keep provider API keys only on the backend host.
+
+Split hosting increases CORS and proxy complexity. A browser error on token creation usually points to `VITE_API_BASE_URL` or `CORS_ORIGIN`; a failure after token creation usually points to provider credentials, HTTPS, microphone permission, or WebSocket/proxy behavior.
 
 ### Traditional VPS
 
@@ -344,6 +521,42 @@ docker run -d \
 ```
 
 Configure Nginx/Caddy for reverse proxy and SSL.
+
+## Custom Domain, HTTPS, And CORS Checklist
+
+Use one canonical HTTPS origin for the production app, for example `https://voice.example.com`.
+
+DNS and proxy:
+
+- Point the domain to the platform or host with an `A`, `AAAA`, or `CNAME` record as required by the provider.
+- Enable HTTPS before testing microphone access.
+- Redirect HTTP to HTTPS.
+- Forward the public host to container port `3001` or the configured `SERVER_PORT`.
+- Preserve `Host`, `X-Forwarded-Proto`, and WebSocket upgrade headers in any custom proxy.
+
+Same-origin Docker deployment:
+
+```bash
+VITE_API_BASE_URL=/
+CORS_ORIGIN=https://voice.example.com
+```
+
+Split frontend/backend deployment:
+
+```bash
+VITE_API_BASE_URL=https://api.voice.example.com
+CORS_ORIGIN=https://voice.example.com
+```
+
+Production CORS rules:
+
+- Do not use `*` for `CORS_ORIGIN` in production.
+- Do not reuse demo-mode ngrok origins in production.
+- Configure exactly one browser-facing origin unless the deployment intentionally supports multiple domains.
+- Rebuild the frontend image when changing `VITE_API_BASE_URL`.
+- Restart the backend container when changing `CORS_ORIGIN`.
+
+Browser microphone access requires HTTPS on public domains. `http://localhost` is allowed for local development, but production domains must use HTTPS.
 
 ## SSL/HTTPS Setup
 

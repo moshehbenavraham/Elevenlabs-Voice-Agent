@@ -1,7 +1,7 @@
 {
   "name": "voice-agent-pupuplatter",
   "private": true,
-  "version": "1.0.56",
+  "version": "1.0.57",
   "type": "module",
   "scripts": {
     "predev": "node scripts/ensure-config-stub.mjs",
@@ -32,6 +32,7 @@
     "docker:down": "docker compose down --remove-orphans",
     "docker:logs": "docker compose logs -f voice-agent",
     "docker:health": "curl -fsS http://localhost:3001/api/health",
+    "deploy:verify": "node scripts/deploy/verify-production.mjs",
     "docker:prod": "npm run docker:up && npm run docker:health",
     "demo": "bash scripts/demo.sh"
   },

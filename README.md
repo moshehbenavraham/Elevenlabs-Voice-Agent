@@ -177,8 +177,8 @@ This project includes comprehensive documentation:
 
 - **[Quick Start Guide](#-quick-start)** - Get up and running in minutes
 - **[Installation & Configuration](#configuration)** - Detailed setup instructions
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - Docker/Coolify production deployment and split-hosting notes
-- **[CI/CD Operations Guide](docs/CI_CD.md)** - GitHub Actions workflows, required checks, branch protection, GHCR deployment, and release notes
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Coolify, GHCR image, SSH Docker-host, domain, CORS, and provider verification guide
+- **[CI/CD Operations Guide](docs/CI_CD.md)** - GitHub Actions workflows, required checks, branch protection, GHCR deployment, SSH layout, and release notes
 
 ### Technical Documentation
 
@@ -207,7 +207,7 @@ This project includes comprehensive documentation:
 
 | Type      | Documentation                                   | Description                     |
 | --------- | ----------------------------------------------- | ------------------------------- |
-| [DEPLOY]  | **[Deployment](docs/DEPLOYMENT.md)**            | Production deployment guides    |
+| [DEPLOY]  | **[Deployment](docs/DEPLOYMENT.md)**            | Coolify, GHCR, SSH deployment   |
 | [CI]      | **[CI/CD](docs/CI_CD.md)**                      | Workflow checks and GHCR deploy |
 | [DEMO]    | **[Demo Mode](docs/DEMO_MODE.md)**              | ngrok demo mode setup           |
 | [ARCH]    | **[Architecture](docs/ARCHITECTURE.md)**        | Technical system design         |
@@ -264,6 +264,30 @@ npm run dev:all      # Frontend: 8082, Backend: 3001
 # Backend only
 npm run server       # http://localhost:3001
 ```
+
+### Production Deployment
+
+Recommended production path:
+
+1. Deploy the combined Docker app with Coolify.
+2. Use GitHub Actions to publish GHCR images on `main`.
+3. Use webhook deployment for managed platforms or SSH deployment with `docker-compose.deploy.yml` for Docker hosts.
+4. Configure production values from `.env.production.example`.
+5. Verify the deployed origin with:
+
+```bash
+npm run deploy:verify -- --url https://voice.example.com
+```
+
+For SSH hosts, prepare this remote layout:
+
+```text
+/opt/voice-agent/
+|-- docker-compose.deploy.yml
+|-- .env.production
+```
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for Coolify, GHCR image, SSH, custom domain, CORS, health, and provider verification steps.
 
 ### Demo Mode (ngrok)
 

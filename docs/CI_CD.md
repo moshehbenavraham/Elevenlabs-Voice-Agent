@@ -30,6 +30,15 @@ to operate the pipeline.
 
 ## Runtime Configuration Audit
 
+### Production Deployment Artifacts
+
+| Artifact                                  | Purpose                                                                                             |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `docker-compose.deploy.yml`               | Remote image-based Compose file for SSH or Docker-host deployments                                  |
+| `.env.production.example`                 | Production environment template for build-time public values, runtime secrets, and deploy variables |
+| `scripts/deploy/verify-production.mjs`    | Post-deploy root page and `/api/health` verifier                                                    |
+| `npm run deploy:verify -- --url <origin>` | Operator command for production verification                                                        |
+
 ### Required Secrets
 
 | Secret                 | Workflow      | Required When                        | Purpose                                             |
@@ -114,6 +123,12 @@ For Docker deployment parity:
 
 ```bash
 npm run docker:prod
+```
+
+For production endpoint verification after a deployment:
+
+```bash
+npm run deploy:verify -- --url https://voice.example.com
 ```
 
 For security parity:
@@ -202,8 +217,25 @@ Configure:
 - Optional repository or environment variable: `HEALTH_CHECK_URL`
 
 The remote deployment path must contain a Compose file that can pull and start
-the production image. The workflow exports `IMAGE_REF` before running
-`docker compose pull` and `docker compose up -d --remove-orphans`.
+the production image:
+
+```text
+/opt/voice-agent/
+|-- docker-compose.deploy.yml
+|-- .env.production
+```
+
+The workflow exports `IMAGE_REF` from the image built in the same workflow run,
+then runs:
+
+```bash
+docker compose --env-file .env.production -f docker-compose.deploy.yml pull
+docker compose --env-file .env.production -f docker-compose.deploy.yml up -d --remove-orphans
+docker compose --env-file .env.production -f docker-compose.deploy.yml ps
+```
+
+Create `.env.production` from `.env.production.example` on the host. If GHCR is
+private, log in to `ghcr.io` on the host before the first pull.
 
 ### No Deployment Configuration
 
