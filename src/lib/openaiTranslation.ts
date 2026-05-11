@@ -9,10 +9,12 @@ import type {
   OpenAITranslationErrorKind,
   OpenAITranslationHookStatus,
   OpenAITranslationInputAudioConfig,
+  OpenAITranslationCleanupResult,
   OpenAITranslationMaxSessionConfig,
   OpenAITranslationNoiseReductionType,
   OpenAITranslationRuntimeRequestOptions,
   OpenAITranslationRuntimeError,
+  OpenAITranslationRouteErrorCategory,
   OpenAITranslationSdpExchangeOptions,
   OpenAITranslationSessionConfig,
   OpenAITranslationSessionConfigOptions,
@@ -39,6 +41,11 @@ import type {
   OpenAITranslationTranscriptSummary,
   OpenAITranslationTranscriptStream,
 } from '@/types/openai-translation';
+
+export {
+  buildOpenAITranslationDiagnostic,
+  getOpenAITranslationDiagnosticCategoryLabel,
+} from './openaiTranslationDiagnostics';
 
 export const OPENAI_TRANSLATION_MODEL = 'gpt-realtime-translate';
 export const OPENAI_TRANSLATION_INPUT_TRANSCRIPTION_MODEL = 'gpt-realtime-whisper';
@@ -150,6 +157,31 @@ const OPENAI_TRANSLATION_TRANSCRIPT_STATUS_LABELS = {
   partial: 'Partial',
   final: 'Final',
 } as const satisfies Record<OpenAITranslationTranscriptDisplayStatus, string>;
+const OPENAI_TRANSLATION_ROUTE_ERROR_CATEGORIES = [
+  'validation',
+  'server-configuration',
+  'openai-auth',
+  'openai-rate-limit',
+  'openai-service',
+  'openai-timeout',
+  'openai-response',
+  'network',
+  'unknown',
+] as const satisfies readonly OpenAITranslationRouteErrorCategory[];
+const OPENAI_TRANSLATION_ROUTE_ERROR_CATEGORY_SET = new Set<OpenAITranslationRouteErrorCategory>(
+  OPENAI_TRANSLATION_ROUTE_ERROR_CATEGORIES
+);
+const SENSITIVE_ROUTE_ERROR_PATTERNS = [
+  /sk-[a-z0-9_-]+/i,
+  /bearer\s+[a-z0-9._-]+/i,
+  /authorization/i,
+  /openai_api_key/i,
+  /client_secret/i,
+  /api[_-]?key/i,
+  /\bv=0\b/i,
+  /offer-sdp/i,
+  /answer-sdp/i,
+] as const;
 
 interface OpenAITranslationDisplayMediaOptions extends DisplayMediaStreamOptions {
   readonly preferCurrentTab?: boolean;
@@ -295,6 +327,7 @@ export function mapOpenAITranslationSourceError(
   }
 
   const name = readErrorName(error);
+  const metadata = getOpenAITranslationSourceModeMetadata(mode);
   switch (name) {
     case 'NotAllowedError':
     case 'SecurityError':
@@ -302,7 +335,7 @@ export function mapOpenAITranslationSourceError(
       return createOpenAITranslationSourceError(
         'permission-denied',
         mode,
-        'Browser permission was denied for the selected audio source.',
+        `${metadata.label} permission was denied by the browser.`,
         { code: 'permission-denied', rawName: name }
       );
 
@@ -310,7 +343,7 @@ export function mapOpenAITranslationSourceError(
       return createOpenAITranslationSourceError(
         'capture-cancelled',
         mode,
-        'Audio source selection was cancelled before capture started.',
+        `${metadata.label} selection was cancelled before capture started.`,
         { code: 'capture-cancelled', rawName: name }
       );
 
@@ -323,8 +356,16 @@ export function mapOpenAITranslationSourceError(
       return createOpenAITranslationSourceError(
         'device-unavailable',
         mode,
-        'The selected audio source is unavailable or could not be started.',
+        `${metadata.label} is unavailable or could not be started.`,
         { code: 'device-unavailable', rawName: name }
+      );
+
+    case 'NotSupportedError':
+      return createOpenAITranslationSourceError(
+        'unsupported',
+        mode,
+        `${metadata.label} is not supported by this browser.`,
+        { recoverable: false, code: 'source-unsupported', rawName: name }
       );
 
     case 'TypeError':
@@ -332,7 +373,7 @@ export function mapOpenAITranslationSourceError(
       return createOpenAITranslationSourceError(
         'capture-failed',
         mode,
-        'Audio source capture could not be started in this browser state.',
+        `${metadata.label} capture could not be started in this browser state.`,
         { code: 'capture-failed', rawName: name }
       );
 
@@ -340,7 +381,7 @@ export function mapOpenAITranslationSourceError(
       return createOpenAITranslationSourceError(
         'unknown',
         mode,
-        'Audio source capture failed unexpectedly.',
+        `${metadata.label} capture failed unexpectedly.`,
         { code: 'unknown-capture-error', rawName: name ?? undefined }
       );
   }
@@ -368,6 +409,7 @@ export function createOpenAITranslationRuntimeError(
     readonly recoverable?: boolean;
     readonly status?: number;
     readonly code?: string;
+    readonly routeCategory?: OpenAITranslationRouteErrorCategory;
   } = {}
 ): OpenAITranslationRuntimeError {
   return {
@@ -376,6 +418,16 @@ export function createOpenAITranslationRuntimeError(
     recoverable: options.recoverable ?? kind !== 'validation',
     ...(typeof options.status === 'number' ? { status: options.status } : {}),
     ...(typeof options.code === 'string' && options.code.length > 0 ? { code: options.code } : {}),
+    ...(options.routeCategory ? { routeCategory: options.routeCategory } : {}),
+  };
+}
+
+export function createOpenAITranslationCleanupResult(
+  error: OpenAITranslationRuntimeError | null
+): OpenAITranslationCleanupResult {
+  return {
+    ok: error === null,
+    error,
   };
 }
 
@@ -796,6 +848,8 @@ export function formatOpenAITranslationSessionEndReason(
       return 'Source ended';
     case 'runtime-error':
       return 'Runtime error';
+    case 'provider-switch':
+      return 'Provider switch';
     case null:
       return 'In progress';
     default:
@@ -1219,11 +1273,15 @@ async function parseOpenAITranslationJson(
   }
 
   if (!response.ok) {
+    const errorResponse = readOpenAITranslationErrorResponse(data);
     throw createOpenAITranslationRuntimeError(
       errorKind,
-      readOpenAITranslationErrorMessage(data) ??
-        `OpenAI translation request failed with HTTP ${response.status}`,
-      { status: response.status, code: 'http-error' }
+      errorResponse?.message ?? `OpenAI translation request failed with HTTP ${response.status}`,
+      {
+        status: response.status,
+        code: errorResponse?.code ?? 'http-error',
+        routeCategory: errorResponse?.category,
+      }
     );
   }
 
@@ -1251,10 +1309,8 @@ async function parseOpenAITranslationText(
   if (!response.ok) {
     throw createOpenAITranslationRuntimeError(
       errorKind,
-      text.trim().length > 0
-        ? text.trim()
-        : `OpenAI translation request failed with HTTP ${response.status}`,
-      { status: response.status, code: 'http-error' }
+      `OpenAI translation SDP exchange failed with HTTP ${response.status}`,
+      { status: response.status, code: 'sdp-http-error' }
     );
   }
 
@@ -1294,18 +1350,29 @@ function normalizeOpenAITranslationSessionResponse(
   };
 }
 
-function readOpenAITranslationErrorMessage(data: unknown): string | null {
+function readOpenAITranslationErrorResponse(data: unknown): OpenAITranslationErrorResponse | null {
   if (!isRecord(data)) {
     return null;
   }
 
   const errorResponse = data as Partial<OpenAITranslationErrorResponse>;
-  const message = readNonEmptyString(errorResponse.message);
-  if (message) {
-    return message;
+  const message = readSafeErrorString(errorResponse.message);
+  const error = readSafeErrorString(errorResponse.error) ?? 'OpenAI translation request failed';
+  const code = readSafeErrorCode(errorResponse.code);
+  const category = isOpenAITranslationRouteErrorCategory(errorResponse.category)
+    ? errorResponse.category
+    : undefined;
+
+  if (!message && !code && !category) {
+    return null;
   }
 
-  return readNonEmptyString(errorResponse.error);
+  return {
+    error,
+    message: message ?? error,
+    ...(category ? { category } : {}),
+    ...(code ? { code } : {}),
+  };
 }
 
 function resolveOpenAITranslationFetch(fetcher?: OpenAITranslationFetch): OpenAITranslationFetch {
@@ -1535,6 +1602,37 @@ function readErrorName(error: unknown): string | null {
 
 function readNonEmptyString(value: unknown): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+}
+
+function readSafeErrorString(value: unknown): string | null {
+  const text = readNonEmptyString(value);
+  if (!text) {
+    return null;
+  }
+
+  if (SENSITIVE_ROUTE_ERROR_PATTERNS.some((pattern) => pattern.test(text))) {
+    return null;
+  }
+
+  return text.length > 240 ? `${text.slice(0, 237)}...` : text;
+}
+
+function readSafeErrorCode(value: unknown): string | null {
+  const code = readNonEmptyString(value);
+  if (!code || SENSITIVE_ROUTE_ERROR_PATTERNS.some((pattern) => pattern.test(code))) {
+    return null;
+  }
+
+  return /^[a-z0-9][a-z0-9._-]{0,80}$/i.test(code) ? code : null;
+}
+
+function isOpenAITranslationRouteErrorCategory(
+  value: unknown
+): value is OpenAITranslationRouteErrorCategory {
+  return (
+    typeof value === 'string' &&
+    OPENAI_TRANSLATION_ROUTE_ERROR_CATEGORY_SET.has(value as OpenAITranslationRouteErrorCategory)
+  );
 }
 
 function buildOpenAITranslationTranscriptEntry(

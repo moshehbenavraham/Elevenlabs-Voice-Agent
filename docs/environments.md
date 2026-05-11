@@ -24,29 +24,29 @@
 
 These are embedded in the build and visible to users.
 
-| Variable                          | Dev Default             | Description                          |
-| --------------------------------- | ----------------------- | ------------------------------------ |
-| `VITE_ELEVENLABS_ENABLED`         | `true`                  | Show ElevenLabs tab                  |
-| `VITE_ELEVENLABS_SDK_ENABLED`     | `true`                  | Show ElevenLabs SDK tab              |
-| `VITE_XAI_ENABLED`                | `true`                  | Show xAI tab                         |
-| `VITE_OPENAI_ENABLED`             | `true`                  | Show OpenAI tab                      |
-| `VITE_OPENAI_TRANSLATION_ENABLED` | `false`                 | Show OpenAI Translation scaffold tab |
-| `VITE_ULTRAVOX_ENABLED`           | `true`                  | Show Ultravox tab                    |
-| `VITE_VAPI_ENABLED`               | `true`                  | Show Vapi tab                        |
-| `VITE_VAPI_WEB_TOKEN`             | -                       | Vapi public web token                |
-| `VITE_VAPI_ASSISTANT_ID`          | -                       | Vapi assistant ID (opt.)             |
-| `VITE_VAPI_VOICE`                 | `paula`                 | Vapi voice selection                 |
-| `VITE_RETELL_ENABLED`             | `true`                  | Show Retell tab                      |
-| `VITE_RETELL_AGENT_ID`            | -                       | Retell Agent ID                      |
-| `VITE_GEMINI_ENABLED`             | `false`                 | Show Gemini tab                      |
-| `VITE_GEMINI_VOICE`               | `Zephyr`                | Gemini voice selection               |
-| `VITE_DEFAULT_PROVIDER`           | `elevenlabs`            | Default active tab                   |
-| `VITE_ELEVENLABS_AGENT_ID`        | -                       | ElevenLabs agent ID                  |
-| `VITE_XAI_VOICE`                  | `Ara`                   | xAI voice selection                  |
-| `VITE_OPENAI_VOICE`               | `alloy`                 | OpenAI voice selection               |
-| `VITE_ULTRAVOX_VOICE`             | `Mark`                  | Ultravox voice selection             |
-| `VITE_API_BASE_URL`               | `http://localhost:3001` | Backend API URL                      |
-| `VITE_NODE_ENV`                   | `development`           | Environment flag                     |
+| Variable                          | Dev Default             | Description                 |
+| --------------------------------- | ----------------------- | --------------------------- |
+| `VITE_ELEVENLABS_ENABLED`         | `true`                  | Show ElevenLabs tab         |
+| `VITE_ELEVENLABS_SDK_ENABLED`     | `true`                  | Show ElevenLabs SDK tab     |
+| `VITE_XAI_ENABLED`                | `true`                  | Show xAI tab                |
+| `VITE_OPENAI_ENABLED`             | `true`                  | Show OpenAI tab             |
+| `VITE_OPENAI_TRANSLATION_ENABLED` | `false`                 | Show OpenAI Translation tab |
+| `VITE_ULTRAVOX_ENABLED`           | `true`                  | Show Ultravox tab           |
+| `VITE_VAPI_ENABLED`               | `true`                  | Show Vapi tab               |
+| `VITE_VAPI_WEB_TOKEN`             | -                       | Vapi public web token       |
+| `VITE_VAPI_ASSISTANT_ID`          | -                       | Vapi assistant ID (opt.)    |
+| `VITE_VAPI_VOICE`                 | `paula`                 | Vapi voice selection        |
+| `VITE_RETELL_ENABLED`             | `true`                  | Show Retell tab             |
+| `VITE_RETELL_AGENT_ID`            | -                       | Retell Agent ID             |
+| `VITE_GEMINI_ENABLED`             | `false`                 | Show Gemini tab             |
+| `VITE_GEMINI_VOICE`               | `Zephyr`                | Gemini voice selection      |
+| `VITE_DEFAULT_PROVIDER`           | `elevenlabs`            | Default active tab          |
+| `VITE_ELEVENLABS_AGENT_ID`        | -                       | ElevenLabs agent ID         |
+| `VITE_XAI_VOICE`                  | `Ara`                   | xAI voice selection         |
+| `VITE_OPENAI_VOICE`               | `alloy`                 | OpenAI voice selection      |
+| `VITE_ULTRAVOX_VOICE`             | `Mark`                  | Ultravox voice selection    |
+| `VITE_API_BASE_URL`               | `http://localhost:3001` | Backend API URL             |
+| `VITE_NODE_ENV`                   | `development`           | Environment flag            |
 
 ### Server-Side Variables (No prefix)
 

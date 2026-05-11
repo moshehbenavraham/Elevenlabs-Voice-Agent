@@ -35,6 +35,44 @@ const SUPPORTED_TRANSLATION_TARGET_LANGUAGE_SET = new Set(
   SUPPORTED_TRANSLATION_TARGET_LANGUAGES
 );
 
+function createTranslationRouteError(error, message, category, code) {
+  return {
+    error,
+    message,
+    category,
+    code,
+  };
+}
+
+function mapTranslationValidationError(error) {
+  return createTranslationRouteError(
+    error.error,
+    error.message,
+    'validation',
+    resolveTranslationValidationCode(error.message)
+  );
+}
+
+function resolveTranslationValidationCode(message) {
+  if (message.includes('is required')) {
+    return 'missing-target-language';
+  }
+
+  if (message.includes('must be one of')) {
+    return 'unsupported-target-language';
+  }
+
+  if (message.includes('unsupported field')) {
+    return 'unsupported-request-field';
+  }
+
+  if (message.includes('must be an object')) {
+    return 'invalid-request-body';
+  }
+
+  return 'invalid-target-language';
+}
+
 /**
  * Validates that OPENAI_API_KEY environment variable is configured.
  * @returns {{ valid: boolean, error?: { error: string, message: string } }}
@@ -147,10 +185,12 @@ export function normalizeTranslationClientSecretResponse(data, targetLanguage) {
     return {
       success: false,
       status: 502,
-      error: {
-        error: 'Invalid OpenAI response',
-        message: 'Translation client secret not found in response',
-      },
+      error: createTranslationRouteError(
+        'Invalid OpenAI response',
+        'Translation client secret not found in response',
+        'openai-response',
+        'missing-client-secret'
+      ),
     };
   }
 
@@ -173,18 +213,22 @@ export function normalizeTranslationClientSecretResponse(data, targetLanguage) {
 
 function mapOpenAITranslationError(status) {
   let message = 'Failed to create OpenAI translation session';
+  let category = 'openai-service';
+  let code = 'openai-service-error';
+
   if (status === 401 || status === 403) {
     message = 'Invalid OpenAI API key';
+    category = 'openai-auth';
+    code = 'openai-auth-failed';
   } else if (status === 429) {
     message = 'OpenAI rate limit exceeded';
+    category = 'openai-rate-limit';
+    code = 'openai-rate-limited';
   } else if (status >= 500) {
     message = 'OpenAI service temporarily unavailable';
   }
 
-  return {
-    error: 'OpenAI API error',
-    message,
-  };
+  return createTranslationRouteError('OpenAI API error', message, category, code);
 }
 
 async function createTranslationClientSecret(apiKey, targetLanguage) {
@@ -216,10 +260,12 @@ async function createTranslationClientSecret(apiKey, targetLanguage) {
       return {
         success: false,
         status: 502,
-        error: {
-          error: 'Invalid OpenAI response',
-          message: 'OpenAI translation response was not valid JSON',
-        },
+        error: createTranslationRouteError(
+          'Invalid OpenAI response',
+          'OpenAI translation response was not valid JSON',
+          'openai-response',
+          'invalid-openai-response-json'
+        ),
       };
     }
 
@@ -237,21 +283,25 @@ async function createTranslationClientSecret(apiKey, targetLanguage) {
       return {
         success: false,
         status: 504,
-        error: {
-          error: 'Request timeout',
-          message: 'OpenAI translation API request timed out',
-        },
+        error: createTranslationRouteError(
+          'Request timeout',
+          'OpenAI translation API request timed out',
+          'openai-timeout',
+          'openai-request-timeout'
+        ),
       };
     }
 
-    console.error('[Server] Error calling OpenAI translation API:', error?.message);
+    console.error('[Server] Error calling OpenAI translation API');
     return {
       success: false,
       status: 500,
-      error: {
-        error: 'Internal server error',
-        message: 'Failed to create OpenAI translation session',
-      },
+      error: createTranslationRouteError(
+        'Internal server error',
+        'Failed to create OpenAI translation session',
+        'network',
+        'openai-network-error'
+      ),
     };
   } finally {
     clearTimeout(timeoutId);
@@ -389,12 +439,19 @@ router.get('/health', (req, res) => {
 router.post('/translation-session', async (req, res) => {
   const requestValidation = validateTranslationSessionRequest(req.body);
   if (!requestValidation.valid) {
-    return res.status(400).json(requestValidation.error);
+    return res.status(400).json(mapTranslationValidationError(requestValidation.error));
   }
 
   const validation = validateApiKey();
   if (!validation.valid) {
-    return res.status(500).json(validation.error);
+    return res.status(500).json(
+      createTranslationRouteError(
+        validation.error.error,
+        validation.error.message,
+        'server-configuration',
+        'missing-openai-api-key'
+      )
+    );
   }
 
   const result = await createTranslationClientSecret(

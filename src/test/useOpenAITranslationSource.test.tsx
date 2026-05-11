@@ -8,7 +8,9 @@ class FakeMediaStreamTrack {
   readonly kind: string;
   readonly id: string;
   readyState: MediaStreamTrackState = 'live';
+  readonly cleanupEvents: string[] = [];
   readonly stop = vi.fn(() => {
+    this.cleanupEvents.push(`stop:${this.id}`);
     this.readyState = 'ended';
   });
   readonly addEventListener = vi.fn((type: string, listener: TrackEventHandler): void => {
@@ -23,6 +25,7 @@ class FakeMediaStreamTrack {
       return;
     }
 
+    this.cleanupEvents.push(`remove:${this.id}`);
     this.endedListeners.delete(listener);
   });
   private readonly endedListeners = new Set<TrackEventHandler>();
@@ -41,6 +44,10 @@ class FakeMediaStreamTrack {
 
   getEndedListenerCount(): number {
     return this.endedListeners.size;
+  }
+
+  getCleanupEvents(): readonly string[] {
+    return this.cleanupEvents;
   }
 }
 
@@ -195,6 +202,25 @@ describe('useOpenAITranslationSource', () => {
     expect(getDisplayMediaMock).not.toHaveBeenCalled();
   });
 
+  it('returns restricted source errors before capture outside secure browser contexts', async () => {
+    vi.stubGlobal('isSecureContext', false);
+    const { result } = renderHook(() => useOpenAITranslationSource());
+
+    await act(async () => {
+      await expect(result.current.captureBrowserTab()).resolves.toBe(false);
+    });
+
+    expect(result.current.status).toBe('error');
+    expect(result.current.error).toMatchObject({
+      kind: 'unsupported',
+      mode: 'browser-tab',
+      code: 'source-restricted',
+      recoverable: true,
+    });
+    expect(getUserMediaMock).not.toHaveBeenCalled();
+    expect(getDisplayMediaMock).not.toHaveBeenCalled();
+  });
+
   it('maps permission denial, cancellation, and device failures to typed errors', async () => {
     getUserMediaMock.mockRejectedValueOnce(createNamedError('NotAllowedError'));
     getDisplayMediaMock
@@ -227,6 +253,17 @@ describe('useOpenAITranslationSource', () => {
       kind: 'device-unavailable',
       mode: 'browser-tab',
       code: 'device-unavailable',
+    });
+
+    getDisplayMediaMock.mockRejectedValueOnce(createNamedError('NotSupportedError'));
+    await act(async () => {
+      await expect(result.current.captureBrowserTab()).resolves.toBe(false);
+    });
+    expect(result.current.error).toMatchObject({
+      kind: 'unsupported',
+      mode: 'browser-tab',
+      code: 'source-unsupported',
+      recoverable: false,
     });
   });
 
@@ -300,6 +337,7 @@ describe('useOpenAITranslationSource', () => {
 
     expect(micTrack.removeEventListener).toHaveBeenCalledTimes(1);
     expect(micTrack.stop).toHaveBeenCalledTimes(1);
+    expect(micTrack.getCleanupEvents()).toEqual(['remove:mic-audio', 'stop:mic-audio']);
     expect(result.current.status).toBe('ready');
     expect(result.current.mode).toBe('browser-tab');
     expect(result.current.stream).toBe(tabStream);
@@ -328,7 +366,8 @@ describe('useOpenAITranslationSource', () => {
       code: 'source-track-ended',
     });
     expect(audioTrack.removeEventListener).toHaveBeenCalledTimes(1);
-    expect(audioTrack.stop).toHaveBeenCalledTimes(1);
+    expect(audioTrack.stop).not.toHaveBeenCalled();
+    expect(audioTrack.getCleanupEvents()).toEqual(['remove:ended-audio']);
   });
 
   it('handles repeated stop, reset after errors, and unmount cleanup idempotently', async () => {
@@ -345,6 +384,14 @@ describe('useOpenAITranslationSource', () => {
       result.current.stop();
     });
 
+    expect(result.current.status).toBe('stopped');
+    expect(audioTrack.removeEventListener).toHaveBeenCalledTimes(1);
+    expect(audioTrack.stop).toHaveBeenCalledTimes(1);
+    expect(audioTrack.getCleanupEvents()).toEqual(['remove:cleanup-audio', 'stop:cleanup-audio']);
+
+    await act(async () => {
+      audioTrack.dispatchEnded();
+    });
     expect(result.current.status).toBe('stopped');
     expect(audioTrack.removeEventListener).toHaveBeenCalledTimes(1);
     expect(audioTrack.stop).toHaveBeenCalledTimes(1);

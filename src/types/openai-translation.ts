@@ -43,9 +43,22 @@ export interface OpenAITranslationSessionResponse {
   readonly model: string;
 }
 
+export type OpenAITranslationRouteErrorCategory =
+  | 'validation'
+  | 'server-configuration'
+  | 'openai-auth'
+  | 'openai-rate-limit'
+  | 'openai-service'
+  | 'openai-timeout'
+  | 'openai-response'
+  | 'network'
+  | 'unknown';
+
 export interface OpenAITranslationErrorResponse {
   readonly error: string;
   readonly message: string;
+  readonly category?: OpenAITranslationRouteErrorCategory;
+  readonly code?: string;
 }
 
 export interface OpenAITranslationSessionRequestDescriptor {
@@ -122,7 +135,19 @@ export type OpenAITranslationSessionEndReason =
   | 'manual'
   | 'source-ended'
   | 'runtime-error'
+  | 'provider-switch'
   | OpenAITranslationAutoStopReason;
+
+export type OpenAITranslationRuntimeStopReason =
+  | OpenAITranslationSessionEndReason
+  | 'failed-start'
+  | 'reset'
+  | 'unmount';
+
+export interface OpenAITranslationCleanupResult {
+  readonly ok: boolean;
+  readonly error: OpenAITranslationRuntimeError | null;
+}
 
 export interface OpenAITranslationMaxSessionConfig {
   readonly maxMinutes: number;
@@ -249,6 +274,84 @@ export interface OpenAITranslationRuntimeError {
   readonly recoverable: boolean;
   readonly status?: number;
   readonly code?: string;
+  readonly routeCategory?: OpenAITranslationRouteErrorCategory;
+}
+
+export type OpenAITranslationAudioStreamKind = 'translated' | 'original';
+
+export interface OpenAITranslationPlaybackError {
+  readonly streamKind: OpenAITranslationAudioStreamKind;
+  readonly message: string;
+  readonly recoverable: boolean;
+  readonly code: string;
+}
+
+export type OpenAITranslationDiagnosticSeverity = 'info' | 'warning' | 'error';
+
+export type OpenAITranslationDiagnosticCategory =
+  | 'ready'
+  | 'loading'
+  | 'active'
+  | 'stopped'
+  | 'source-ready'
+  | 'source-unsupported'
+  | 'source-restricted'
+  | 'source-unavailable'
+  | 'source-permission'
+  | 'source-cancelled'
+  | 'source-missing-audio'
+  | 'source-ended'
+  | 'source-cleanup'
+  | 'backend-validation'
+  | 'backend-token'
+  | 'backend-configuration'
+  | 'backend-auth'
+  | 'backend-rate-limit'
+  | 'backend-service'
+  | 'backend-timeout'
+  | 'backend-response'
+  | 'sdp-exchange'
+  | 'webrtc-peer'
+  | 'ice-connection'
+  | 'data-channel'
+  | 'parser'
+  | 'remote-audio'
+  | 'playback'
+  | 'offline'
+  | 'aborted'
+  | 'cleanup'
+  | 'validation'
+  | 'unknown';
+
+export type OpenAITranslationDiagnosticOwner =
+  | 'source'
+  | 'runtime'
+  | 'backend'
+  | 'browser'
+  | 'provider'
+  | 'audio';
+
+export interface OpenAITranslationDiagnosticDetail {
+  readonly label: string;
+  readonly value: string;
+}
+
+export interface OpenAITranslationDiagnosticRecovery {
+  readonly label: string;
+  readonly description: string;
+}
+
+export interface OpenAITranslationDiagnostic {
+  readonly category: OpenAITranslationDiagnosticCategory;
+  readonly severity: OpenAITranslationDiagnosticSeverity;
+  readonly owner: OpenAITranslationDiagnosticOwner;
+  readonly title: string;
+  readonly message: string;
+  readonly recovery: OpenAITranslationDiagnosticRecovery;
+  readonly details: readonly OpenAITranslationDiagnosticDetail[];
+  readonly retryable: boolean;
+  readonly code?: string;
+  readonly status?: number;
 }
 
 export type OpenAITranslationTranscriptStream = 'source' | 'translated';
@@ -372,7 +475,9 @@ export interface UseOpenAITranslationResult {
   readonly isStarting: boolean;
   readonly isConnected: boolean;
   readonly start: (options: OpenAITranslationStartOptions) => Promise<boolean>;
-  readonly stop: () => Promise<void>;
+  readonly stop: (
+    reason?: OpenAITranslationRuntimeStopReason
+  ) => Promise<OpenAITranslationCleanupResult>;
   readonly clearTranscripts: () => void;
   readonly reset: () => void;
 }

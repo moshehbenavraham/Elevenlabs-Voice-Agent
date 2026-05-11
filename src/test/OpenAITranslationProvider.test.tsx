@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OpenAITranslationProvider } from '@/components/providers/OpenAITranslationProvider';
 import {
   OPENAI_TRANSLATION_LANGUAGE_COUNT,
+  createOpenAITranslationRuntimeError,
   getOpenAITranslationSourceModes,
 } from '@/lib/openaiTranslation';
 import type {
@@ -70,7 +71,7 @@ describe('OpenAITranslationProvider', () => {
     captureMicrophoneMock.mockResolvedValue(true);
     captureBrowserTabMock.mockResolvedValue(true);
     runtimeStartMock.mockResolvedValue(true);
-    runtimeStopMock.mockResolvedValue(undefined);
+    runtimeStopMock.mockResolvedValue({ ok: true, error: null });
 
     sourceResult = createSourceHookResult();
     runtimeResult = createRuntimeHookResult();
@@ -212,6 +213,81 @@ describe('OpenAITranslationProvider', () => {
     expect(
       screen.getByRole('heading', { name: /requesting client secret/i, level: 2 })
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: /backend request diagnostic/i })
+    ).toBeInTheDocument();
+  });
+
+  it('renders source diagnostics with safe details and retry behavior', async () => {
+    const user = userEvent.setup();
+    sourceResult = createSourceHookResult({
+      status: 'error',
+      mode: 'microphone',
+      error: {
+        kind: 'permission-denied',
+        mode: 'microphone',
+        message: 'Microphone permission was denied by the browser.',
+        recoverable: true,
+        code: 'permission-denied',
+        rawName: 'NotAllowedError',
+      },
+    });
+
+    render(<OpenAITranslationProvider />);
+
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent(/source permission/i);
+    expect(alert).toHaveTextContent(/source permission denied/i);
+    expect(alert).toHaveTextContent(/code/i);
+    expect(alert).toHaveTextContent(/permission-denied/i);
+
+    await user.click(screen.getByRole('button', { name: /^retry$/i }));
+
+    await waitFor(() => {
+      expect(runtimeStopMock).toHaveBeenCalledWith('reset');
+      expect(sourceStopMock).toHaveBeenCalledTimes(1);
+      expect(captureMicrophoneMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('renders backend diagnostics without leaking raw secret-looking payloads', () => {
+    runtimeResult = createRuntimeHookResult({
+      status: 'error',
+      error: createOpenAITranslationRuntimeError(
+        'client-secret',
+        'Bearer sk-test OPENAI_API_KEY raw provider payload',
+        {
+          code: 'openai-rate-limited',
+          status: 429,
+          routeCategory: 'openai-rate-limit',
+        }
+      ),
+    });
+
+    render(<OpenAITranslationProvider />);
+
+    const diagnostic = screen.getByRole('status', { name: /openai rate limit hit/i });
+    expect(diagnostic).toHaveTextContent(/backend rate limit/i);
+    expect(diagnostic).toHaveTextContent(/translation runtime failed/i);
+    expect(diagnostic).toHaveTextContent(/openai-rate-limited/i);
+    expect(diagnostic).not.toHaveTextContent(/sk-test/i);
+    expect(diagnostic).not.toHaveTextContent(/bearer/i);
+    expect(diagnostic).not.toHaveTextContent(/OPENAI_API_KEY/i);
+  });
+
+  it('surfaces translated audio playback diagnostics from the audio element', () => {
+    runtimeResult = createRuntimeHookResult({
+      status: 'connected',
+      isConnected: true,
+      translatedAudioStream: createMediaStream(),
+    });
+
+    render(<OpenAITranslationProvider />);
+    fireEvent.error(screen.getByLabelText(/translated audio playback/i));
+
+    const diagnostic = screen.getByRole('status', { name: /audio playback failed/i });
+    expect(diagnostic).toHaveTextContent(/playback/i);
+    expect(diagnostic).toHaveTextContent(/translated-audio-playback-failed/i);
   });
 
   it('stops runtime and source resources from the Stop control', async () => {
@@ -232,7 +308,7 @@ describe('OpenAITranslationProvider', () => {
     await user.click(screen.getByRole('button', { name: /stop translation/i }));
 
     await waitFor(() => {
-      expect(runtimeStopMock).toHaveBeenCalledTimes(1);
+      expect(runtimeStopMock).toHaveBeenCalledWith('manual');
       expect(sourceStopMock).toHaveBeenCalledTimes(1);
     });
   });
@@ -545,6 +621,8 @@ describe('OpenAITranslationProvider', () => {
     });
 
     expect(runtimeStartMock).toHaveBeenCalledTimes(1);
+    runtimeStopMock.mockClear();
+    sourceStopMock.mockClear();
 
     act(() => {
       vi.advanceTimersByTime(3000);
@@ -554,7 +632,73 @@ describe('OpenAITranslationProvider', () => {
     });
 
     expect(runtimeStopMock).toHaveBeenCalledTimes(1);
+    expect(runtimeStopMock).toHaveBeenCalledWith('max-session-duration');
     expect(sourceStopMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops with source-ended reason when the active source ends', async () => {
+    const source = createSourceResult('microphone');
+    sourceResult = createSourceHookResult({
+      status: 'ready',
+      mode: 'microphone',
+      stream: source.sourceStream,
+      audioTracks: source.audioTracks,
+      source,
+      isReady: true,
+    });
+    let view: ReturnType<typeof render> | null = null;
+    runtimeStartMock.mockImplementation(async () => {
+      runtimeResult = createRuntimeHookResult({ status: 'connected', isConnected: true });
+      view?.rerender(<OpenAITranslationProvider />);
+      return true;
+    });
+
+    view = render(<OpenAITranslationProvider />);
+    fireEvent.click(screen.getByRole('button', { name: /start translation/i }));
+
+    await waitFor(() => {
+      expect(runtimeStartMock).toHaveBeenCalledTimes(1);
+    });
+
+    sourceResult = createSourceHookResult({
+      status: 'ended',
+      mode: 'microphone',
+      error: {
+        kind: 'track-ended',
+        mode: 'microphone',
+        message: 'The selected audio source ended before translation was stopped.',
+        recoverable: true,
+        code: 'source-track-ended',
+      },
+    });
+    view.rerender(<OpenAITranslationProvider />);
+
+    await waitFor(() => {
+      expect(runtimeStopMock).toHaveBeenCalledWith('source-ended');
+    });
+  });
+
+  it('uses the shared stop path after failed runtime startup and remains retryable', async () => {
+    const source = createSourceResult('microphone');
+    sourceResult = createSourceHookResult({
+      status: 'ready',
+      mode: 'microphone',
+      stream: source.sourceStream,
+      audioTracks: source.audioTracks,
+      source,
+      isReady: true,
+    });
+    runtimeStartMock.mockResolvedValue(false);
+
+    render(<OpenAITranslationProvider />);
+    fireEvent.click(screen.getByRole('button', { name: /start translation/i }));
+
+    await waitFor(() => {
+      expect(runtimeStartMock).toHaveBeenCalledTimes(1);
+      expect(runtimeStopMock).toHaveBeenCalledWith('failed-start');
+      expect(sourceStopMock).toHaveBeenCalled();
+    });
+    expect(screen.getByRole('button', { name: /start translation/i })).toBeEnabled();
   });
 
   it('registers a provider-switch stop handler and clears it on unmount', async () => {
@@ -568,7 +712,7 @@ describe('OpenAITranslationProvider', () => {
       await stopRef.current?.();
     });
 
-    expect(runtimeStopMock).toHaveBeenCalledTimes(1);
+    expect(runtimeStopMock).toHaveBeenCalledWith('provider-switch');
     expect(sourceStopMock).toHaveBeenCalledTimes(1);
 
     unmount();

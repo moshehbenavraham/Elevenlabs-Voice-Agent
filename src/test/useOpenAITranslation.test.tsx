@@ -5,11 +5,15 @@ import { useOpenAITranslation } from '@/hooks/useOpenAITranslation';
 class FakeMediaStreamTrack {
   readonly kind: string;
   readonly id: string;
+  readyState: MediaStreamTrackState = 'live';
   stop = vi.fn();
 
   constructor(kind = 'audio', id = `${kind}-track`) {
     this.kind = kind;
     this.id = id;
+    this.stop.mockImplementation(() => {
+      this.readyState = 'ended';
+    });
   }
 }
 
@@ -41,6 +45,10 @@ class FakeRTCDataChannel {
   onopen: ((event: Event) => void) | null = null;
   onclose: ((event: Event) => void) | null = null;
   close = vi.fn(() => {
+    if (this.readyState === 'closed') {
+      return;
+    }
+
     this.readyState = 'closed';
     this.onclose?.({} as Event);
   });
@@ -69,6 +77,9 @@ class FakeRTCPeerConnection {
   oniceconnectionstatechange: ((event: Event) => void) | null = null;
   addTrack = vi.fn((_track: FakeMediaStreamTrack, _stream: FakeMediaStream) => {
     return { track: _track } as unknown as RTCRtpSender;
+  });
+  removeTrack = vi.fn((_sender: RTCRtpSender): void => {
+    return undefined;
   });
   createDataChannel = vi.fn((label: string) => {
     this.dataChannel = new FakeRTCDataChannel(label);
@@ -101,6 +112,11 @@ class FakeRTCPeerConnection {
   failConnection(): void {
     this.connectionState = 'failed';
     this.onconnectionstatechange?.({} as Event);
+  }
+
+  failIceConnection(): void {
+    this.iceConnectionState = 'failed';
+    this.oniceconnectionstatechange?.({} as Event);
   }
 }
 
@@ -231,7 +247,17 @@ describe('useOpenAITranslation', () => {
   });
 
   it('maps client-secret failures without creating a peer connection', async () => {
-    fetchMock.mockResolvedValue(createJsonResponse({ message: 'Token failure' }, 500));
+    fetchMock.mockResolvedValue(
+      createJsonResponse(
+        {
+          error: 'OpenAI API error',
+          message: 'OpenAI rate limit exceeded',
+          category: 'openai-rate-limit',
+          code: 'openai-rate-limited',
+        },
+        429
+      )
+    );
     const { stream } = createSourceStream();
     const { result } = renderHook(() => useOpenAITranslation());
 
@@ -247,7 +273,9 @@ describe('useOpenAITranslation', () => {
     expect(result.current.status).toBe('error');
     expect(result.current.error).toMatchObject({
       kind: 'client-secret',
-      status: 500,
+      status: 429,
+      code: 'openai-rate-limited',
+      routeCategory: 'openai-rate-limit',
     });
     expect(FakeRTCPeerConnection.instances).toHaveLength(0);
   });
@@ -265,7 +293,7 @@ describe('useOpenAITranslation', () => {
         });
       }
 
-      return new Response('sdp failed', { status: 503 });
+      return new Response('Bearer sk-test raw SDP v=0', { status: 503 });
     });
     const { stream, track } = createSourceStream();
     const { result } = renderHook(() => useOpenAITranslation());
@@ -284,10 +312,82 @@ describe('useOpenAITranslation', () => {
     expect(result.current.error).toMatchObject({
       kind: 'sdp-exchange',
       status: 503,
+      code: 'sdp-http-error',
+      message: 'OpenAI translation SDP exchange failed with HTTP 503',
     });
+    expect(JSON.stringify(result.current.error)).not.toContain('sk-test');
+    expect(JSON.stringify(result.current.error)).not.toContain('v=0');
     expect(peerConnection.close).toHaveBeenCalledTimes(1);
     expect(peerConnection.dataChannel?.close).toHaveBeenCalledTimes(1);
+    expect(peerConnection.removeTrack).toHaveBeenCalledTimes(1);
     expect(track.stop).not.toHaveBeenCalled();
+  });
+
+  it('fails fast while offline without requesting a client secret', async () => {
+    Object.defineProperty(navigator, 'onLine', {
+      configurable: true,
+      value: false,
+    });
+    const { stream } = createSourceStream();
+    const { result } = renderHook(() => useOpenAITranslation());
+
+    await act(async () => {
+      await expect(
+        result.current.start({
+          sourceStream: stream,
+          targetLanguage: 'es',
+        })
+      ).resolves.toBe(false);
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.status).toBe('error');
+    expect(result.current.error).toMatchObject({
+      kind: 'offline',
+      code: 'browser-offline',
+    });
+  });
+
+  it('aborts pending startup requests and reuses duplicate stop cleanup', async () => {
+    const tokenSignalRef: { current: AbortSignal | null } = { current: null };
+    fetchMock.mockImplementation(
+      (_input: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          tokenSignalRef.current = init?.signal ?? null;
+          tokenSignalRef.current?.addEventListener(
+            'abort',
+            () => {
+              reject(new DOMException('Aborted', 'AbortError'));
+            },
+            { once: true }
+          );
+        })
+    );
+    const { stream } = createSourceStream();
+    const { result } = renderHook(() => useOpenAITranslation());
+    let startPromise: Promise<boolean> = Promise.resolve(false);
+
+    await act(async () => {
+      startPromise = result.current.start({
+        sourceStream: stream,
+        targetLanguage: 'es',
+      });
+      await Promise.resolve();
+    });
+
+    expect(result.current.status).toBe('requesting-client-secret');
+
+    await act(async () => {
+      const firstStop = result.current.stop('manual');
+      const secondStop = result.current.stop('manual');
+      await expect(firstStop).resolves.toEqual({ ok: true, error: null });
+      await expect(secondStop).resolves.toEqual({ ok: true, error: null });
+      await expect(startPromise).resolves.toBe(false);
+    });
+
+    expect(tokenSignalRef.current?.aborted).toBe(true);
+    expect(result.current.status).toBe('stopped');
+    expect(FakeRTCPeerConnection.instances).toHaveLength(0);
   });
 
   it('exposes remote translated audio streams from peer tracks', async () => {
@@ -375,6 +475,64 @@ describe('useOpenAITranslation', () => {
       code: 'malformed-json',
     });
     expect(result.current.transcripts).toHaveLength(2);
+  });
+
+  it('cleans active runtime resources when the data channel errors', async () => {
+    mockSuccessfulFetches();
+    const { stream, track } = createSourceStream();
+    const remoteTrack = new FakeMediaStreamTrack('audio', 'remote-track');
+    const remoteStream = new FakeMediaStream([remoteTrack]);
+    const { result } = renderHook(() => useOpenAITranslation());
+
+    await act(async () => {
+      await result.current.start({
+        sourceStream: stream,
+        targetLanguage: 'es',
+      });
+    });
+
+    const peerConnection = FakeRTCPeerConnection.instances[0];
+    await act(async () => {
+      peerConnection.dispatchTrack(remoteTrack, [remoteStream]);
+      peerConnection.dataChannel?.emitError();
+    });
+
+    expect(result.current.status).toBe('error');
+    expect(result.current.error).toMatchObject({
+      kind: 'data-channel',
+      code: 'data-channel-error',
+    });
+    expect(result.current.translatedAudioStream).toBeNull();
+    expect(peerConnection.dataChannel?.close).toHaveBeenCalledTimes(1);
+    expect(peerConnection.removeTrack).toHaveBeenCalledTimes(1);
+    expect(peerConnection.close).toHaveBeenCalledTimes(1);
+    expect(remoteTrack.stop).toHaveBeenCalledTimes(1);
+    expect(track.stop).not.toHaveBeenCalled();
+  });
+
+  it('maps ICE connection failures to stable WebRTC diagnostics', async () => {
+    mockSuccessfulFetches();
+    const { stream } = createSourceStream();
+    const { result } = renderHook(() => useOpenAITranslation());
+
+    await act(async () => {
+      await result.current.start({
+        sourceStream: stream,
+        targetLanguage: 'es',
+      });
+    });
+
+    const peerConnection = FakeRTCPeerConnection.instances[0];
+    await act(async () => {
+      peerConnection.failIceConnection();
+    });
+
+    expect(result.current.status).toBe('error');
+    expect(result.current.error).toMatchObject({
+      kind: 'webrtc',
+      code: 'ice-connection-failed',
+    });
+    expect(peerConnection.close).toHaveBeenCalledTimes(1);
   });
 
   it('clears transcript state without stopping active runtime resources', async () => {
@@ -517,6 +675,7 @@ describe('useOpenAITranslation', () => {
     expect(result.current.translatedAudioStream).toBeNull();
     expect(peerConnection.close).toHaveBeenCalledTimes(1);
     expect(peerConnection.dataChannel?.close).toHaveBeenCalledTimes(1);
+    expect(peerConnection.removeTrack).toHaveBeenCalledTimes(1);
     expect(track.stop).toHaveBeenCalledTimes(1);
     expect(remoteTrack.stop).toHaveBeenCalledTimes(1);
   });

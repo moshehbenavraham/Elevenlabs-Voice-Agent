@@ -1,6 +1,10 @@
 import { useEffect, useId, useRef } from 'react';
 import { Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type {
+  OpenAITranslationAudioStreamKind,
+  OpenAITranslationPlaybackError,
+} from '@/types/openai-translation';
 
 interface OpenAITranslationAudioPlayerProps {
   readonly stream: MediaStream | null;
@@ -9,8 +13,9 @@ interface OpenAITranslationAudioPlayerProps {
   readonly activeDescription?: string;
   readonly inactiveDescription?: string;
   readonly playbackLabel?: string;
-  readonly streamKind?: 'translated' | 'original';
+  readonly streamKind?: OpenAITranslationAudioStreamKind;
   readonly volume?: number;
+  readonly onPlaybackError?: (error: OpenAITranslationPlaybackError) => void;
 }
 
 export function OpenAITranslationAudioPlayer({
@@ -22,6 +27,7 @@ export function OpenAITranslationAudioPlayer({
   playbackLabel,
   streamKind = 'translated',
   volume = 1,
+  onPlaybackError,
 }: OpenAITranslationAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const headingId = useId();
@@ -83,6 +89,14 @@ export function OpenAITranslationAudioPlayer({
         ref={audioRef}
         controls
         autoPlay
+        onError={() => {
+          onPlaybackError?.({
+            streamKind,
+            message: `${label} playback failed in the browser audio element.`,
+            recoverable: true,
+            code: `${streamKind}-audio-playback-failed`,
+          });
+        }}
         aria-label={resolvedPlaybackLabel}
         aria-disabled={disabled}
         className={cn(

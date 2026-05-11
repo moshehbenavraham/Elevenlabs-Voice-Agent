@@ -4,7 +4,7 @@ This document outlines the technical architecture of the Conversational Voice AI
 
 ## Architecture Overview
 
-A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), OpenAI, Ultravox, Vapi, Retell, and Google Gemini Live. It also includes a gated OpenAI Translation scaffold for the next WebRTC translation phase. The architecture emphasizes provider abstraction, performance, and accessibility.
+A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), OpenAI, Ultravox, Vapi, Retell, and Google Gemini Live. It also includes a dedicated OpenAI Translation browser MVP with WebRTC media, transcripts, and export controls. The architecture emphasizes provider abstraction, performance, and accessibility.
 
 ## Table of Contents
 
@@ -90,7 +90,7 @@ ProviderContext (active provider selection)
     ├── ElevenLabs VoiceContext (SDK with reconnection)
     ├── XAIVoiceContext (WebSocket + ephemeral token)
     ├── OpenAIVoiceContext (WebSocket + ephemeral token)
-    ├── OpenAITranslationProvider scaffold (feature-flagged)
+    ├── OpenAITranslationProvider (feature-flagged browser translation MVP)
     ├── UltravoxVoiceContext (SDK with joinUrl)
     ├── useVapiVoice (SDK with public web token)
     ├── useRetellVoice (SDK with backend access token)
@@ -132,7 +132,7 @@ App
 │   │   │   ├── GeminiVoiceStatus
 │   │   │   ├── GeminiVoiceSelector
 │   │   │   └── GeminiEmptyState
-│   │   ├── OpenAI Translation Provider # Feature-flagged scaffold
+│   │   ├── OpenAI Translation Provider # Feature-flagged browser translation MVP
 │   │   │   └── OpenAITranslationProvider
 │   │   ├── BackgroundEffects
 │   │   └── ConfigurationDialog   # Settings modal (Phase 03)
@@ -431,21 +431,26 @@ For the detailed OpenAI Realtime voice-agent flow, translation client-secret
 boundary, session events, and audio format assumptions, see
 [OpenAI Realtime Voice Provider](./OPENAI_REALTIME.md).
 
-### OpenAI Translation Foundation
+### OpenAI Translation Runtime
 
-Phase 02 added the foundation for a dedicated OpenAI Translation provider
-without merging it into the existing OpenAI voice-agent context:
+Phase 02 added the backend contract and shared translation config. Phase 03
+completed the browser translation MVP without merging it into the existing
+OpenAI voice-agent context:
 
 - `POST /api/openai/translation-session` validates a target language and mints
   a sanitized `gpt-realtime-translate` browser client secret.
 - `src/lib/openaiTranslation.ts` owns supported target languages, route request
-  descriptors, session config builders, and audio mix helpers.
+  descriptors, session config builders, audio mix helpers, and Markdown export
+  helpers.
 - `src/types/openai-translation.ts` defines the shared route, language, session,
-  and audio mix contracts.
-- `src/components/providers/OpenAITranslationProvider.tsx` renders a disabled
-  scaffold tab when `VITE_OPENAI_TRANSLATION_ENABLED=true`.
-- Phase 03 owns microphone/browser-tab capture, WebRTC SDP exchange, translated
-  audio playback, transcripts, export controls, and runtime cleanup.
+  audio mix, transcript, and max-session contracts.
+- `src/hooks/useOpenAITranslation.ts` owns the WebRTC translation lifecycle,
+  translated audio playback, transcript parsing, and cleanup behavior.
+- `src/hooks/useOpenAITranslationSource.ts` owns microphone and browser-tab
+  capture modes plus source permission handling.
+- `src/components/providers/OpenAITranslationProvider.tsx` renders the
+  feature-flagged translation tab with source selection, language selection,
+  status, transcript, mix, and export controls.
 
 ### xAI Token Flow
 
@@ -479,8 +484,10 @@ decodeAudioFromXAI(base64String) -> Float32Array
 resampleAudio(audioData, fromRate, toRate) -> Float32Array
 ```
 
-The helper names still reference xAI, but OpenAI reuses the same 24 kHz PCM16
-mono/base64 pipeline in `OpenAIVoiceContext`.
+The helper names still reference xAI, but OpenAI voice mode reuses the same 24
+kHz PCM16 mono/base64 pipeline in `OpenAIVoiceContext`. The translation runtime
+uses browser WebRTC media for source capture and translated playback instead of
+the voice-agent WebSocket pipeline.
 
 ## Performance Considerations
 
@@ -791,7 +798,7 @@ src/test/
 ├── setup.ts                        # Test configuration and mocks
 ├── ProviderContext.test.tsx        # Provider context tests
 ├── ProviderTabs.test.tsx           # Tab component tests
-├── OpenAITranslationProvider.test.tsx # Translation scaffold tests
+├── OpenAITranslationProvider.test.tsx # Translation provider tests
 ├── openaiTranslation.test.ts       # Translation config helper tests
 ├── openaiTranslationRoute.test.ts  # Translation backend route tests
 ├── settingsStorage.test.ts         # Settings persistence tests

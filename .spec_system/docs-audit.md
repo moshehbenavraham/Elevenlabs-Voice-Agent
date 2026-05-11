@@ -2,7 +2,7 @@
 
 **Date**: 2026-05-11
 **Project**: Voice-Agent-PuPuPlatter
-**Audit Mode**: Phase-Focused (Phase 02 just completed)
+**Audit Mode**: Phase-Focused (Phase 03 just completed)
 
 ## Summary
 
@@ -16,37 +16,38 @@
 
 ## Phase Focus
 
-**Completed Phase**: Phase 02 - Translation Foundation
-**Sessions Analyzed**: 4
+**Completed Phase**: Phase 03 - Browser Translation MVP
+**Sessions Analyzed**: 5
 
-- phase02-session01-translation-api-contract-and-server-route
-- phase02-session02-shared-translation-config-library
-- phase02-session03-provider-tab-scaffold
-- phase02-session04-backend-and-config-tests
+- phase03-session01-reusable-webrtc-translation-hook
+- phase03-session02-source-capture-modes
+- phase03-session03-translation-tab-ui-mvp
+- phase03-session04-transcript-and-caption-experience
+- phase03-session05-audio-mix-and-export-controls
 
 ### Change Manifest
 
-| Area                   | Files                                                                                                                                                                                                                                                                  |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Backend route          | `server/routes/openai.js`, `server/utils/security.js`                                                                                                                                                                                                                  |
-| Shared frontend config | `src/lib/openaiTranslation.ts`, `src/types/openai-translation.ts`, `src/types/index.ts`                                                                                                                                                                                |
-| Provider scaffold      | `src/types/voice-provider.ts`, `src/contexts/ProviderContext.tsx`, `src/components/tabs/ProviderTab.tsx`, `src/components/tabs/ProviderTabs.tsx`, `src/components/providers/OpenAITranslationProvider.tsx`, `src/components/providers/index.ts`, `src/pages/Index.tsx` |
-| Tests                  | `src/test/openaiTranslationRoute.test.ts`, `src/test/openaiTranslation.test.ts`, `src/test/serverSecurity.test.ts`, `src/test/ProviderContext.test.tsx`, `src/test/ProviderTabs.test.tsx`, `src/test/OpenAITranslationProvider.test.tsx`, `src/test/setup.ts`          |
-| Configuration/docs     | `.env.example`, `.env.production.example`, `docs/OPENAI_REALTIME.md`                                                                                                                                                                                                   |
+| Area                   | Files                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Backend route          | `server/routes/openai.js`, `server/utils/security.js`                                                                                                                                                                                                                                                                                                                                    |
+| Shared frontend config | `src/lib/openaiTranslation.ts`, `src/types/openai-translation.ts`, `src/types/index.ts`                                                                                                                                                                                                                                                                                                  |
+| Translation runtime    | `src/hooks/useOpenAITranslation.ts`, `src/hooks/useOpenAITranslationSource.ts`, `src/components/providers/OpenAITranslationProvider.tsx`, `src/components/providers/OpenAITranslationAudioMixControls.tsx`, `src/components/providers/OpenAITranslationExportControls.tsx`                                                                                                               |
+| Tests                  | `src/test/openaiTranslationRoute.test.ts`, `src/test/openaiTranslation.test.ts`, `src/test/serverSecurity.test.ts`, `src/test/ProviderContext.test.tsx`, `src/test/ProviderTabs.test.tsx`, `src/test/OpenAITranslationProvider.test.tsx`, `src/test/useOpenAITranslation.test.tsx`, `src/test/useOpenAITranslationSource.test.tsx`, `src/test/useOpenAITranslationSessionTimer.test.tsx` |
+| Configuration/docs     | `.env.example`, `.env.production.example`, `docs/OPENAI_REALTIME.md`, `docs/ARCHITECTURE.md`                                                                                                                                                                                                                                                                                             |
 
 ## Root Level Documentation
 
-| File              | Purpose                                            | Status   | Notes                                                                      |
-| ----------------- | -------------------------------------------------- | -------- | -------------------------------------------------------------------------- |
-| `README.md`       | Project overview, quickstart, one-command run path | Updated  | Added OpenAI Translation scaffold, route boundary, and current test counts |
-| `CONTRIBUTING.md` | Development guidelines                             | Verified | Present                                                                    |
-| `LICENSE`         | Legal clarity                                      | Verified | Present                                                                    |
+| File              | Purpose                                            | Status   | Notes                                                                         |
+| ----------------- | -------------------------------------------------- | -------- | ----------------------------------------------------------------------------- |
+| `README.md`       | Project overview, quickstart, one-command run path | Updated  | Added OpenAI Translation browser MVP, route boundary, and current test counts |
+| `CONTRIBUTING.md` | Development guidelines                             | Verified | Present                                                                       |
+| `LICENSE`         | Legal clarity                                      | Verified | Present                                                                       |
 
 ## /docs/ Directory Documentation
 
 | File                                           | Purpose                                        | Status   | Notes                                                                    |
 | ---------------------------------------------- | ---------------------------------------------- | -------- | ------------------------------------------------------------------------ |
-| `docs/ARCHITECTURE.md`                         | System design, provider topology, endpoint map | Updated  | Added translation scaffold, backend endpoint, and test files             |
+| `docs/ARCHITECTURE.md`                         | System design, provider topology, endpoint map | Updated  | Added translation runtime, backend endpoint, and test files              |
 | `docs/CODEOWNERS`                              | Ownership map                                  | Verified | Present                                                                  |
 | `docs/onboarding.md`                           | New developer setup                            | Updated  | Added translation flag and OpenAI key scope                              |
 | `docs/development.md`                          | Dev scripts, test layout, verification gates   | Updated  | Added translation tests and current Vitest baseline                      |
@@ -55,7 +56,7 @@
 | `docs/adr/0000-template.md`                    | ADR template                                   | Verified | Present                                                                  |
 | `docs/adr/0001-multi-provider-architecture.md` | Provider architecture decision                 | Verified | Present                                                                  |
 | `docs/runbooks/incident-response.md`           | Incident response runbook                      | Verified | Present                                                                  |
-| `docs/OPENAI_REALTIME.md`                      | OpenAI voice and translation boundary          | Updated  | Reconciled Phase 02 completed foundation vs deferred Phase 03 runtime    |
+| `docs/OPENAI_REALTIME.md`                      | OpenAI voice and translation boundary          | Updated  | Reconciled Phase 02 foundation with Phase 03 browser translation runtime |
 
 ## Files Created
 
@@ -90,7 +91,7 @@
 
 ## Next Action
 
-PRD.md still defines unfinished Phase 03 work: Browser Translation MVP. Recommended next steps:
+PRD.md still defines unfinished Phase 04 and Phase 05 work. Recommended next steps:
 
-1. Perform manual testing and an LLM audit of the Phase 02 translation foundation.
-2. Run `phasebuild` to create Phase 03 session structure.
+1. Perform manual testing and an LLM audit of the Phase 03 translation runtime.
+2. Run `phasebuild` only if the next phase needs to be scaffolded; otherwise keep iterating through the remaining workflow steps.

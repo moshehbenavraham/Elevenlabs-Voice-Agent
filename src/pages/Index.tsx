@@ -52,6 +52,7 @@ import { useXAIVoice } from '@/hooks/useXAIVoice';
 import { hasConfiguredValue, isPlaceholderConfigValue } from '@/lib/configPlaceholders';
 import { trackError } from '@/lib/errorTracking';
 import type { ProviderType } from '@/types';
+import type { OpenAITranslationSessionEndReason } from '@/types/openai-translation';
 
 const DEBUG = import.meta.env.DEV;
 
@@ -100,11 +101,17 @@ export const Index = () => {
 
   // Refs to expose provider disconnect functions for clean provider switching
   const geminiDisconnectRef = useRef<(() => Promise<void>) | null>(null);
-  const openaiTranslationStopRef = useRef<(() => Promise<void>) | null>(null);
+  const openaiTranslationStopRef = useRef<
+    ((reason?: OpenAITranslationSessionEndReason) => Promise<void>) | null
+  >(null);
 
   // Handle provider change - disconnect active connection before switching
   const handleProviderChange = useCallback(
     async (newProvider: ProviderType) => {
+      if (newProvider === activeProvider) {
+        return;
+      }
+
       debugLog('handleProviderChange', 'Switching provider', {
         from: activeProvider,
         to: newProvider,
@@ -133,7 +140,7 @@ export const Index = () => {
       if (activeProvider === 'openai-translation') {
         debugLog('handleProviderChange', 'Cleaning up OpenAI Translation before switch');
         if (openaiTranslationStopRef.current) {
-          await openaiTranslationStopRef.current();
+          await openaiTranslationStopRef.current('provider-switch');
         }
       }
 

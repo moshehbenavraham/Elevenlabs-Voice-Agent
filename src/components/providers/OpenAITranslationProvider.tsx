@@ -4,6 +4,7 @@ import { Languages, Play, Square } from 'lucide-react';
 import { TranslationTranscriptPanel } from '@/components/conversation/TranslationTranscriptPanel';
 import { OpenAITranslationAudioMixControls } from '@/components/providers/OpenAITranslationAudioMixControls';
 import { OpenAITranslationAudioPlayer } from '@/components/providers/OpenAITranslationAudioPlayer';
+import { OpenAITranslationDiagnosticsPanel } from '@/components/providers/OpenAITranslationDiagnosticsPanel';
 import { OpenAITranslationExportControls } from '@/components/providers/OpenAITranslationExportControls';
 import { OpenAITranslationLanguageSelect } from '@/components/providers/OpenAITranslationLanguageSelect';
 import { OpenAITranslationLatestCaption } from '@/components/providers/OpenAITranslationLatestCaption';
@@ -18,6 +19,7 @@ import { useOpenAITranslationSource } from '@/hooks/useOpenAITranslationSource';
 import {
   OPENAI_TRANSLATION_DEFAULT_AUDIO_MIX_PERCENT,
   OPENAI_TRANSLATION_DEFAULT_TARGET_LANGUAGE,
+  buildOpenAITranslationDiagnostic,
   buildOpenAITranslationTranscriptMarkdown,
   buildTranslationAudioMixState,
   formatOpenAITranslationDuration,
@@ -34,7 +36,9 @@ import {
 import { cn } from '@/lib/utils';
 import type {
   OpenAITranslationHookStatus,
+  OpenAITranslationPlaybackError,
   OpenAITranslationRuntimeError,
+  OpenAITranslationRuntimeStopReason,
   OpenAITranslationAutoStopReason,
   OpenAITranslationSessionEndReason,
   OpenAITranslationSessionMetadata,
@@ -52,7 +56,9 @@ interface OpenAITranslationProviderProps {
   readonly isEmpty?: boolean;
   readonly isOffline?: boolean;
   readonly errorMessage?: string | null;
-  readonly stopRef?: MutableRefObject<(() => Promise<void>) | null>;
+  readonly stopRef?: MutableRefObject<
+    ((reason?: OpenAITranslationSessionEndReason) => Promise<void>) | null
+  >;
 }
 
 interface PendingStart {
@@ -70,6 +76,7 @@ interface TranslationSessionState {
 }
 
 type TranslationAction = 'start' | 'stop';
+type ProviderStopReason = OpenAITranslationSessionEndReason | 'failed-start' | 'retry-reset';
 
 const HEADER_STATUS_ITEMS = [
   'Capture starts only after Start is pressed.',
@@ -123,6 +130,7 @@ export function OpenAITranslationProvider({
   );
   const [actionInFlight, setActionInFlight] = useState<TranslationAction | null>(null);
   const [pendingStart, setPendingStart] = useState<PendingStart | null>(null);
+  const [playbackError, setPlaybackError] = useState<OpenAITranslationPlaybackError | null>(null);
   const operationIdRef = useRef(0);
   const pendingStartRef = useRef<PendingStart | null>(null);
   const stopPromiseRef = useRef<Promise<void> | null>(null);
@@ -198,45 +206,12 @@ export function OpenAITranslationProvider({
   const isTranscriptActive =
     isRuntimeConnected || isRuntimeStarting || isStartPending || sourceStatus === 'ready';
 
-  const handleStart = useCallback(async (): Promise<void> => {
-    if (isStartDisabled) {
-      return;
-    }
-
-    const operationId = operationIdRef.current + 1;
-    operationIdRef.current = operationId;
-    const nextPendingStart: PendingStart = {
-      operationId,
-      mode: activeSourceMode,
-      targetLanguage,
-    };
-
-    pendingStartRef.current = nextPendingStart;
-    setPendingStart(nextPendingStart);
-    setActionInFlight('start');
-    setAudioMixPercent(OPENAI_TRANSLATION_DEFAULT_AUDIO_MIX_PERCENT);
-    setSessionState(createIdleTranslationSessionState(targetLanguage));
-    resetRuntime();
-
-    const captured =
-      activeSourceMode === 'microphone' ? await captureMicrophone() : await captureBrowserTab();
-
-    if (!captured && pendingStartRef.current?.operationId === operationId) {
-      pendingStartRef.current = null;
-      setPendingStart(null);
-      setActionInFlight(null);
-    }
-  }, [
-    activeSourceMode,
-    captureBrowserTab,
-    captureMicrophone,
-    isStartDisabled,
-    resetRuntime,
-    targetLanguage,
-  ]);
+  const handlePlaybackError = useCallback((error: OpenAITranslationPlaybackError): void => {
+    setPlaybackError(error);
+  }, []);
 
   const stopTranslation = useCallback(
-    async (reason: OpenAITranslationSessionEndReason = 'manual'): Promise<void> => {
+    async (reason: ProviderStopReason = 'manual'): Promise<void> => {
       if (stopPromiseRef.current) {
         return stopPromiseRef.current;
       }
@@ -247,16 +222,20 @@ export function OpenAITranslationProvider({
 
       const stopPromise = (async (): Promise<void> => {
         setActionInFlight('stop');
+        setPlaybackError(null);
         try {
-          await stopRuntime();
+          await stopRuntime(resolveRuntimeStopReason(reason));
         } finally {
           stopSource();
+          const sessionEndReason = resolveSessionEndReason(reason);
           setSessionState((currentSession) =>
-            currentSession.startedAt !== null && currentSession.endedAt === null
+            sessionEndReason !== null &&
+            currentSession.startedAt !== null &&
+            currentSession.endedAt === null
               ? {
                   ...currentSession,
                   endedAt: Date.now(),
-                  endReason: reason,
+                  endReason: sessionEndReason,
                 }
               : currentSession
           );
@@ -275,6 +254,51 @@ export function OpenAITranslationProvider({
     },
     [stopRuntime, stopSource]
   );
+
+  const handleStart = useCallback(async (): Promise<void> => {
+    if (isStartDisabled) {
+      return;
+    }
+
+    if (sourceStatus !== 'idle' || runtimeStatus !== 'idle') {
+      await stopTranslation('retry-reset');
+    }
+
+    const operationId = operationIdRef.current + 1;
+    operationIdRef.current = operationId;
+    const nextPendingStart: PendingStart = {
+      operationId,
+      mode: activeSourceMode,
+      targetLanguage,
+    };
+
+    pendingStartRef.current = nextPendingStart;
+    setPendingStart(nextPendingStart);
+    setActionInFlight('start');
+    setPlaybackError(null);
+    setAudioMixPercent(OPENAI_TRANSLATION_DEFAULT_AUDIO_MIX_PERCENT);
+    setSessionState(createIdleTranslationSessionState(targetLanguage));
+    resetRuntime();
+
+    const captured =
+      activeSourceMode === 'microphone' ? await captureMicrophone() : await captureBrowserTab();
+
+    if (!captured && pendingStartRef.current?.operationId === operationId) {
+      pendingStartRef.current = null;
+      setPendingStart(null);
+      setActionInFlight(null);
+    }
+  }, [
+    activeSourceMode,
+    captureBrowserTab,
+    captureMicrophone,
+    isStartDisabled,
+    resetRuntime,
+    runtimeStatus,
+    sourceStatus,
+    stopTranslation,
+    targetLanguage,
+  ]);
 
   const handleAutoStop = useCallback(
     (reason: OpenAITranslationAutoStopReason): void => {
@@ -350,6 +374,48 @@ export function OpenAITranslationProvider({
       translatedAudioStream,
     ]
   );
+  const diagnostic = useMemo(
+    () =>
+      buildOpenAITranslationDiagnostic({
+        isOffline,
+        providerErrorMessage: errorMessage,
+        sourceStatus,
+        sourceMode: activeSourceMode,
+        sourceCapability: selectedCapability,
+        sourceError,
+        runtimeStatus,
+        runtimeError,
+        playbackError,
+        isStartPending,
+        isStopPending,
+        targetLanguageLabel,
+        transcriptSummary,
+        translatedAudioStream,
+        originalAudioStream,
+      }),
+    [
+      activeSourceMode,
+      errorMessage,
+      isOffline,
+      isStartPending,
+      isStopPending,
+      originalAudioStream,
+      playbackError,
+      runtimeError,
+      runtimeStatus,
+      selectedCapability,
+      sourceError,
+      sourceStatus,
+      targetLanguageLabel,
+      transcriptSummary,
+      translatedAudioStream,
+    ]
+  );
+
+  const handleDiagnosticRetry = useCallback((): void => {
+    setPlaybackError(null);
+    void handleStart();
+  }, [handleStart]);
 
   const handleSourceModeChange = useCallback(
     (nextSourceMode: OpenAITranslationSourceMode): void => {
@@ -406,7 +472,7 @@ export function OpenAITranslationProvider({
         }
 
         if (!started) {
-          stopSource();
+          await stopTranslation('failed-start');
           setSessionState(createIdleTranslationSessionState(pendingStart.targetLanguage));
           return;
         }
@@ -421,7 +487,7 @@ export function OpenAITranslationProvider({
       } catch (error) {
         if (!cancelled) {
           console.error('[OpenAITranslationProvider] Failed to start translation runtime', error);
-          stopSource();
+          await stopTranslation('failed-start');
           setSessionState(createIdleTranslationSessionState(pendingStart.targetLanguage));
         }
       } finally {
@@ -441,29 +507,38 @@ export function OpenAITranslationProvider({
     return () => {
       cancelled = true;
     };
-  }, [capturedSource, pendingStart, runtimeStart, sourceStatus, stopSource]);
+  }, [capturedSource, pendingStart, runtimeStart, sourceStatus, stopTranslation]);
 
   useEffect(() => {
     if (
       sourceStatus === 'ended' &&
-      sessionState.startedAt !== null &&
-      sessionState.endedAt === null
+      sessionState.endedAt === null &&
+      (sessionState.startedAt !== null ||
+        actionInFlight === 'start' ||
+        isRuntimeStarting ||
+        isRuntimeConnected)
     ) {
       void stopTranslation('source-ended');
     }
-  }, [sessionState.endedAt, sessionState.startedAt, sourceStatus, stopTranslation]);
+  }, [
+    actionInFlight,
+    isRuntimeConnected,
+    isRuntimeStarting,
+    sessionState.endedAt,
+    sessionState.startedAt,
+    sourceStatus,
+    stopTranslation,
+  ]);
 
   useEffect(() => {
     if (!stopRef) {
       return undefined;
     }
 
-    stopRef.current = stopTranslation;
+    stopRef.current = (reason = 'provider-switch') => stopTranslation(reason);
 
     return () => {
-      if (stopRef.current === stopTranslation) {
-        stopRef.current = null;
-      }
+      stopRef.current = null;
     };
   }, [stopRef, stopTranslation]);
 
@@ -565,6 +640,18 @@ export function OpenAITranslationProvider({
               runtimeStatus={runtimeStatus}
             />
 
+            <OpenAITranslationDiagnosticsPanel
+              diagnostic={diagnostic}
+              canRetry={diagnostic.retryable && diagnostic.severity !== 'info' && !isStartDisabled}
+              canStop={canStop}
+              isRetryPending={isStartPending}
+              isStopPending={isStopPending}
+              onRetry={handleDiagnosticRetry}
+              onStop={() => {
+                void stopTranslation('manual');
+              }}
+            />
+
             <OpenAITranslationExportControls
               hasEntries={transcriptSummary.hasEntries}
               onExportMarkdown={handleExportMarkdown}
@@ -579,6 +666,7 @@ export function OpenAITranslationProvider({
               playbackLabel="Translated audio playback"
               streamKind="translated"
               volume={translatedAudioVolume}
+              onPlaybackError={handlePlaybackError}
             />
 
             {shouldUseBrowserTabAudio && (
@@ -597,6 +685,7 @@ export function OpenAITranslationProvider({
                   playbackLabel="Original browser-tab audio playback"
                   streamKind="original"
                   volume={audioMixState.originalVolume}
+                  onPlaybackError={handlePlaybackError}
                 />
               </>
             )}
@@ -678,12 +767,11 @@ function deriveOpenAITranslationUiStatus({
   }
 
   if (runtimeError || sourceError) {
-    const error = runtimeError ?? sourceError;
     return {
       tone: 'error',
-      title: formatErrorTitle(error),
-      message: error?.message ?? 'Translation failed unexpectedly.',
-      details: appendErrorCode(detailsWithEndReason, error),
+      title: 'Translation needs attention',
+      message: 'Review the diagnostics panel for category, recovery, and safe technical details.',
+      details: detailsWithEndReason,
     };
   }
 
@@ -800,6 +888,42 @@ function createIdleTranslationSessionState(
   };
 }
 
+function resolveRuntimeStopReason(reason: ProviderStopReason): OpenAITranslationRuntimeStopReason {
+  switch (reason) {
+    case 'retry-reset':
+      return 'reset';
+    case 'failed-start':
+      return 'failed-start';
+    case 'manual':
+    case 'source-ended':
+    case 'runtime-error':
+    case 'provider-switch':
+    case 'max-session-duration':
+      return reason;
+    default:
+      return assertNeverProviderStopReason(reason);
+  }
+}
+
+function resolveSessionEndReason(
+  reason: ProviderStopReason
+): OpenAITranslationSessionEndReason | null {
+  switch (reason) {
+    case 'retry-reset':
+      return null;
+    case 'failed-start':
+      return 'runtime-error';
+    case 'manual':
+    case 'source-ended':
+    case 'runtime-error':
+    case 'provider-switch':
+    case 'max-session-duration':
+      return reason;
+    default:
+      return assertNeverProviderStopReason(reason);
+  }
+}
+
 function downloadOpenAITranslationMarkdown(markdown: string, filename: string): void {
   if (typeof Blob !== 'function') {
     throw new Error('Markdown export is unavailable because Blob is not supported.');
@@ -885,50 +1009,14 @@ function describeTranscriptSummary(summary: OpenAITranslationTranscriptSummary):
   return `${summary.totalCount} ${lineLabel}, ${summary.sourceCount} source, ${summary.translatedCount} translated`;
 }
 
-function formatErrorTitle(
-  error: OpenAITranslationRuntimeError | OpenAITranslationSourceError | null | undefined
-): string {
-  if (!error) {
-    return 'Translation error';
-  }
-
-  switch (error.kind) {
-    case 'permission-denied':
-      return 'Source permission denied';
-    case 'capture-cancelled':
-      return 'Source selection cancelled';
-    case 'missing-audio-track':
-      return 'No audio track found';
-    case 'offline':
-      return 'Browser offline';
-    case 'client-secret':
-      return 'Client secret request failed';
-    case 'sdp-exchange':
-      return 'SDP exchange failed';
-    case 'webrtc':
-      return 'WebRTC connection failed';
-    case 'cleanup':
-      return 'Cleanup failed';
-    default:
-      return 'Translation error';
-  }
-}
-
-function appendErrorCode(
-  details: readonly string[],
-  error: OpenAITranslationRuntimeError | OpenAITranslationSourceError | null | undefined
-): readonly string[] {
-  if (!error?.code) {
-    return details;
-  }
-
-  return [...details, `Code: ${error.code}`];
-}
-
 function assertNeverSourceStatus(status: never): never {
   throw new Error(`Unhandled OpenAI translation source status: ${String(status)}`);
 }
 
 function assertNeverRuntimeStatus(status: never): never {
   throw new Error(`Unhandled OpenAI translation runtime status: ${String(status)}`);
+}
+
+function assertNeverProviderStopReason(reason: never): never {
+  throw new Error(`Unhandled OpenAI translation provider stop reason: ${String(reason)}`);
 }

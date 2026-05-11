@@ -1,26 +1,26 @@
 # OpenAI Realtime Voice Provider
 
 This document captures the current OpenAI Realtime voice-agent integration and
-the server-side live translation client-secret boundary in this repository. It
-consolidates the durable implementation notes from the initial OpenAI provider
-research.
+the browser translation runtime in this repository. It consolidates the durable
+implementation notes from the initial OpenAI provider research and the Phase 02
+and Phase 03 translation work.
 
 ## Scope
 
 The OpenAI provider is a voice-agent conversation tab. OpenAI live translation
 uses a separate protocol surface. Phase 02 completed the translation
-client-secret route, shared frontend config, feature-flagged provider scaffold,
-and focused backend/config tests; browser media capture and WebRTC runtime work
-remain deferred.
+client-secret route, shared frontend config, feature-flagged provider tab, and
+focused backend/config tests. Phase 03 completed browser media capture,
+WebRTC runtime, transcript rendering, audio mix controls, and export behavior.
 
-| Capability            | Current OpenAI voice provider  | Translation foundation               |
-| --------------------- | ------------------------------ | ------------------------------------ |
-| Backend token route   | `/api/openai/session`          | `/api/openai/translation-session`    |
-| Endpoint family       | `/v1/realtime`                 | `/v1/realtime/translations`          |
-| Frontend transport    | WebSocket                      | Scaffold now, future WebRTC          |
-| Default model in repo | `gpt-realtime`                 | `gpt-realtime-translate`             |
-| Main React state      | `OpenAIVoiceContext`           | `OpenAITranslationProvider` scaffold |
-| Event pattern         | Assistant turns and tool calls | Deferred translation runtime events  |
+| Capability            | Current OpenAI voice provider  | Translation foundation              |
+| --------------------- | ------------------------------ | ----------------------------------- |
+| Backend token route   | `/api/openai/session`          | `/api/openai/translation-session`   |
+| Endpoint family       | `/v1/realtime`                 | `/v1/realtime/translations`         |
+| Frontend transport    | WebSocket                      | WebRTC                              |
+| Default model in repo | `gpt-realtime`                 | `gpt-realtime-translate`            |
+| Main React state      | `OpenAIVoiceContext`           | `OpenAITranslationProvider` + hooks |
+| Event pattern         | Assistant turns and tool calls | `oai-events` translation events     |
 
 Keep these implementations separate. Translation should not be built by adding
 translation behavior to the current voice-agent context.
@@ -91,11 +91,18 @@ the server API key, or secret-bearing debug fields. It is included in the
 strict token rate limiter and duplicate in-flight guard through
 `TOKEN_ENDPOINT_PATHS`.
 
-The route intentionally does not create a WebRTC call, post SDP to
-`/v1/realtime/translations/calls`, render transcripts, or start browser media
-capture. The provider tab exists as a disabled scaffold behind
-`VITE_OPENAI_TRANSLATION_ENABLED`; runtime behavior is owned by later
-translation sessions.
+## Translation Runtime Flow
+
+1. The user opens the OpenAI Translation tab and selects microphone or
+   browser-tab audio.
+2. The browser requests a short-lived client secret from
+   `POST /api/openai/translation-session`.
+3. The client opens a translation WebRTC session against
+   `https://api.openai.com/v1/realtime/translations/calls`.
+4. Translated audio is rendered through a browser audio element while
+   transcript deltas flow over the `oai-events` data channel.
+5. Stopping the session tears down peer connections, source tracks, audio
+   elements, timers, and transcript state.
 
 ## Shared Translation Config
 
@@ -152,23 +159,29 @@ reduction adds `audio.input.noise_reduction.type`. Both are opt-in. The shared
 module does not expose or reference `OPENAI_API_KEY`; the backend remains the
 only owner of OpenAI API credentials.
 
-Completed foundation work:
+Completed work:
 
 - `POST /api/openai/translation-session` validates target languages, calls the
   OpenAI translation client-secret endpoint, and returns sanitized fields.
 - `src/lib/openaiTranslation.ts` owns the frontend-safe language list, session
-  payload builders, route request descriptor, and audio mix helpers.
-- `OpenAITranslationProvider` renders a disabled scaffold tab when
-  `VITE_OPENAI_TRANSLATION_ENABLED=true`.
+  payload builders, route request descriptor, audio mix helpers, max-session
+  helpers, and transcript export helpers.
+- `src/hooks/useOpenAITranslation.ts` owns the WebRTC runtime, translated audio
+  playback, transcript parsing, and cleanup.
+- `src/hooks/useOpenAITranslationSource.ts` owns microphone and browser-tab
+  source capture.
+- `OpenAITranslationProvider` renders the feature-flagged browser translation
+  tab when `VITE_OPENAI_TRANSLATION_ENABLED=true`.
 - Focused tests cover route validation, response sanitization, language list
-  drift, audio mix clamping, token limiter coverage, and scaffold rendering.
+  drift, audio mix clamping, token limiter coverage, source capture, runtime
+  cleanup, and export behavior.
 
-Deferred runtime work:
+Remaining Phase 04 work:
 
-- WebRTC peer connection setup, SDP exchange, data channel events, translated
-  audio playback, transcript rendering, abort controllers, timers, and cleanup.
-- Microphone and browser-tab source capture, permission errors, track-ended
-  handling, transcript export, and max-session guards.
+- Harden translation lifecycle cleanup, diagnostics, and stop-path coverage.
+- Expand automated unit, integration, and E2E coverage for browser permission
+  failures, provider switching, and demo-readiness regressions.
+- Refresh operational and documentation guidance as the hardening phase lands.
 
 ## Configuration
 

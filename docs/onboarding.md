@@ -76,7 +76,7 @@ npm run dev
 - [ ] ElevenLabs tab shows (if `VITE_ELEVENLABS_ENABLED=true`)
 - [ ] xAI tab shows (if `VITE_XAI_ENABLED=true`)
 - [ ] OpenAI tab shows (if `VITE_OPENAI_ENABLED=true`)
-- [ ] OpenAI Translation scaffold tab shows (if `VITE_OPENAI_TRANSLATION_ENABLED=true`)
+- [ ] OpenAI Translation tab shows (if `VITE_OPENAI_TRANSLATION_ENABLED=true`)
 - [ ] Ultravox tab shows (if `VITE_ULTRAVOX_ENABLED=true`)
 - [ ] Vapi tab shows (if `VITE_VAPI_ENABLED=true`)
 - [ ] Retell tab shows (if `VITE_RETELL_ENABLED=true`)

@@ -15,6 +15,7 @@ import {
   assertTranslationTargetLanguage,
   buildOpenAITranslationTranscriptMarkdown,
   buildOpenAITranslationDisplayMediaOptions,
+  buildOpenAITranslationDiagnostic,
   buildTranslationAudioMixState,
   buildTranslationSessionConfig,
   buildTranslationSessionRequest,
@@ -27,6 +28,7 @@ import {
   exchangeOpenAITranslationSdp,
   formatOpenAITranslationDuration,
   formatOpenAITranslationSessionEndReason,
+  getOpenAITranslationDiagnosticCategoryLabel,
   getLatestOpenAITranslationCaption,
   getOpenAITranslationSourceCapability,
   getOpenAITranslationSourceModeMetadata,
@@ -80,6 +82,43 @@ const EXPECTED_PRD_TARGET_LANGUAGES = [
 const EXPECTED_PRD_TARGET_LANGUAGE_CODES = EXPECTED_PRD_TARGET_LANGUAGES.map(
   (language) => language.code
 );
+
+function createDiagnosticInput(
+  overrides: Partial<Parameters<typeof buildOpenAITranslationDiagnostic>[0]> = {}
+): Parameters<typeof buildOpenAITranslationDiagnostic>[0] {
+  return {
+    isOffline: false,
+    providerErrorMessage: null,
+    sourceStatus: 'idle',
+    sourceMode: 'microphone',
+    sourceCapability: {
+      mode: 'microphone',
+      supported: true,
+      canRequest: true,
+      status: 'available',
+      message: null,
+    },
+    sourceError: null,
+    runtimeStatus: 'idle',
+    runtimeError: null,
+    playbackError: null,
+    isStartPending: false,
+    isStopPending: false,
+    targetLanguageLabel: 'English',
+    transcriptSummary: {
+      totalCount: 0,
+      sourceCount: 0,
+      translatedCount: 0,
+      finalCount: 0,
+      partialCount: 0,
+      hasEntries: false,
+      hasTranslatedCaption: false,
+    },
+    translatedAudioStream: null,
+    originalAudioStream: null,
+    ...overrides,
+  };
+}
 
 describe('openaiTranslation', () => {
   describe('translation constants', () => {
@@ -909,6 +948,219 @@ describe('openaiTranslation', () => {
     });
   });
 
+  describe('diagnostic helpers', () => {
+    it('maps source capability and source errors to stable diagnostics', () => {
+      expect(
+        buildOpenAITranslationDiagnostic(
+          createDiagnosticInput({
+            sourceCapability: {
+              mode: 'browser-tab',
+              supported: true,
+              canRequest: false,
+              status: 'restricted',
+              message: 'Tab audio requires a secure browser context.',
+            },
+            sourceMode: 'browser-tab',
+          })
+        )
+      ).toMatchObject({
+        category: 'source-restricted',
+        title: 'Secure context required',
+        code: 'source-restricted',
+      });
+
+      expect(
+        buildOpenAITranslationDiagnostic(
+          createDiagnosticInput({
+            sourceError: {
+              kind: 'permission-denied',
+              mode: 'microphone',
+              message: 'Microphone permission was denied by the browser.',
+              recoverable: true,
+              code: 'permission-denied',
+              rawName: 'NotAllowedError',
+            },
+            sourceStatus: 'error',
+          })
+        )
+      ).toMatchObject({
+        category: 'source-permission',
+        title: 'Source permission denied',
+        retryable: true,
+      });
+
+      expect(
+        buildOpenAITranslationDiagnostic(
+          createDiagnosticInput({
+            sourceError: createOpenAITranslationMissingAudioTrackError('browser-tab'),
+            sourceMode: 'browser-tab',
+            sourceStatus: 'error',
+          })
+        )
+      ).toMatchObject({
+        category: 'source-missing-audio',
+        code: 'missing-audio-track',
+      });
+    });
+
+    it.each([
+      ['validation', { status: 400, routeCategory: 'validation' }, 'backend-validation'],
+      [
+        'server configuration',
+        { status: 500, routeCategory: 'server-configuration' },
+        'backend-configuration',
+      ],
+      ['auth', { status: 401, routeCategory: 'openai-auth' }, 'backend-auth'],
+      ['rate limit', { status: 429, routeCategory: 'openai-rate-limit' }, 'backend-rate-limit'],
+      ['service', { status: 503, routeCategory: 'openai-service' }, 'backend-service'],
+      ['timeout', { status: 504, routeCategory: 'openai-timeout' }, 'backend-timeout'],
+      ['response', { status: 502, routeCategory: 'openai-response' }, 'backend-response'],
+    ] as const)(
+      'maps client-secret %s route failures to diagnostics',
+      (_name, options, category) => {
+        const diagnostic = buildOpenAITranslationDiagnostic(
+          createDiagnosticInput({
+            runtimeStatus: 'error',
+            runtimeError: createOpenAITranslationRuntimeError(
+              'client-secret',
+              'Safe route failure',
+              {
+                code: `${category}-code`,
+                recoverable: true,
+                status: options.status,
+                routeCategory: options.routeCategory,
+              }
+            ),
+          })
+        );
+
+        expect(diagnostic).toMatchObject({
+          category,
+          code: `${category}-code`,
+          status: options.status,
+        });
+      }
+    );
+
+    it.each([
+      [
+        createOpenAITranslationRuntimeError('sdp-exchange', 'SDP failed', {
+          code: 'sdp-http-error',
+          status: 503,
+        }),
+        'sdp-exchange',
+      ],
+      [
+        createOpenAITranslationRuntimeError('webrtc', 'ICE failed', {
+          code: 'ice-connection-failed',
+        }),
+        'ice-connection',
+      ],
+      [
+        createOpenAITranslationRuntimeError('webrtc', 'Peer failed', {
+          code: 'peer-connection-failed',
+        }),
+        'webrtc-peer',
+      ],
+      [
+        createOpenAITranslationRuntimeError('data-channel', 'Data channel failed', {
+          code: 'data-channel-error',
+        }),
+        'data-channel',
+      ],
+      [
+        createOpenAITranslationRuntimeError('parser', 'Parser failed', {
+          code: 'malformed-json',
+        }),
+        'parser',
+      ],
+      [
+        createOpenAITranslationRuntimeError('offline', 'Browser offline', {
+          code: 'browser-offline',
+        }),
+        'offline',
+      ],
+      [
+        createOpenAITranslationRuntimeError('aborted', 'Startup aborted', {
+          code: 'startup-aborted',
+        }),
+        'aborted',
+      ],
+      [
+        createOpenAITranslationRuntimeError('cleanup', 'Cleanup failed', {
+          code: 'cleanup-failed',
+        }),
+        'cleanup',
+      ],
+    ] as const)('maps runtime diagnostics to %s', (runtimeError, category) => {
+      expect(
+        buildOpenAITranslationDiagnostic(
+          createDiagnosticInput({
+            runtimeStatus: 'error',
+            runtimeError,
+          })
+        )
+      ).toMatchObject({ category, code: runtimeError.code });
+    });
+
+    it('maps non-error provider states and playback failures', () => {
+      expect(
+        buildOpenAITranslationDiagnostic(
+          createDiagnosticInput({ runtimeStatus: 'requesting-client-secret' })
+        )
+      ).toMatchObject({ category: 'loading', owner: 'backend' });
+      expect(
+        buildOpenAITranslationDiagnostic(createDiagnosticInput({ runtimeStatus: 'connected' }))
+      ).toMatchObject({ category: 'remote-audio' });
+      expect(
+        buildOpenAITranslationDiagnostic(
+          createDiagnosticInput({
+            runtimeStatus: 'connected',
+            translatedAudioStream: {} as MediaStream,
+          })
+        )
+      ).toMatchObject({ category: 'active' });
+      expect(
+        buildOpenAITranslationDiagnostic(
+          createDiagnosticInput({
+            playbackError: {
+              streamKind: 'translated',
+              message: 'Translated Audio playback failed in the browser audio element.',
+              recoverable: true,
+              code: 'translated-audio-playback-failed',
+            },
+          })
+        )
+      ).toMatchObject({ category: 'playback' });
+      expect(getOpenAITranslationDiagnosticCategoryLabel('backend-rate-limit')).toBe(
+        'Backend rate limit'
+      );
+    });
+
+    it('sanitizes diagnostics before browser-visible display', () => {
+      const diagnostic = buildOpenAITranslationDiagnostic(
+        createDiagnosticInput({
+          runtimeStatus: 'error',
+          runtimeError: createOpenAITranslationRuntimeError(
+            'sdp-exchange',
+            'Bearer sk-test OPENAI_API_KEY v=0 raw provider payload',
+            {
+              code: 'sdp-http-error',
+              status: 503,
+            }
+          ),
+        })
+      );
+      const serialized = JSON.stringify(diagnostic);
+
+      expect(diagnostic.message).toBe('Translation runtime failed.');
+      expect(serialized).not.toContain('sk-test');
+      expect(serialized).not.toContain('Bearer');
+      expect(serialized).not.toContain('OPENAI_API_KEY');
+      expect(serialized).not.toContain('v=0');
+    });
+  });
+
   describe('runtime request helpers', () => {
     it('requests a sanitized client secret through the backend route', async () => {
       const fetcher = vi.fn(
@@ -965,6 +1217,40 @@ describe('openaiTranslation', () => {
       expect(fetcher).toHaveBeenCalledTimes(2);
     });
 
+    it('normalizes route-safe client-secret error codes without leaking legacy payloads', async () => {
+      const fetcher = vi.fn(
+        async (): Promise<Response> =>
+          new Response(
+            JSON.stringify({
+              error: 'OpenAI API error',
+              message: 'OpenAI rate limit exceeded',
+              category: 'openai-rate-limit',
+              code: 'openai-rate-limited',
+              raw: 'Bearer sk-test should not leak',
+            }),
+            {
+              status: 429,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          )
+      ) satisfies OpenAITranslationFetch;
+
+      await expect(
+        requestOpenAITranslationClientSecret({
+          targetLanguage: 'fr',
+          fetcher,
+          retryCount: 0,
+          retryDelayMs: 0,
+        })
+      ).rejects.toMatchObject({
+        kind: 'client-secret',
+        status: 429,
+        code: 'openai-rate-limited',
+        routeCategory: 'openai-rate-limit',
+        message: 'OpenAI rate limit exceeded',
+      });
+    });
+
     it('exchanges SDP with the translation calls endpoint', async () => {
       const fetcher = vi.fn(
         async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
@@ -1006,6 +1292,31 @@ describe('openaiTranslation', () => {
         code: 'missing-client-secret',
       });
       expect(fetcher).not.toHaveBeenCalled();
+    });
+
+    it('sanitizes SDP HTTP failure bodies before surfacing runtime errors', async () => {
+      const fetcher = vi.fn(
+        async (): Promise<Response> =>
+          new Response('Bearer sk-test raw SDP v=0', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain' },
+          })
+      ) satisfies OpenAITranslationFetch;
+
+      await expect(
+        exchangeOpenAITranslationSdp({
+          clientSecret: 'ek_test',
+          offerSdp: 'offer-sdp',
+          fetcher,
+          retryCount: 0,
+          retryDelayMs: 0,
+        })
+      ).rejects.toMatchObject({
+        kind: 'sdp-exchange',
+        status: 503,
+        code: 'sdp-http-error',
+        message: 'OpenAI translation SDP exchange failed with HTTP 503',
+      });
     });
   });
 });

@@ -16,7 +16,7 @@ Learn how to create and configure ElevenLabs agents for this application:
 
 ---
 
-A sophisticated multi-provider voice AI web application built with React 19, TypeScript, and support for 9 provider tabs, including a gated OpenAI live translation scaffold. Experience real-time voice conversations with audio visualizations and a modern glassmorphism UI.
+A sophisticated multi-provider voice AI web application built with React 19, TypeScript, and support for 9 provider tabs, including a dedicated OpenAI live translation tab. Experience real-time voice conversations with audio visualizations and a modern glassmorphism UI.
 
 ## Built With
 
@@ -49,26 +49,26 @@ A sophisticated multi-provider voice AI web application built with React 19, Typ
 
 - **E2E Testing**: Playwright-based end-to-end testing with multi-browser support
 - **Voice Flow Tests**: Comprehensive voice connection, transcript, and function calling tests
-- **679+ Unit Tests**: Extensive test coverage including voice, contexts, hooks, backend routes, shared config, and accessibility
+- **739 Tests**: Extensive test coverage including voice, contexts, hooks, backend routes, shared config, and accessibility
 - **Configuration Modal**: Settings modal for configuring voice providers
 
 ## [MIC] Multi-Provider Voice System
 
-This application supports 9 provider tabs through a tabbed interface. OpenAI Translation is currently a feature-flagged scaffold; browser media capture, WebRTC calls, translated playback, transcripts, and export controls are planned for the next translation phase.
+This application supports 9 provider tabs through a tabbed interface. OpenAI Translation is a feature-flagged browser translation MVP with microphone and browser-tab capture, WebRTC calls, translated playback, transcript review, and export controls.
 
 ### Supported Providers
 
-| Provider               | Status    | Backend Required | Description                                                                   |
-| ---------------------- | --------- | ---------------- | ----------------------------------------------------------------------------- |
-| **ElevenLabs Widget**  | Available | No               | Pre-built embed from ElevenLabs CDN with customizable UI                      |
-| **ElevenLabs SDK**     | Available | No               | Custom React UI with @elevenlabs/react SDK                                    |
-| **xAI Grok**           | Available | Yes              | Grok-powered voice assistant with realtime API                                |
-| **OpenAI**             | Available | Yes              | gpt-realtime voice conversations with server VAD                              |
-| **OpenAI Translation** | Scaffold  | Yes              | Feature-flagged live translation foundation with server-minted client secrets |
-| **Ultravox**           | Available | Yes              | Low-latency voice AI with call-based WebSocket connections                    |
-| **Vapi**               | Available | No               | Voice AI platform with Daily.co WebRTC and public web token                   |
-| **Retell**             | Available | Yes              | Retell AI with LiveKit WebRTC and agent dashboard config                      |
-| **Gemini Live**        | Available | Yes              | Google Gemini Live with AudioWorklet and 30 HD voices                         |
+| Provider               | Status                      | Backend Required | Description                                                                                         |
+| ---------------------- | --------------------------- | ---------------- | --------------------------------------------------------------------------------------------------- |
+| **ElevenLabs Widget**  | Available                   | No               | Pre-built embed from ElevenLabs CDN with customizable UI                                            |
+| **ElevenLabs SDK**     | Available                   | No               | Custom React UI with @elevenlabs/react SDK                                                          |
+| **xAI Grok**           | Available                   | Yes              | Grok-powered voice assistant with realtime API                                                      |
+| **OpenAI**             | Available                   | Yes              | gpt-realtime voice conversations with server VAD                                                    |
+| **OpenAI Translation** | Available (feature-flagged) | Yes              | Browser translation MVP with server-minted client secrets, WebRTC playback, transcripts, and export |
+| **Ultravox**           | Available                   | Yes              | Low-latency voice AI with call-based WebSocket connections                                          |
+| **Vapi**               | Available                   | No               | Voice AI platform with Daily.co WebRTC and public web token                                         |
+| **Retell**             | Available                   | Yes              | Retell AI with LiveKit WebRTC and agent dashboard config                                            |
+| **Gemini Live**        | Available                   | Yes              | Google Gemini Live with AudioWorklet and 30 HD voices                                               |
 
 ### Configuration
 
@@ -102,13 +102,13 @@ OPENAI_API_KEY=sk-your_openai_api_key_here
 # Client-side (enable OpenAI in frontend)
 VITE_OPENAI_ENABLED=true
 VITE_OPENAI_VOICE=alloy  # Options: alloy, ash, ballad, coral, echo, sage, shimmer, verse
-VITE_OPENAI_TRANSLATION_ENABLED=false  # Optional scaffold tab
+VITE_OPENAI_TRANSLATION_ENABLED=false  # Optional translation tab
 VITE_API_BASE_URL=http://localhost:3001
 ```
 
 OpenAI uses the Realtime API with ephemeral tokens for secure WebSocket connections. The backend generates short-lived tokens (60s expiry) so your API key is never exposed to the client.
 
-OpenAI Translation uses the same server-side `OPENAI_API_KEY` to mint browser-safe translation client secrets through `POST /api/openai/translation-session`. The scaffold tab is hidden unless `VITE_OPENAI_TRANSLATION_ENABLED=true`; runtime media capture and WebRTC translation sessions are deferred to Phase 03.
+OpenAI Translation uses the same server-side `OPENAI_API_KEY` to mint browser-safe translation client secrets through `POST /api/openai/translation-session`. The tab is hidden unless `VITE_OPENAI_TRANSLATION_ENABLED=true`; the browser runtime handles microphone and browser-tab capture, WebRTC translation sessions, transcript rendering, audio mix controls, and Markdown export.
 
 #### Ultravox Setup
 
@@ -347,7 +347,7 @@ See [docs/DEMO_MODE.md](docs/DEMO_MODE.md) for comprehensive documentation, trou
   - ultravox-client v0.5.0
   - retell-client-js-sdk v2.0.7
   - @google/genai v2.0.1 (Gemini Live)
-- **OpenAI Translation Foundation**: Server route, shared TypeScript config, feature-flagged provider scaffold
+- **OpenAI Translation**: Server route, shared TypeScript config, browser capture, WebRTC runtime, transcripts, and export controls
 - **UI Components**: Radix UI primitives with shadcn/ui styling
 - **State Management**: React Context, TanStack Query
 - **Testing**: Vitest, React Testing Library, Playwright
@@ -428,15 +428,14 @@ repository variables, environment secrets, and failure diagnostics.
 
 ### Test Coverage
 
-- **679+ tests** covering components, contexts, hooks, backend routes, and utilities
-- **33 test files** with comprehensive coverage
+- **739 tests** covering components, contexts, hooks, backend routes, and utilities
 - **Voice configuration tests** - Provider voice selection, persistence
 - **Reconnection tests** - Backoff logic, retry limits, connection recovery
 - **Conversation tests** - Message bubbles, transcript panel, auto-scroll
 - **Function calling tests** - Tool definitions, execution, result handling
 - **ProviderContext tests** - Provider selection, localStorage persistence
 - **ProviderTabs tests** - Tab rendering, keyboard navigation, accessibility
-- **OpenAI Translation tests** - Route validation, response sanitization, shared config, audio mix helpers, and scaffold rendering
+- **OpenAI Translation tests** - Route validation, response sanitization, shared config, audio mix helpers, browser capture, runtime cleanup, and export behavior
 - **Audio utilities tests** - PCM encoding/decoding, base64 conversion
 
 ### Test Categories
@@ -706,7 +705,7 @@ src/
 |-- pages/               # Page components
 |   |-- Index.tsx        # Main application page
 |   \-- NotFound.tsx     # 404 page
-|-- test/                # Test files (33 test files, 679+ tests)
+|-- test/                # Test files
 |-- types/               # TypeScript type definitions
 |   |-- ultravox.ts
 |   |-- vapi.ts

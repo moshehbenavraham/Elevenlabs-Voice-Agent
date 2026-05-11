@@ -100,10 +100,12 @@ describe('POST /api/openai/translation-session', () => {
     const result = await postTranslationSession(body);
 
     expect(result.status).toBe(400);
-    expect(result.body).toEqual({
+    expect(result.body).toMatchObject({
       error: 'Validation error',
       message,
+      category: 'validation',
     });
+    expect(result.body.code).toEqual(expect.any(String));
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -117,6 +119,8 @@ describe('POST /api/openai/translation-session', () => {
     expect(result.body).toEqual({
       error: 'Server configuration error',
       message: 'OpenAI API key not configured',
+      category: 'server-configuration',
+      code: 'missing-openai-api-key',
     });
     expect(fetchMock).not.toHaveBeenCalled();
     expect(JSON.stringify(result.body)).not.toContain('sk-');
@@ -235,6 +239,11 @@ describe('POST /api/openai/translation-session', () => {
     expect(result.body).toEqual({
       error: 'Invalid OpenAI response',
       message,
+      category: 'openai-response',
+      code:
+        message === 'Translation client secret not found in response'
+          ? 'missing-client-secret'
+          : 'invalid-openai-response-json',
     });
   });
 
@@ -258,6 +267,18 @@ describe('POST /api/openai/translation-session', () => {
     expect(result.body).toEqual({
       error: 'OpenAI API error',
       message,
+      category:
+        status === 401 || status === 403
+          ? 'openai-auth'
+          : status === 429
+            ? 'openai-rate-limit'
+            : 'openai-service',
+      code:
+        status === 401 || status === 403
+          ? 'openai-auth-failed'
+          : status === 429
+            ? 'openai-rate-limited'
+            : 'openai-service-error',
     });
     expect(JSON.stringify(result.body)).not.toContain(TEST_OPENAI_API_KEY);
     expect(JSON.stringify(result.body)).not.toContain('raw upstream error');
@@ -274,6 +295,8 @@ describe('POST /api/openai/translation-session', () => {
     expect(result.body).toEqual({
       error: 'Request timeout',
       message: 'OpenAI translation API request timed out',
+      category: 'openai-timeout',
+      code: 'openai-request-timeout',
     });
   });
 
@@ -288,6 +311,8 @@ describe('POST /api/openai/translation-session', () => {
     expect(result.body).toEqual({
       error: 'Internal server error',
       message: 'Failed to create OpenAI translation session',
+      category: 'network',
+      code: 'openai-network-error',
     });
     expect(JSON.stringify(result.body)).not.toContain(TEST_OPENAI_API_KEY);
     expect(JSON.stringify(result.body)).not.toContain('socket failure');

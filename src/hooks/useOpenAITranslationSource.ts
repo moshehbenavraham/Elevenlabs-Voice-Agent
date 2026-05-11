@@ -74,7 +74,7 @@ export function useOpenAITranslationSource(): UseOpenAITranslationSourceResult {
     }
 
     collectSourceCleanupError(cleanupErrors, 'source stream tracks', () => {
-      resources.stream?.getTracks().forEach((track) => track.stop());
+      stopMediaStreamTracks(resources.stream);
     });
 
     resourcesRef.current = createEmptySourceResources();
@@ -379,7 +379,7 @@ function registerSourceTrackEndedListeners(
 function stopMediaStream(stream: MediaStream): OpenAITranslationSourceError | null {
   const cleanupErrors: string[] = [];
   collectSourceCleanupError(cleanupErrors, 'source stream tracks', () => {
-    stream.getTracks().forEach((track) => track.stop());
+    stopMediaStreamTracks(stream);
   });
 
   if (cleanupErrors.length > 0) {
@@ -392,6 +392,14 @@ function stopMediaStream(stream: MediaStream): OpenAITranslationSourceError | nu
   }
 
   return null;
+}
+
+function stopMediaStreamTracks(stream: MediaStream | null): void {
+  stream?.getTracks().forEach((track) => {
+    if (track.readyState !== 'ended') {
+      track.stop();
+    }
+  });
 }
 
 function collectSourceCleanupError(errors: string[], label: string, cleanup: () => void): void {

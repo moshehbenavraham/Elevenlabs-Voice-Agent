@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   applyOpenAITranslationTranscriptEvent,
+  createOpenAITranslationCleanupResult,
   createOpenAITranslationRuntimeError,
   exchangeOpenAITranslationSdp,
   isOpenAITranslationBusyStatus,
@@ -11,7 +12,9 @@ import {
 } from '@/lib/openaiTranslation';
 import type {
   OpenAITranslationHookStatus,
+  OpenAITranslationCleanupResult,
   OpenAITranslationRuntimeError,
+  OpenAITranslationRuntimeStopReason,
   OpenAITranslationStartOptions,
   OpenAITranslationTargetLanguageCode,
   OpenAITranslationTranscriptEntry,
@@ -47,7 +50,7 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
   const mountedRef = useRef(true);
   const operationIdRef = useRef(0);
   const startPromiseRef = useRef<Promise<boolean> | null>(null);
-  const stopPromiseRef = useRef<Promise<void> | null>(null);
+  const stopPromiseRef = useRef<Promise<OpenAITranslationCleanupResult> | null>(null);
   const statusRef = useRef<OpenAITranslationHookStatus>(INITIAL_STATUS);
   const resourcesRef = useRef<OpenAITranslationRuntimeResources>(
     createEmptyOpenAITranslationResources()
@@ -95,7 +98,17 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
           resources.dataChannel.onerror = null;
           resources.dataChannel.onopen = null;
           resources.dataChannel.onclose = null;
-          resources.dataChannel.close();
+          if (resources.dataChannel.readyState !== 'closed') {
+            resources.dataChannel.close();
+          }
+        }
+      });
+
+      collectCleanupError(cleanupErrors, 'source senders', () => {
+        if (resources.peerConnection) {
+          resources.sourceSenders.forEach((sender) => {
+            resources.peerConnection?.removeTrack(sender);
+          });
         }
       });
 
@@ -109,12 +122,12 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
       });
 
       collectCleanupError(cleanupErrors, 'remote stream tracks', () => {
-        resources.remoteStream?.getTracks().forEach((track) => track.stop());
+        stopMediaStreamTracks(resources.remoteStream);
       });
 
       if (resources.ownsSourceStream) {
         collectCleanupError(cleanupErrors, 'source stream tracks', () => {
-          resources.sourceStream?.getTracks().forEach((track) => track.stop());
+          stopMediaStreamTracks(resources.sourceStream);
         });
       }
 
@@ -171,6 +184,7 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
 
         const startOptions = validation.value;
         if (operationIdRef.current !== operationId) {
+          cleanupRuntimeResources({ updateState: false, abortRequests: false });
           return false;
         }
 
@@ -224,6 +238,7 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
         }
 
         if (clientSecret.length === 0 || operationIdRef.current !== operationId) {
+          cleanupRuntimeResources({ updateState: false, abortRequests: false });
           return false;
         }
 
@@ -237,6 +252,16 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
             peerConnection.addTrack(track, startOptions.sourceStream)
           );
           const dataChannel = peerConnection.createDataChannel('oai-events');
+          const failActiveRuntime = (runtimeError: OpenAITranslationRuntimeError): void => {
+            if (operationIdRef.current !== operationId || !mountedRef.current) {
+              return;
+            }
+
+            operationIdRef.current += 1;
+            const cleanupError = cleanupRuntimeResources();
+            setError(cleanupError ?? runtimeError);
+            setHookStatus('error');
+          };
 
           peerConnection.ontrack = (event: RTCTrackEvent): void => {
             if (operationIdRef.current !== operationId || !mountedRef.current) {
@@ -256,14 +281,13 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
             }
 
             if (peerConnection.connectionState === 'failed') {
-              setError(
+              failActiveRuntime(
                 createOpenAITranslationRuntimeError(
                   'webrtc',
                   'OpenAI translation peer connection failed',
                   { code: 'peer-connection-failed' }
                 )
               );
-              setHookStatus('error');
             }
 
             if (peerConnection.connectionState === 'closed' && statusRef.current === 'connected') {
@@ -276,14 +300,13 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
             }
 
             if (peerConnection.iceConnectionState === 'failed') {
-              setError(
+              failActiveRuntime(
                 createOpenAITranslationRuntimeError(
                   'webrtc',
                   'OpenAI translation ICE connection failed',
                   { code: 'ice-connection-failed' }
                 )
               );
-              setHookStatus('error');
             }
           };
           dataChannel.onmessage = (event: MessageEvent): void => {
@@ -293,8 +316,7 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
 
             const parsed = parseOpenAITranslationDataChannelMessage(event.data);
             if (!parsed.ok) {
-              setError(parsed.error);
-              setHookStatus('error');
+              failActiveRuntime(parsed.error);
               return;
             }
 
@@ -309,8 +331,7 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
               );
               setHookTranscripts(nextTranscripts);
             } catch (caughtError) {
-              setError(mapOpenAITranslationHookError(caughtError, 'parser'));
-              setHookStatus('error');
+              failActiveRuntime(mapOpenAITranslationHookError(caughtError, 'parser'));
             }
           };
           dataChannel.onerror = (): void => {
@@ -318,14 +339,13 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
               return;
             }
 
-            setError(
+            failActiveRuntime(
               createOpenAITranslationRuntimeError(
                 'data-channel',
                 'OpenAI translation data channel reported an error',
                 { code: 'data-channel-error' }
               )
             );
-            setHookStatus('error');
           };
           dataChannel.onclose = (): void => {
             if (operationIdRef.current !== operationId || !mountedRef.current) {
@@ -346,6 +366,11 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
           };
 
           const offer = await peerConnection.createOffer();
+          if (operationIdRef.current !== operationId) {
+            cleanupRuntimeResources({ updateState: false, abortRequests: false });
+            return false;
+          }
+
           if (!offer.sdp) {
             throw createOpenAITranslationRuntimeError(
               'sdp-exchange',
@@ -355,6 +380,11 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
           }
 
           await peerConnection.setLocalDescription(offer);
+          if (operationIdRef.current !== operationId) {
+            cleanupRuntimeResources({ updateState: false, abortRequests: false });
+            return false;
+          }
+
           const answerSdp = await exchangeOpenAITranslationSdp({
             clientSecret,
             offerSdp: offer.sdp,
@@ -369,6 +399,10 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
             type: 'answer',
             sdp: answerSdp,
           });
+          if (operationIdRef.current !== operationId) {
+            cleanupRuntimeResources({ updateState: false, abortRequests: false });
+            return false;
+          }
         } catch (caughtError) {
           if (operationIdRef.current !== operationId) {
             return false;
@@ -397,39 +431,45 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
     [cleanupRuntimeResources, setHookStatus, setHookTranscripts]
   );
 
-  const stop = useCallback(async (): Promise<void> => {
-    if (!mountedRef.current) {
-      return;
-    }
-
-    if (stopPromiseRef.current) {
-      return stopPromiseRef.current;
-    }
-
-    operationIdRef.current += 1;
-
-    const stopPromise = (async (): Promise<void> => {
-      setHookStatus('stopping');
-      const cleanupError = cleanupRuntimeResources();
-      if (cleanupError) {
-        setError(cleanupError);
-        setHookStatus('error');
-        return;
+  const stop = useCallback(
+    async (
+      _reason: OpenAITranslationRuntimeStopReason = 'manual'
+    ): Promise<OpenAITranslationCleanupResult> => {
+      if (!mountedRef.current) {
+        return createOpenAITranslationCleanupResult(null);
       }
 
-      setHookStatus('stopped');
-    })();
-
-    stopPromiseRef.current = stopPromise;
-
-    try {
-      await stopPromise;
-    } finally {
-      if (stopPromiseRef.current === stopPromise) {
-        stopPromiseRef.current = null;
+      if (stopPromiseRef.current) {
+        return stopPromiseRef.current;
       }
-    }
-  }, [cleanupRuntimeResources, setHookStatus]);
+
+      operationIdRef.current += 1;
+
+      const stopPromise = (async (): Promise<OpenAITranslationCleanupResult> => {
+        setHookStatus('stopping');
+        const cleanupError = cleanupRuntimeResources();
+        if (cleanupError) {
+          setError(cleanupError);
+          setHookStatus('error');
+          return createOpenAITranslationCleanupResult(cleanupError);
+        }
+
+        setHookStatus('stopped');
+        return createOpenAITranslationCleanupResult(null);
+      })();
+
+      stopPromiseRef.current = stopPromise;
+
+      try {
+        return await stopPromise;
+      } finally {
+        if (stopPromiseRef.current === stopPromise) {
+          stopPromiseRef.current = null;
+        }
+      }
+    },
+    [cleanupRuntimeResources, setHookStatus]
+  );
 
   const clearTranscripts = useCallback((): void => {
     if (!mountedRef.current) {
@@ -559,9 +599,87 @@ function mapOpenAITranslationHookError(
     return error;
   }
 
-  return createOpenAITranslationRuntimeError(fallbackKind, 'OpenAI translation startup failed', {
-    code: 'startup-failed',
-  });
+  if (isAbortError(error)) {
+    return createOpenAITranslationRuntimeError(
+      'aborted',
+      'OpenAI translation startup was aborted',
+      { code: 'startup-aborted' }
+    );
+  }
+
+  return createOpenAITranslationRuntimeError(
+    fallbackKind,
+    resolveFallbackRuntimeErrorMessage(fallbackKind),
+    {
+      code: resolveFallbackRuntimeErrorCode(fallbackKind),
+    }
+  );
+}
+
+function isAbortError(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    (error as { readonly name?: unknown }).name === 'AbortError'
+  );
+}
+
+function resolveFallbackRuntimeErrorMessage(
+  fallbackKind: OpenAITranslationRuntimeError['kind']
+): string {
+  switch (fallbackKind) {
+    case 'client-secret':
+      return 'OpenAI translation client-secret request failed';
+    case 'sdp-exchange':
+      return 'OpenAI translation SDP exchange failed';
+    case 'webrtc':
+      return 'OpenAI translation WebRTC startup failed';
+    case 'data-channel':
+      return 'OpenAI translation data channel failed';
+    case 'parser':
+      return 'OpenAI translation event parsing failed';
+    case 'cleanup':
+      return 'OpenAI translation cleanup failed';
+    case 'offline':
+      return 'OpenAI translation cannot start while the browser is offline';
+    case 'aborted':
+      return 'OpenAI translation startup was aborted';
+    case 'validation':
+      return 'OpenAI translation input validation failed';
+    case 'unknown':
+      return 'OpenAI translation startup failed';
+    default:
+      return assertNeverRuntimeErrorKind(fallbackKind);
+  }
+}
+
+function resolveFallbackRuntimeErrorCode(
+  fallbackKind: OpenAITranslationRuntimeError['kind']
+): string {
+  switch (fallbackKind) {
+    case 'client-secret':
+      return 'client-secret-failed';
+    case 'sdp-exchange':
+      return 'sdp-exchange-failed';
+    case 'webrtc':
+      return 'webrtc-startup-failed';
+    case 'data-channel':
+      return 'data-channel-failed';
+    case 'parser':
+      return 'parser-failed';
+    case 'cleanup':
+      return 'cleanup-failed';
+    case 'offline':
+      return 'browser-offline';
+    case 'aborted':
+      return 'startup-aborted';
+    case 'validation':
+      return 'validation-failed';
+    case 'unknown':
+      return 'startup-failed';
+    default:
+      return assertNeverRuntimeErrorKind(fallbackKind);
+  }
 }
 
 function createOpenAITranslationPeerConnection(
@@ -622,10 +740,22 @@ function createEmptyOpenAITranslationResources(): OpenAITranslationRuntimeResour
   };
 }
 
+function stopMediaStreamTracks(stream: MediaStream | null): void {
+  stream?.getTracks().forEach((track) => {
+    if (track.readyState !== 'ended') {
+      track.stop();
+    }
+  });
+}
+
 function collectCleanupError(errors: string[], label: string, cleanup: () => void): void {
   try {
     cleanup();
   } catch {
     errors.push(label);
   }
+}
+
+function assertNeverRuntimeErrorKind(kind: never): never {
+  throw new Error(`Unhandled OpenAI translation runtime error kind: ${String(kind)}`);
 }

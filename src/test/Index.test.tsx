@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Index } from '../pages/Index';
 import { ProviderProvider } from '@/contexts/ProviderContext';
+import type { ProviderType } from '@/types';
 
 interface HeroSectionMockProps {
   onStartConversation: () => void;
@@ -10,6 +11,20 @@ interface HeroSectionMockProps {
 interface ConfigurationModalMockProps {
   isOpen: boolean;
 }
+
+interface ProviderTabsMockProps {
+  onProviderChange?: (provider: ProviderType) => Promise<void> | void;
+}
+
+interface OpenAITranslationProviderMockProps {
+  stopRef?: {
+    current: ((reason?: string) => Promise<void>) | null;
+  };
+}
+
+const indexMocks = vi.hoisted(() => ({
+  openaiTranslationStop: vi.fn(),
+}));
 
 // Wrapper with required providers
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -89,6 +104,13 @@ vi.mock('@/components/voice/VoiceWidget', () => ({
 
 // Mock xAI provider components
 vi.mock('@/components/providers', () => ({
+  OpenAITranslationProvider: ({ stopRef }: OpenAITranslationProviderMockProps) => {
+    if (stopRef) {
+      stopRef.current = indexMocks.openaiTranslationStop;
+    }
+
+    return <div data-testid="openai-translation-provider">OpenAI Translation Provider</div>;
+  },
   XAIProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   XAIVoiceButton: () => <div data-testid="xai-voice-button">XAI Voice Button</div>,
   XAIVoiceStatus: () => <div data-testid="xai-voice-status">XAI Voice Status</div>,
@@ -97,12 +119,27 @@ vi.mock('@/components/providers', () => ({
 
 // Mock ProviderTabs
 vi.mock('@/components/tabs', () => ({
-  ProviderTabs: () => <div data-testid="provider-tabs">Provider Tabs</div>,
+  ProviderTabs: ({ onProviderChange }: ProviderTabsMockProps) => (
+    <div data-testid="provider-tabs">
+      <button type="button" onClick={() => void onProviderChange?.('openai')}>
+        Switch to OpenAI
+      </button>
+      <button type="button" onClick={() => void onProviderChange?.('openai-translation')}>
+        Switch to OpenAI Translation
+      </button>
+    </div>
+  ),
 }));
 
 describe('Index Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+    indexMocks.openaiTranslationStop.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it('renders without crashing', () => {
@@ -127,5 +164,34 @@ describe('Index Component', () => {
     expect(screen.getByTestId('background-effects')).toBeInTheDocument();
     // Provider tabs should be visible
     expect(screen.getByTestId('provider-tabs')).toBeInTheDocument();
+  });
+
+  it('passes provider-switch reason before switching away from OpenAI Translation', async () => {
+    vi.stubEnv('VITE_OPENAI_TRANSLATION_ENABLED', 'true');
+    vi.stubEnv('VITE_OPENAI_ENABLED', 'true');
+    localStorage.setItem('voice-ai-provider', 'openai-translation');
+
+    render(<Index />, { wrapper: TestWrapper });
+
+    expect(screen.getByTestId('openai-translation-provider')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /^switch to openai$/i }));
+
+    await waitFor(() => {
+      expect(indexMocks.openaiTranslationStop).toHaveBeenCalledWith('provider-switch');
+    });
+  });
+
+  it('does not request translation cleanup for the already active provider', async () => {
+    vi.stubEnv('VITE_OPENAI_TRANSLATION_ENABLED', 'true');
+    localStorage.setItem('voice-ai-provider', 'openai-translation');
+
+    render(<Index />, { wrapper: TestWrapper });
+
+    fireEvent.click(screen.getByRole('button', { name: /switch to openai translation/i }));
+
+    await waitFor(() => {
+      expect(indexMocks.openaiTranslationStop).not.toHaveBeenCalled();
+    });
   });
 });
