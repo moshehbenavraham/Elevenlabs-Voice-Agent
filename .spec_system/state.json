@@ -69,7 +69,8 @@
     "phase04-session04-e2e-and-browser-smoke-tests",
     "phase04-session05-documentation-and-demo-configuration",
     "phase05-session01-production-safety-and-usage-controls",
-    "phase05-session02-evaluation-harness-and-sample-workflow"
+    "phase05-session02-evaluation-harness-and-sample-workflow",
+    "phase05-session03-backend-raw-audio-bridge-spike"
   ],
   "next_session_history": [
     {
