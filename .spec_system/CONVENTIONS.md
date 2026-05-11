@@ -149,16 +149,17 @@ scripts/           # Shell scripts for dev/build/demo
 
 ## Infrastructure
 
-| Component     | Provider                  | Details                                           |
-| ------------- | ------------------------- | ------------------------------------------------- |
-| Container     | Docker                    | Multi-stage build, non-root user                  |
-| Registry      | GitHub Container Registry | ghcr.io, auto-push on main                        |
-| Health        | Express endpoint          | `/api/health` with service status, memory, uptime |
-| Health Probe  | Docker HEALTHCHECK        | 30s interval, 10s timeout, 3 retries              |
-| Rate Limiting | express-rate-limit        | API: 100/15min, Tokens: 10/min, Static: 500/15min |
-| CORS          | Express middleware        | Configurable via CORS_ORIGIN env var              |
-| Deploy        | GitHub Actions            | Webhook or SSH, on push to main                   |
-| Backup        | N/A                       | Stateless application, no persistent data         |
+| Component     | Provider                  | Details                                                         |
+| ------------- | ------------------------- | --------------------------------------------------------------- |
+| Container     | Docker                    | Multi-stage build, non-root user                                |
+| Registry      | GitHub Container Registry | ghcr.io, auto-push on main                                      |
+| Health        | Express endpoint          | `/api/health` with service status, memory, uptime               |
+| Health Probe  | Docker HEALTHCHECK        | 30s interval, 10s timeout, 3 retries                            |
+| Rate Limiting | express-rate-limit        | API: 100/15min, Tokens: 10/min, Static: 500/15min               |
+| CORS          | Express middleware        | Exact origins via CORS_ORIGIN; local Docker smoke override only |
+| Deploy        | GitHub Actions            | Webhook or SSH, on push to main                                 |
+| Backup        | N/A                       | Stateless application, no persistent data                       |
+| Local Dev     | Docker Compose            | `npm run docker:prod` builds, starts, and probes `/api/health`  |
 
 ## When In Doubt
 

@@ -54,6 +54,7 @@ const securityConfig = validateProductionSecurityConfig({
   nodeEnv: process.env.NODE_ENV,
   corsOrigin: process.env.CORS_ORIGIN,
   isDemoMode,
+  allowLocalhostProductionOrigins: process.env.ALLOW_LOCALHOST_PRODUCTION_CORS === 'true',
 });
 
 if (isProduction && !securityConfig.ok) {

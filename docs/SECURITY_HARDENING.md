@@ -43,6 +43,10 @@ Production rejects unsafe CORS posture:
 - Invalid origin strings
 - localhost-only production origins
 
+`docker-compose.yml` sets `ALLOW_LOCALHOST_PRODUCTION_CORS=true` for local
+production smoke tests only. Remote production deployments must keep this flag
+unset or `false`; `docker-compose.deploy.yml` forces it to `false`.
+
 Requests without an `Origin` header remain allowed for same-origin navigation,
 health probes, curl checks, and container health checks. Browser requests with
 an unauthorized `Origin` do not receive an allow-origin header.

@@ -2,9 +2,9 @@
 
 > **Project assembled by [AI with Apex](https://AIwithApex.com)**
 
-## [VIDEO] Video Tutorial Series
+## Video Tutorial Series
 
-Learn how to create and configure ElevenLabs agents (in general and) for this application:
+Learn how to create and configure ElevenLabs agents for this application:
 
 | Tutorial                                                                                        | Description                                                        |
 | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
@@ -16,7 +16,7 @@ Learn how to create and configure ElevenLabs agents (in general and) for this ap
 
 ---
 
-A sophisticated multi-provider voice AI web application built with React 19, TypeScript, and support for 8 different voice AI providers. Experience real-time voice conversations with beautiful audio visualizations and a modern glassmorphism UI.
+A sophisticated multi-provider voice AI web application built with React 19, TypeScript, and support for 8 voice provider tabs. Experience real-time voice conversations with audio visualizations and a modern glassmorphism UI.
 
 ## Built With
 
@@ -169,7 +169,7 @@ Gemini Live uses ephemeral tokens from the backend for secure WebSocket connecti
 - **Mobile Responsive**: Horizontal scrolling tabs on smaller screens
 - **Touch Optimized**: 44px minimum touch targets for accessibility
 
-## [DOCS] Documentation
+## Documentation
 
 This project includes comprehensive documentation:
 
@@ -189,9 +189,10 @@ This project includes comprehensive documentation:
 - **[Voice Features Documentation](docs/VOICE_FEATURES.md)** - Voice orb, audio visualization, and voice interactions
 - **[Mobile Optimization Guide](docs/MOBILE_OPTIMIZATION.md)** - Touch interactions, PWA features, and mobile performance
 
-### AI-Assistant Documentation
+### Spec System Documentation
 
-- **[Claude Code Integration Guide](CLAUDE.md)** - Development commands, architecture overview, and guidelines for Claude Code
+- **[Spec System PRD](.spec_system/PRD/PRD.md)** - Current phase roadmap, session scope, and product direction
+- **[Setup Guide](docs/README_SETUP.md)** - Multi-provider setup and local runbook
 
 ### Community & Support
 
@@ -207,21 +208,21 @@ This project includes comprehensive documentation:
 
 ### Quick Links
 
-| Type      | Documentation                                   | Description                     |
-| --------- | ----------------------------------------------- | ------------------------------- |
-| [DEPLOY]  | **[Deployment](docs/DEPLOYMENT.md)**            | Coolify, GHCR, SSH deployment   |
-| [CI]      | **[CI/CD](docs/CI_CD.md)**                      | Workflow checks and GHCR deploy |
-| [OBS]     | **[Observability](docs/OBSERVABILITY.md)**      | Health, metrics, logs, alerts   |
-| [DEMO]    | **[Demo Mode](docs/DEMO_MODE.md)**              | ngrok demo mode setup           |
-| [ARCH]    | **[Architecture](docs/ARCHITECTURE.md)**        | Technical system design         |
-| [VOICE]   | **[Voice Features](docs/VOICE_FEATURES.md)**    | Voice AI functionality          |
-| [MOBILE]  | **[Mobile Guide](docs/MOBILE_OPTIMIZATION.md)** | Mobile optimization             |
-| [API]     | **[API Integration](docs/API_INTEGRATION.md)**  | Voice SDK integration guide     |
-| [OPENAI]  | **[OpenAI Realtime](docs/OPENAI_REALTIME.md)**  | OpenAI provider internals       |
-| [HELP]    | **[Troubleshooting](docs/TROUBLESHOOTING.md)**  | Problem resolution              |
-| [AI]      | **[Claude Integration](CLAUDE.md)**             | AI assistant development guide  |
-| [CONTRIB] | **[Contributing](CONTRIBUTING.md)**             | Development guidelines          |
-| [SECURE]  | **[Security](docs/SECURITY.md)**                | Security policies               |
+| Type      | Documentation                                   | Description                       |
+| --------- | ----------------------------------------------- | --------------------------------- |
+| [DEPLOY]  | **[Deployment](docs/DEPLOYMENT.md)**            | Coolify, GHCR, SSH deployment     |
+| [CI]      | **[CI/CD](docs/CI_CD.md)**                      | Workflow checks and GHCR deploy   |
+| [OBS]     | **[Observability](docs/OBSERVABILITY.md)**      | Health, metrics, logs, alerts     |
+| [DEMO]    | **[Demo Mode](docs/DEMO_MODE.md)**              | ngrok demo mode setup             |
+| [ARCH]    | **[Architecture](docs/ARCHITECTURE.md)**        | Technical system design           |
+| [VOICE]   | **[Voice Features](docs/VOICE_FEATURES.md)**    | Voice AI functionality            |
+| [MOBILE]  | **[Mobile Guide](docs/MOBILE_OPTIMIZATION.md)** | Mobile optimization               |
+| [API]     | **[API Integration](docs/API_INTEGRATION.md)**  | Voice SDK integration guide       |
+| [OPENAI]  | **[OpenAI Realtime](docs/OPENAI_REALTIME.md)**  | OpenAI provider internals         |
+| [HELP]    | **[Troubleshooting](docs/TROUBLESHOOTING.md)**  | Problem resolution                |
+| [SPEC]    | **[Spec System PRD](.spec_system/PRD/PRD.md)**  | Phase roadmap and session history |
+| [CONTRIB] | **[Contributing](CONTRIBUTING.md)**             | Development guidelines            |
+| [SECURE]  | **[Security](docs/SECURITY.md)**                | Security policies                 |
 
 ## [START] Quick Start
 
@@ -247,11 +248,11 @@ bun install
 cp .env.example .env
 # Edit .env with your provider credentials
 
-# Start development server (frontend only)
-npm run dev
-
-# Or start both frontend and backend
+# Start both frontend and backend
 npm run dev:all
+
+# Or start the frontend only
+npm run dev
 ```
 
 ### Development Server
@@ -262,7 +263,7 @@ The frontend runs on port **8082** by default. The backend API server runs on po
 # Frontend only
 npm run dev          # http://localhost:8082
 
-# Frontend + Backend (for xAI, OpenAI, Ultravox, Retell)
+# Frontend + Backend (for provider tabs that need the API server)
 npm run dev:all      # Frontend: 8082, Backend: 3001
 
 # Backend only
@@ -568,6 +569,7 @@ Use Vercel, Netlify, or static hosting only when the Express backend is deployed
    SERVER_PORT=3001
    HOST_PORT=3001
    CORS_ORIGIN=https://your-production-origin.com
+   ALLOW_LOCALHOST_PRODUCTION_CORS=false
    ```
 
 4. **Browser Compatibility**

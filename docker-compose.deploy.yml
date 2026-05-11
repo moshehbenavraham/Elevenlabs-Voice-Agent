@@ -12,6 +12,7 @@ services:
       NODE_ENV: production
       SERVER_PORT: ${SERVER_PORT:-3001}
       CORS_ORIGIN: ${CORS_ORIGIN:?Set CORS_ORIGIN to the public HTTPS origin}
+      ALLOW_LOCALHOST_PRODUCTION_CORS: 'false'
       LOG_LEVEL: ${LOG_LEVEL:-info}
       REQUEST_LOGGING_ENABLED: ${REQUEST_LOGGING_ENABLED:-true}
       METRICS_ENABLED: ${METRICS_ENABLED:-true}

@@ -100,6 +100,7 @@ export function parseAllowedOrigins(value, options = {}) {
 
 export function validateProductionSecurityConfig(options = {}) {
   const isProduction = Boolean(options.isProduction ?? isProductionEnv(options.nodeEnv));
+  const allowLocalhostProductionOrigins = Boolean(options.allowLocalhostProductionOrigins);
   const parsedOrigins = parseAllowedOrigins(options.corsOrigin, { isProduction });
   const issues = [];
   const warnings = [];
@@ -125,7 +126,13 @@ export function validateProductionSecurityConfig(options = {}) {
     parsedOrigins.origins.length > 0 &&
     parsedOrigins.origins.every(origin => isLocalhostOrigin(origin))
   ) {
-    issues.push('Production CORS origins cannot be localhost-only.');
+    if (allowLocalhostProductionOrigins) {
+      warnings.push(
+        'Localhost-only production CORS origins are allowed only for local Docker smoke tests.'
+      );
+    } else {
+      issues.push('Production CORS origins cannot be localhost-only.');
+    }
   }
 
   if (!isProduction && parsedOrigins.hasWildcard) {
@@ -143,6 +150,7 @@ export function validateProductionSecurityConfig(options = {}) {
     origins: parsedOrigins.origins,
     hasWildcard: parsedOrigins.hasWildcard,
     usingFallback: parsedOrigins.usingFallback,
+    allowLocalhostProductionOrigins,
     issues,
     warnings,
   };
@@ -555,6 +563,7 @@ export function getSecurityPosture(options = {}) {
       allowNoOriginRequests: true,
       wildcardConfigured: securityConfig.hasWildcard,
       usingDevelopmentFallback: securityConfig.usingFallback,
+      localhostProductionOriginsAllowed: Boolean(securityConfig.allowLocalhostProductionOrigins),
       unsafeProductionConfig: isProduction && !securityConfig.ok,
       issues: securityConfig.issues,
       warnings: securityConfig.warnings,

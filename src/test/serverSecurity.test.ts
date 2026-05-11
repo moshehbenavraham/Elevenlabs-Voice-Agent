@@ -6,6 +6,7 @@ interface SecurityConfig {
   readonly origins: readonly string[];
   readonly hasWildcard: boolean;
   readonly usingFallback: boolean;
+  readonly allowLocalhostProductionOrigins: boolean;
   readonly issues: readonly string[];
   readonly warnings: readonly string[];
 }
@@ -30,6 +31,7 @@ interface SecurityModule {
     readonly corsOrigin?: string;
     readonly isProduction?: boolean;
     readonly isDemoMode?: boolean;
+    readonly allowLocalhostProductionOrigins?: boolean;
   }) => SecurityConfig;
   isOriginAllowed: (origin: string | undefined, securityConfig: SecurityConfig) => boolean;
   getSecurityHeaderValues: (options?: {
@@ -126,6 +128,15 @@ describe('server security utilities', () => {
     });
     expect(localhostOnly.ok).toBe(false);
     expect(localhostOnly.issues.join(' ')).toContain('localhost-only');
+
+    const localDockerSmoke = security.validateProductionSecurityConfig({
+      nodeEnv: 'production',
+      corsOrigin: 'http://localhost:3001',
+      allowLocalhostProductionOrigins: true,
+    });
+    expect(localDockerSmoke.ok).toBe(true);
+    expect(localDockerSmoke.allowLocalhostProductionOrigins).toBe(true);
+    expect(localDockerSmoke.warnings.join(' ')).toContain('local Docker smoke tests');
   });
 
   it('allows no-origin requests while enforcing configured browser origins', () => {

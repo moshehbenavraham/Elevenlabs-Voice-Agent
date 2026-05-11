@@ -16,13 +16,13 @@
     "1": {
       "name": "Production Deployment & DevOps",
       "description": "Establish production-grade deployment infrastructure with Docker optimization, CI/CD pipelines, cloud deployment, monitoring, and security hardening",
-      "status": "in_progress",
+      "status": "complete",
       "session_count": 5
     },
     "2": {
       "name": "Translation Foundation",
       "description": "Establish the OpenAI Translation API contract, backend token route, shared frontend config, provider-tab scaffold, and focused backend/config tests",
-      "status": "planned",
+      "status": "not_started",
       "session_count": 4
     },
     "3": {

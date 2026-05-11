@@ -100,6 +100,7 @@ Set these in Coolify for both deployment options:
 NODE_ENV=production
 SERVER_PORT=3001
 CORS_ORIGIN=https://voice.example.com
+ALLOW_LOCALHOST_PRODUCTION_CORS=false
 JSON_BODY_LIMIT=128kb
 LOG_LEVEL=info
 REQUEST_LOGGING_ENABLED=true
@@ -679,6 +680,7 @@ CORS_ORIGIN=https://voice.example.com
 Production CORS rules:
 
 - Do not use `*` for `CORS_ORIGIN` in production.
+- Keep `ALLOW_LOCALHOST_PRODUCTION_CORS=false` outside local Docker smoke tests.
 - Do not reuse demo-mode ngrok origins in production.
 - Configure exactly one browser-facing origin unless the deployment intentionally supports multiple domains.
 - Rebuild the frontend image when changing `VITE_API_BASE_URL`.

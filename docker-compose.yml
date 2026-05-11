@@ -62,6 +62,9 @@ services:
       NODE_ENV: production
       SERVER_PORT: ${SERVER_PORT:-3001}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001}
+      # Local production smoke tests often use localhost-only origins. Remote
+      # deployments use docker-compose.deploy.yml, which keeps this disabled.
+      ALLOW_LOCALHOST_PRODUCTION_CORS: ${ALLOW_LOCALHOST_PRODUCTION_CORS:-true}
       LOG_LEVEL: ${LOG_LEVEL:-info}
       REQUEST_LOGGING_ENABLED: ${REQUEST_LOGGING_ENABLED:-true}
       METRICS_ENABLED: ${METRICS_ENABLED:-true}
