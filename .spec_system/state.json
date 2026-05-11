@@ -65,7 +65,8 @@
     "phase03-session05-audio-mix-and-export-controls",
     "phase04-session01-lifecycle-reliability",
     "phase04-session02-error-states-and-diagnostics",
-    "phase04-session03-unit-and-integration-coverage"
+    "phase04-session03-unit-and-integration-coverage",
+    "phase04-session04-e2e-and-browser-smoke-tests"
   ],
   "next_session_history": [
     {
@@ -247,6 +248,16 @@
       "date": "2026-05-11",
       "session": "phase04-session03-unit-and-integration-coverage",
       "status": "planned"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase04-session04-e2e-and-browser-smoke-tests",
+      "status": "planned"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase04-session04-e2e-and-browser-smoke-tests",
+      "status": "completed"
     }
   ]
 }

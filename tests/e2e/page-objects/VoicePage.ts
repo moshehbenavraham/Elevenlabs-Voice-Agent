@@ -4,6 +4,15 @@
  */
 
 import type { Page, Locator } from '@playwright/test';
+import type { OpenAITranslationMockSnapshot } from '../utils/openai-translation-mock';
+
+type ProviderTabId =
+  | 'elevenlabs'
+  | 'elevenlabs-sdk'
+  | 'openai'
+  | 'openai-translation'
+  | 'xai'
+  | 'gemini';
 
 export class VoicePage {
   readonly page: Page;
@@ -12,6 +21,7 @@ export class VoicePage {
   readonly providerTabElevenlabs: Locator;
   readonly providerTabElevenlabsSdk: Locator;
   readonly providerTabOpenai: Locator;
+  readonly providerTabOpenaiTranslation: Locator;
   readonly providerTabXai: Locator;
   readonly providerTabGemini: Locator;
 
@@ -43,6 +53,7 @@ export class VoicePage {
     this.providerTabElevenlabs = page.getByTestId('provider-tab-elevenlabs');
     this.providerTabElevenlabsSdk = page.getByTestId('provider-tab-elevenlabs-sdk');
     this.providerTabOpenai = page.getByTestId('provider-tab-openai');
+    this.providerTabOpenaiTranslation = page.getByTestId('provider-tab-openai-translation');
     this.providerTabXai = page.getByTestId('provider-tab-xai');
     this.providerTabGemini = page.getByTestId('provider-tab-gemini');
 
@@ -79,12 +90,135 @@ export class VoicePage {
   /**
    * Select a provider tab
    */
-  async selectProvider(
-    provider: 'elevenlabs' | 'elevenlabs-sdk' | 'openai' | 'xai' | 'gemini'
-  ): Promise<void> {
+  async selectProvider(provider: ProviderTabId): Promise<void> {
     const tab = this.page.getByTestId(`provider-tab-${provider}`);
     await tab.click();
     await this.page.waitForTimeout(300); // Wait for tab transition animation
+  }
+
+  /**
+   * Select the OpenAI Translation provider tab
+   */
+  async selectOpenAITranslationProvider(): Promise<void> {
+    await this.selectProvider('openai-translation');
+    await this.page.getByRole('heading', { name: /live translation/i }).waitFor();
+  }
+
+  /**
+   * Get the OpenAI Translation start button
+   */
+  getOpenAITranslationStartButton(): Locator {
+    return this.page.getByRole('button', { name: /start translation/i }).first();
+  }
+
+  /**
+   * Get the OpenAI Translation stop button
+   */
+  getOpenAITranslationStopButton(): Locator {
+    return this.page.getByRole('button', { name: /^stop translation$/i }).first();
+  }
+
+  /**
+   * Start OpenAI Translation
+   */
+  async startOpenAITranslation(): Promise<void> {
+    await this.getOpenAITranslationStartButton().click();
+  }
+
+  /**
+   * Stop OpenAI Translation
+   */
+  async stopOpenAITranslation(): Promise<void> {
+    await this.getOpenAITranslationStopButton().click();
+  }
+
+  /**
+   * Get a source selector option
+   */
+  getOpenAITranslationSourceOption(mode: 'microphone' | 'browser-tab'): Locator {
+    const label = mode === 'microphone' ? /microphone source/i : /tab audio source/i;
+    return this.page.getByRole('radio', { name: label });
+  }
+
+  /**
+   * Select an OpenAI Translation source
+   */
+  async selectOpenAITranslationSource(mode: 'microphone' | 'browser-tab'): Promise<void> {
+    await this.getOpenAITranslationSourceOption(mode).click();
+  }
+
+  /**
+   * Select an OpenAI Translation target language
+   */
+  async selectOpenAITranslationTargetLanguage(languageCode: string): Promise<void> {
+    await this.page.getByLabel('Target language', { exact: true }).selectOption(languageCode);
+  }
+
+  /**
+   * Get the translation status panel
+   */
+  getOpenAITranslationStatusPanel(): Locator {
+    return this.page.locator('section[role="status"]:not([aria-labelledby])');
+  }
+
+  /**
+   * Get the translation diagnostics panel by heading
+   */
+  getOpenAITranslationDiagnosticsPanel(): Locator {
+    return this.page.locator('section[aria-labelledby="openai-translation-diagnostics-title"]');
+  }
+
+  /**
+   * Get the translation transcript log
+   */
+  getOpenAITranslationTranscriptLog(): Locator {
+    return this.page.getByRole('log', { name: /translation transcript/i });
+  }
+
+  /**
+   * Get the latest translated caption region
+   */
+  getOpenAITranslationLatestCaption(): Locator {
+    return this.page.getByRole('status', { name: /latest translated caption/i });
+  }
+
+  /**
+   * Get the translated audio player
+   */
+  getOpenAITranslationAudioPlayer(): Locator {
+    return this.page.getByLabel(/translated audio playback/i);
+  }
+
+  /**
+   * Get the test-only OpenAI Translation mock snapshot
+   */
+  async getOpenAITranslationMockState(): Promise<OpenAITranslationMockSnapshot> {
+    return this.page.evaluate(() => {
+      const mock = window.__E2E_OPENAI_TRANSLATION_MOCK__;
+      if (!mock) {
+        throw new Error('OpenAI Translation E2E mock is not installed.');
+      }
+
+      return mock.getState();
+    });
+  }
+
+  /**
+   * Emit a translated audio track through the test-only mock
+   */
+  async emitOpenAITranslationRemoteAudio(): Promise<void> {
+    await this.page.evaluate(() => {
+      window.__E2E_OPENAI_TRANSLATION_MOCK__?.emitRemoteAudio();
+    });
+  }
+
+  /**
+   * Emit a data-channel event through the test-only mock
+   */
+  async emitOpenAITranslationEvent(event: Record<string, unknown>): Promise<void> {
+    await this.page.evaluate((payload) => {
+      window.__E2E_OPENAI_TRANSLATION_MOCK__?.emitTranscript(payload);
+    }, event);
   }
 
   /**
