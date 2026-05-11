@@ -25,6 +25,39 @@ WebRTC runtime, transcript rendering, audio mix controls, and export behavior.
 Keep these implementations separate. Translation should not be built by adding
 translation behavior to the current voice-agent context.
 
+## Official Realtime Translation Re-check - 2026-05-12
+
+Current official OpenAI documentation confirms these translation assumptions:
+
+- Live translation uses `gpt-realtime-translate` for speech-to-speech
+  translation, not a standard voice-agent assistant model.
+- Translation sessions connect to the dedicated
+  `/v1/realtime/translations` endpoint family.
+- Browser apps should mint short-lived credentials on the server through
+  `POST /v1/realtime/translations/client_secrets`; the browser must not receive
+  the standard server API key.
+- Browser WebRTC calls post SDP offers to
+  `POST /v1/realtime/translations/calls` and receive an SDP answer for the peer
+  connection.
+- Translation sessions stream continuously from source audio and do not use
+  `response.create`.
+- Current documented translation events include `session.output_audio.delta`,
+  `session.output_transcript.delta`, and `session.input_transcript.delta`.
+  The repo may keep older event aliases for compatibility, but new protocol
+  work should prefer the current documented names.
+- Official docs recommend an `OpenAI-Safety-Identifier` only when the app has a
+  stable non-PII identifier, for example a hashed user ID. This project does
+  not currently have accounts or a stable non-PII app identifier, so that
+  header remains deferred rather than derived from IP address, user agent,
+  cookies, authorization headers, or provider payloads.
+
+Sources checked:
+
+- https://developers.openai.com/api/docs/guides/realtime-translation
+- https://developers.openai.com/api/docs/models/gpt-realtime-translate
+- https://developers.openai.com/api/docs/guides/realtime-webrtc
+- https://developers.openai.com/api/reference/resources/realtime/subresources/client_secrets
+
 ## Runtime Flow
 
 1. The user clicks the OpenAI voice control.

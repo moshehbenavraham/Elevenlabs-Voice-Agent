@@ -7,6 +7,7 @@ import {
   OPENAI_TRANSLATION_HARD_MAX_SESSION_MINUTES,
   OPENAI_TRANSLATION_INPUT_TRANSCRIPTION_MODEL,
   OPENAI_TRANSLATION_LANGUAGE_COUNT,
+  OPENAI_TRANSLATION_MAX_SESSION_ENV_VAR,
   OPENAI_TRANSLATION_MODEL,
   OPENAI_TRANSLATION_SOURCE_MODE_METADATA,
   OPENAI_TRANSLATION_SOURCE_MODES,
@@ -556,6 +557,9 @@ describe('openaiTranslation', () => {
 
   describe('max session, duration, and export helpers', () => {
     it('normalizes max-session config with defaults and hard caps', () => {
+      expect(OPENAI_TRANSLATION_MAX_SESSION_ENV_VAR).toBe(
+        'VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES'
+      );
       expect(OPENAI_TRANSLATION_DEFAULT_MAX_SESSION_MINUTES).toBe(30);
       expect(OPENAI_TRANSLATION_HARD_MAX_SESSION_MINUTES).toBe(120);
       expect(normalizeOpenAITranslationMaxSessionConfig(undefined)).toEqual({
@@ -892,6 +896,42 @@ describe('openaiTranslation', () => {
           phase: 'final',
           text: 'hola',
           rawType: 'response.audio_transcript.done',
+        },
+      });
+    });
+
+    it('parses current documented session transcript delta events', () => {
+      const source = parseOpenAITranslationDataChannelMessage({
+        type: 'session.input_transcript.delta',
+        event_id: 'source-current',
+        delta: 'hello',
+      });
+      const translated = parseOpenAITranslationDataChannelMessage({
+        type: 'session.output_transcript.delta',
+        event_id: 'translated-current',
+        delta: 'hola',
+      });
+
+      expect(source).toEqual({
+        ok: true,
+        kind: 'transcript',
+        event: {
+          id: 'source-current',
+          stream: 'source',
+          phase: 'delta',
+          text: 'hello',
+          rawType: 'session.input_transcript.delta',
+        },
+      });
+      expect(translated).toEqual({
+        ok: true,
+        kind: 'transcript',
+        event: {
+          id: 'translated-current',
+          stream: 'translated',
+          phase: 'delta',
+          text: 'hola',
+          rawType: 'session.output_transcript.delta',
         },
       });
     });

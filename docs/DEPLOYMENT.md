@@ -386,28 +386,52 @@ NODE_ENV=production node server/index.js
 
 ### Frontend Variables (build-time)
 
-| Variable                   | Description         | Example             |
-| -------------------------- | ------------------- | ------------------- |
-| `VITE_ELEVENLABS_AGENT_ID` | ElevenLabs Agent ID | `agent_xxx`         |
-| `VITE_API_BASE_URL`        | Backend API URL     | `/` for same-origin |
-| `VITE_ELEVENLABS_ENABLED`  | Enable ElevenLabs   | `true`              |
-| `VITE_XAI_ENABLED`         | Enable xAI          | `true`              |
-| `VITE_OPENAI_ENABLED`      | Enable OpenAI       | `true`              |
-| `VITE_ULTRAVOX_ENABLED`    | Enable Ultravox     | `true`              |
-| `VITE_VAPI_ENABLED`        | Enable Vapi         | `true`              |
-| `VITE_VAPI_WEB_TOKEN`      | Vapi web token      | `your-token`        |
-| `VITE_RETELL_ENABLED`      | Enable Retell       | `true`              |
-| `VITE_RETELL_AGENT_ID`     | Retell Agent ID     | `agent_xxx`         |
-| `VITE_GEMINI_ENABLED`      | Enable Gemini       | `false`             |
-| `VITE_GEMINI_VOICE`        | Gemini voice        | `Zephyr`            |
+| Variable                                      | Description                                  | Example             |
+| --------------------------------------------- | -------------------------------------------- | ------------------- |
+| `VITE_ELEVENLABS_AGENT_ID`                    | ElevenLabs Agent ID                          | `agent_xxx`         |
+| `VITE_API_BASE_URL`                           | Backend API URL                              | `/` for same-origin |
+| `VITE_ELEVENLABS_ENABLED`                     | Enable ElevenLabs                            | `true`              |
+| `VITE_XAI_ENABLED`                            | Enable xAI                                   | `true`              |
+| `VITE_OPENAI_ENABLED`                         | Enable OpenAI                                | `true`              |
+| `VITE_OPENAI_TRANSLATION_ENABLED`             | Enable OpenAI Translation tab                | `false`             |
+| `VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES` | OpenAI Translation browser max-session guard | `30`                |
+| `VITE_ULTRAVOX_ENABLED`                       | Enable Ultravox                              | `true`              |
+| `VITE_VAPI_ENABLED`                           | Enable Vapi                                  | `true`              |
+| `VITE_VAPI_WEB_TOKEN`                         | Vapi web token                               | `your-token`        |
+| `VITE_RETELL_ENABLED`                         | Enable Retell                                | `true`              |
+| `VITE_RETELL_AGENT_ID`                        | Retell Agent ID                              | `agent_xxx`         |
+| `VITE_GEMINI_ENABLED`                         | Enable Gemini                                | `false`             |
+| `VITE_GEMINI_VOICE`                           | Gemini voice                                 | `Zephyr`            |
 
 ### Docker Environment Rules
 
 - Server-side provider keys are runtime variables only. Do not add `ELEVENLABS_API_KEY`, `XAI_API_KEY`, `OPENAI_API_KEY`, `ULTRAVOX_API_KEY`, `RETELL_API_KEY`, or `GEMINI_API_KEY` as Docker build args.
 - Public `VITE_*` values are compiled into the frontend bundle at image build time.
+- OpenAI Translation uses public build args
+  `VITE_OPENAI_TRANSLATION_ENABLED` and
+  `VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES`. The Dockerfile and local
+  Compose default them to `false` and `30`; the GitHub image build reads the
+  same names from repository variables.
 - For combined Docker production, set `VITE_API_BASE_URL=/` before building.
 - For local Vite development on port 8082, use `VITE_API_BASE_URL=http://localhost:3001`.
 - For split hosting, set `VITE_API_BASE_URL` to the backend URL and `CORS_ORIGIN` to the frontend origin.
+
+### OpenAI Translation Production Controls
+
+- Build the image with `VITE_OPENAI_TRANSLATION_ENABLED=true` only when the
+  translation tab should be visible.
+- Keep `VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES` at `30` unless a demo plan
+  requires a shorter or longer value. Values above `120` are capped by the
+  frontend guard.
+- Keep `OPENAI_API_KEY` as a runtime secret only. It is used by
+  `/api/openai/translation-session` to mint short-lived client secrets.
+- The translation token route is covered by the strict token limiter and
+  duplicate in-flight guard, but those controls are process-local. Multi-node
+  production needs a shared-store limiter or platform-level quota before these
+  limits can be treated as global.
+- Translation lifecycle logs are metadata-only and exclude raw request bodies,
+  raw upstream bodies, API keys, client secrets, cookies, authorization
+  headers, audio, transcripts, and SDP payloads.
 
 ### Health Checks
 

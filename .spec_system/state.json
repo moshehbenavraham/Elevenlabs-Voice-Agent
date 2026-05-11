@@ -4,7 +4,7 @@
   "description": "A multi-provider voice AI demo platform showcasing integrations with ElevenLabs, OpenAI, xAI, Ultravox, Vapi, Retell, Gemini Live APIs, and planned OpenAI live translation",
   "monorepo": false,
   "packages": [],
-  "current_phase": 4,
+  "current_phase": 5,
   "current_session": null,
   "phases": {
     "0": {
@@ -40,7 +40,7 @@
     "5": {
       "name": "Production Extensions and Media Variants",
       "description": "Document or prototype production safety controls, evaluation workflow, raw-audio bridge, room/telephony architecture, and optional subtitle overlay posture",
-      "status": "planned",
+      "status": "in_progress",
       "session_count": 5
     }
   },
@@ -67,7 +67,8 @@
     "phase04-session02-error-states-and-diagnostics",
     "phase04-session03-unit-and-integration-coverage",
     "phase04-session04-e2e-and-browser-smoke-tests",
-    "phase04-session05-documentation-and-demo-configuration"
+    "phase04-session05-documentation-and-demo-configuration",
+    "phase05-session01-production-safety-and-usage-controls"
   ],
   "next_session_history": [
     {
@@ -273,6 +274,21 @@
     {
       "date": "2026-05-12",
       "session": "phase04-session05-documentation-and-demo-configuration",
+      "status": "completed"
+    },
+    {
+      "date": "2026-05-12",
+      "session": "phase05-session01-production-safety-and-usage-controls",
+      "status": "planned"
+    },
+    {
+      "date": "2026-05-12",
+      "session": "phase05-session01-production-safety-and-usage-controls",
+      "status": "validated"
+    },
+    {
+      "date": "2026-05-12",
+      "session": "phase05-session01-production-safety-and-usage-controls",
       "status": "completed"
     }
   ]

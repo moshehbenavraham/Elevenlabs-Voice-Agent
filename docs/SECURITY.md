@@ -79,6 +79,28 @@ control guide covering:
 - Do not log raw audio, transcripts, authorization headers, cookies, request
   bodies, or provider response bodies.
 
+## OpenAI Translation Privacy And Usage Controls
+
+- OpenAI Translation uses a separate browser WebRTC flow from the OpenAI
+  voice-agent provider.
+- The backend route `POST /api/openai/translation-session` mints short-lived
+  client secrets with server-side `OPENAI_API_KEY`; the browser receives only
+  browser-safe session fields.
+- The route is covered by the strict token limiter and duplicate in-flight
+  guard, but these controls are process-local until a shared-store or
+  platform-level limiter is added.
+- The browser max-session guard defaults to 30 minutes and caps configured
+  values above 120 minutes.
+- Translation lifecycle logs include only sanitized metadata: request ID,
+  route, target language, status category/code, result, duration config source,
+  and safety-identifier status.
+- Translation lifecycle logs exclude raw request bodies, raw upstream bodies,
+  client secrets, API keys, cookies, authorization headers, audio, transcripts,
+  and SDP payloads.
+- `OpenAI-Safety-Identifier` remains deferred until the app has a stable
+  non-PII app identifier. Do not derive it from IP address, user agent, cookies,
+  authorization headers, transcripts, audio, or provider responses.
+
 ## Server-Side Controls
 
 Production deployments should enforce:

@@ -54,6 +54,7 @@ export const OPENAI_TRANSLATION_DEFAULT_TARGET_LANGUAGE = 'en';
 export const OPENAI_TRANSLATION_DEFAULT_AUDIO_MIX_PERCENT = 85;
 export const OPENAI_TRANSLATION_DEFAULT_MAX_SESSION_MINUTES = 30;
 export const OPENAI_TRANSLATION_HARD_MAX_SESSION_MINUTES = 120;
+export const OPENAI_TRANSLATION_MAX_SESSION_ENV_VAR = 'VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES';
 export const OPENAI_TRANSLATION_DEFAULT_NOISE_REDUCTION_TYPE = 'near_field';
 export const OPENAI_TRANSLATION_RUNTIME_REQUEST_TIMEOUT_MS = 30000;
 export const OPENAI_TRANSLATION_RUNTIME_RETRY_COUNT = 1;
@@ -560,6 +561,7 @@ export function parseOpenAITranslationDataChannelMessage(
   }
 
   switch (eventType) {
+    case 'session.input_transcript.delta':
     case 'translation.source_transcript.delta':
     case 'input_audio_transcription.delta':
     case 'conversation.item.input_audio_transcription.delta':
@@ -568,6 +570,8 @@ export function parseOpenAITranslationDataChannelMessage(
         'text',
       ]);
 
+    case 'session.input_transcript.done':
+    case 'session.input_transcript.final':
     case 'translation.source_transcript.done':
     case 'translation.source_transcript.final':
     case 'input_audio_transcription.completed':
@@ -577,6 +581,7 @@ export function parseOpenAITranslationDataChannelMessage(
         'text',
       ]);
 
+    case 'session.output_transcript.delta':
     case 'translation.translated_transcript.delta':
     case 'translation.translation_transcript.delta':
     case 'response.audio_transcript.delta':
@@ -585,6 +590,8 @@ export function parseOpenAITranslationDataChannelMessage(
         'text',
       ]);
 
+    case 'session.output_transcript.done':
+    case 'session.output_transcript.final':
     case 'translation.translated_transcript.done':
     case 'translation.translated_transcript.final':
     case 'translation.translation_transcript.done':

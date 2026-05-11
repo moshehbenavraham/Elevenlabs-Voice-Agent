@@ -97,4 +97,5 @@ None. Phase 04 did not add new personal data collection, persistent storage, or 
 
 - Keep this document cumulative and concise. Re-synthesize rather than append raw session reports.
 - Phase 04 stayed clean: no new findings, no new personal data inventory entries, and no changes to the two open P01 residual risks.
+- Phase 05 Session 01 pre-implementation review: the process-local rate limiting finding remains open and applies to `/api/openai/translation-session`; CSP tightening remains out of scope without provider-by-provider validation.
 - Re-evaluate the open findings after any future deployment, CSP, or translation changes.

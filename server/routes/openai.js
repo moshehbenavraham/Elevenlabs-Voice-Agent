@@ -3,6 +3,12 @@ import {
   validateAllowedKeys,
   validateString,
 } from '../utils/security.js';
+import { logTranslationLifecycleEvent } from '../utils/observability.js';
+import {
+  getTranslationSafetyIdentifierHeader,
+  resolveTranslationDurationConfig,
+  resolveTranslationSafetyIdentifier,
+} from '../utils/translationSafety.js';
 
 const router = Router();
 
@@ -146,13 +152,24 @@ export function buildTranslationClientSecretRequestBody(targetLanguage) {
   };
 }
 
-function buildTranslationClientSecretFetchOptions(apiKey, targetLanguage, signal) {
+function buildTranslationClientSecretFetchOptions(
+  apiKey,
+  targetLanguage,
+  signal,
+  safetyIdentifier
+) {
+  const headers = {
+    'Authorization': `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  };
+  const safetyIdentifierHeader = getTranslationSafetyIdentifierHeader(safetyIdentifier);
+  if (safetyIdentifierHeader) {
+    headers['OpenAI-Safety-Identifier'] = safetyIdentifierHeader;
+  }
+
   return {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(buildTranslationClientSecretRequestBody(targetLanguage)),
     signal,
   };
@@ -231,7 +248,7 @@ function mapOpenAITranslationError(status) {
   return createTranslationRouteError('OpenAI API error', message, category, code);
 }
 
-async function createTranslationClientSecret(apiKey, targetLanguage) {
+async function createTranslationClientSecret(apiKey, targetLanguage, safetyIdentifier) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
@@ -240,7 +257,12 @@ async function createTranslationClientSecret(apiKey, targetLanguage) {
 
     const response = await fetch(
       OPENAI_TRANSLATION_CLIENT_SECRET_URL,
-      buildTranslationClientSecretFetchOptions(apiKey, targetLanguage, controller.signal)
+      buildTranslationClientSecretFetchOptions(
+        apiKey,
+        targetLanguage,
+        controller.signal,
+        safetyIdentifier
+      )
     );
 
     if (!response.ok) {
@@ -305,6 +327,40 @@ async function createTranslationClientSecret(apiKey, targetLanguage) {
     };
   } finally {
     clearTimeout(timeoutId);
+  }
+}
+
+function getRouteElapsedMs(startedAt) {
+  return Number(process.hrtime.bigint() - startedAt) / 1_000_000;
+}
+
+function readRouteRequestId(req) {
+  return (
+    req?.requestId ||
+    req?.id ||
+    req?.headers?.['x-request-id'] ||
+    req?.headers?.['x-correlation-id']
+  );
+}
+
+function recordTranslationLifecycle(req, startedAt, metadata) {
+  return logTranslationLifecycleEvent({
+    requestId: readRouteRequestId(req),
+    elapsedMs: getRouteElapsedMs(startedAt),
+    ...metadata,
+  });
+}
+
+function resolveTranslationFailurePhase(error) {
+  switch (error?.category) {
+    case 'openai-timeout':
+      return 'upstream-timeout';
+    case 'openai-response':
+      return 'upstream-response-invalid';
+    case 'network':
+      return 'network-failed';
+    default:
+      return 'upstream-failed';
   }
 }
 
@@ -437,31 +493,81 @@ router.get('/health', (req, res) => {
 });
 
 router.post('/translation-session', async (req, res) => {
+  const startedAt = process.hrtime.bigint();
+  const durationConfig = resolveTranslationDurationConfig(process.env);
+  const safetyIdentifier = resolveTranslationSafetyIdentifier();
+  const lifecycleBase = {
+    durationConfig,
+    safetyIdentifier,
+  };
   const requestValidation = validateTranslationSessionRequest(req.body);
   if (!requestValidation.valid) {
-    return res.status(400).json(mapTranslationValidationError(requestValidation.error));
+    const error = mapTranslationValidationError(requestValidation.error);
+    recordTranslationLifecycle(req, startedAt, {
+      ...lifecycleBase,
+      phase: 'validation-failed',
+      result: 'failure',
+      targetLanguage: req.body?.targetLanguage,
+      statusCategory: error.category,
+      statusCode: 400,
+      errorCode: error.code,
+    });
+    return res.status(400).json(error);
   }
 
   const validation = validateApiKey();
   if (!validation.valid) {
-    return res.status(500).json(
-      createTranslationRouteError(
-        validation.error.error,
-        validation.error.message,
-        'server-configuration',
-        'missing-openai-api-key'
-      )
+    const error = createTranslationRouteError(
+      validation.error.error,
+      validation.error.message,
+      'server-configuration',
+      'missing-openai-api-key'
     );
+    recordTranslationLifecycle(req, startedAt, {
+      ...lifecycleBase,
+      phase: 'configuration-failed',
+      result: 'failure',
+      targetLanguage: requestValidation.targetLanguage,
+      statusCategory: error.category,
+      statusCode: 500,
+      errorCode: error.code,
+    });
+    return res.status(500).json(error);
   }
+
+  recordTranslationLifecycle(req, startedAt, {
+    ...lifecycleBase,
+    phase: 'upstream-request',
+    result: 'pending',
+    targetLanguage: requestValidation.targetLanguage,
+  });
 
   const result = await createTranslationClientSecret(
     validation.apiKey,
-    requestValidation.targetLanguage
+    requestValidation.targetLanguage,
+    safetyIdentifier
   );
 
   if (!result.success) {
+    recordTranslationLifecycle(req, startedAt, {
+      ...lifecycleBase,
+      phase: resolveTranslationFailurePhase(result.error),
+      result: 'failure',
+      targetLanguage: requestValidation.targetLanguage,
+      statusCategory: result.error?.category,
+      statusCode: result.status || 500,
+      errorCode: result.error?.code,
+    });
     return res.status(result.status || 500).json(result.error);
   }
+
+  recordTranslationLifecycle(req, startedAt, {
+    ...lifecycleBase,
+    phase: 'success',
+    result: 'success',
+    targetLanguage: result.targetLanguage,
+    statusCode: 200,
+  });
 
   res.json({
     clientSecret: result.clientSecret,

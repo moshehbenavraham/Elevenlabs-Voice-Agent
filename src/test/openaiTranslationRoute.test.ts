@@ -24,6 +24,16 @@ interface OpenAIRouteModule {
   ) => Record<string, unknown>;
 }
 
+interface ServerLogger {
+  info: (...args: readonly unknown[]) => void;
+  warn: (...args: readonly unknown[]) => void;
+  error: (...args: readonly unknown[]) => void;
+}
+
+interface ObservabilityModule {
+  readonly serverLogger: ServerLogger;
+}
+
 interface RouteTestServer {
   readonly translationSessionUrl: string;
   readonly close: () => Promise<void>;
@@ -34,19 +44,30 @@ interface RouteResponse {
   readonly body: Record<string, unknown>;
 }
 
+interface TranslationLifecycleLogCall {
+  readonly level: 'info' | 'warn' | 'error';
+  readonly record: Record<string, unknown>;
+  readonly message: string;
+}
+
 type OpenAIFetch = typeof fetch;
 
 const require = createRequire(import.meta.url);
 const express = require('express') as ExpressFactory;
 const modulePath = '../../server/routes/openai.js';
+const observabilityModulePath = '../../server/utils/observability.js';
 const openaiModule = (await import(modulePath)) as OpenAIRouteModule;
+const observabilityModule = (await import(observabilityModulePath)) as ObservabilityModule;
 const openaiRouter = openaiModule.default;
 const { OPENAI_TRANSLATION_CLIENT_SECRET_URL, OPENAI_TRANSLATION_MODEL } = openaiModule;
+const { serverLogger } = observabilityModule;
 const buildTranslationClientSecretRequestBody =
   openaiModule.buildTranslationClientSecretRequestBody;
 const nativeFetch = globalThis.fetch.bind(globalThis);
 const TEST_OPENAI_API_KEY = 'sk-test-translation-route-key';
 const TEST_CLIENT_SECRET = 'translation-client-secret';
+const TEST_REQUEST_ID = 'route-test-request-1234';
+const TRANSLATION_LIFECYCLE_EVENT = 'openai.translation.lifecycle';
 const EXPECTED_LANGUAGE_ERROR =
   'targetLanguage: must be one of es, pt, fr, ja, ru, zh, de, ko, hi, id, vi, it, en';
 const ROUTE_SANITIZED_SUCCESS_FIXTURES = [
@@ -133,13 +154,24 @@ const ROUTE_MALFORMED_SUCCESS_FIXTURES = [
 
 let originalOpenAIApiKey: string | undefined;
 let routeServer: RouteTestServer | undefined;
+let lifecycleLogCalls: TranslationLifecycleLogCall[] = [];
 
 beforeEach(async () => {
   originalOpenAIApiKey = process.env.OPENAI_API_KEY;
   process.env.OPENAI_API_KEY = TEST_OPENAI_API_KEY;
   routeServer = await startRouteTestServer();
+  lifecycleLogCalls = [];
   vi.spyOn(console, 'log').mockImplementation(() => undefined);
   vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  vi.spyOn(serverLogger, 'info').mockImplementation((...args: readonly unknown[]) => {
+    captureLifecycleLog('info', args);
+  });
+  vi.spyOn(serverLogger, 'warn').mockImplementation((...args: readonly unknown[]) => {
+    captureLifecycleLog('warn', args);
+  });
+  vi.spyOn(serverLogger, 'error').mockImplementation((...args: readonly unknown[]) => {
+    captureLifecycleLog('error', args);
+  });
 });
 
 afterEach(async () => {
@@ -216,6 +248,47 @@ describe('POST /api/openai/translation-session', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('logs sanitized validation failure lifecycle events', async () => {
+    const fetchMock = stubOpenAIFetch();
+
+    const result = await postTranslationSession({
+      targetLanguage: 'es',
+      sourceLanguage: `Bearer ${TEST_OPENAI_API_KEY}`,
+    });
+
+    expect(result.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(getTranslationLifecycleLogRecords()).toEqual([
+      {
+        level: 'warn',
+        record: expect.objectContaining({
+          event: TRANSLATION_LIFECYCLE_EVENT,
+          phase: 'validation-failed',
+          result: 'failure',
+          route: '/api/openai/translation-session',
+          requestId: TEST_REQUEST_ID,
+          targetLanguage: 'es',
+          statusCategory: 'validation',
+          statusCode: 400,
+          errorCode: 'unsupported-request-field',
+          durationConfig: {
+            maxMinutes: 30,
+            maxSeconds: 1800,
+            defaultMinutes: 30,
+            hardMaxMinutes: 120,
+            source: 'default',
+          },
+          safetyIdentifier: {
+            status: 'deferred',
+            reason: 'no-stable-non-pii-app-identifier',
+          },
+        }),
+        message: TRANSLATION_LIFECYCLE_EVENT,
+      },
+    ]);
+    expectLifecycleLogsToBeSafe();
+  });
+
   it('returns a stable missing-key error without making an upstream request', async () => {
     delete process.env.OPENAI_API_KEY;
     const fetchMock = stubOpenAIFetch();
@@ -263,6 +336,54 @@ describe('POST /api/openai/translation-session', () => {
     ]);
     expect(JSON.stringify(result.body)).not.toContain(TEST_OPENAI_API_KEY);
     expect(JSON.stringify(result.body)).not.toContain('raw-upstream-field');
+  });
+
+  it('logs sanitized upstream request and success lifecycle events', async () => {
+    stubOpenAIFetch(async () =>
+      jsonResponse({
+        value: TEST_CLIENT_SECRET,
+        expires_at: 1893456000,
+        session: { model: OPENAI_TRANSLATION_MODEL },
+        raw_debug: `Authorization: Bearer ${TEST_OPENAI_API_KEY}`,
+        sdp: 'v=0',
+      })
+    );
+
+    const result = await postTranslationSession({ targetLanguage: 'es' });
+    const lifecycleRecords = getTranslationLifecycleLogRecords();
+
+    expect(result.status).toBe(200);
+    expect(lifecycleRecords).toHaveLength(2);
+    expect(lifecycleRecords.map((call) => call.level)).toEqual(['info', 'info']);
+    expect(lifecycleRecords.map((call) => call.record.phase)).toEqual([
+      'upstream-request',
+      'success',
+    ]);
+    expect(lifecycleRecords[0].record).toMatchObject({
+      event: TRANSLATION_LIFECYCLE_EVENT,
+      result: 'pending',
+      targetLanguage: 'es',
+      statusCategory: 'unknown',
+      durationConfig: {
+        maxMinutes: 30,
+        maxSeconds: 1800,
+        source: 'default',
+      },
+      safetyIdentifier: {
+        status: 'deferred',
+      },
+    });
+    expect(lifecycleRecords[1].record).toMatchObject({
+      event: TRANSLATION_LIFECYCLE_EVENT,
+      phase: 'success',
+      result: 'success',
+      requestId: TEST_REQUEST_ID,
+      targetLanguage: 'es',
+      statusCode: 200,
+    });
+    expectLifecycleLogsToBeSafe();
+    expect(JSON.stringify(lifecycleRecords)).not.toContain(TEST_CLIENT_SECRET);
+    expect(JSON.stringify(lifecycleRecords)).not.toContain('raw_debug');
   });
 
   it('returns a sanitized client secret from the nested OpenAI client_secret shape', async () => {
@@ -454,6 +575,43 @@ describe('POST /api/openai/translation-session', () => {
     }
   );
 
+  it('logs sanitized upstream failure lifecycle events', async () => {
+    stubOpenAIFetch(
+      async () =>
+        new Response(`raw upstream error Authorization: Bearer ${TEST_OPENAI_API_KEY} v=0`, {
+          status: 429,
+          headers: { 'Content-Type': 'text/plain' },
+        })
+    );
+
+    const result = await postTranslationSession({ targetLanguage: 'fr' });
+    const lifecycleRecords = getTranslationLifecycleLogRecords();
+
+    expect(result.status).toBe(429);
+    expect(lifecycleRecords).toHaveLength(2);
+    expect(lifecycleRecords.map((call) => call.record.phase)).toEqual([
+      'upstream-request',
+      'upstream-failed',
+    ]);
+    expect(lifecycleRecords[1]).toEqual({
+      level: 'warn',
+      message: TRANSLATION_LIFECYCLE_EVENT,
+      record: expect.objectContaining({
+        event: TRANSLATION_LIFECYCLE_EVENT,
+        phase: 'upstream-failed',
+        result: 'failure',
+        route: '/api/openai/translation-session',
+        requestId: TEST_REQUEST_ID,
+        targetLanguage: 'fr',
+        statusCategory: 'openai-rate-limit',
+        statusCode: 429,
+        errorCode: 'openai-rate-limited',
+      }),
+    });
+    expectLifecycleLogsToBeSafe();
+    expect(JSON.stringify(lifecycleRecords)).not.toContain('raw upstream error');
+  });
+
   it('maps upstream aborts to a deterministic timeout error', async () => {
     stubOpenAIFetch(async () => {
       throw createAbortError();
@@ -546,6 +704,7 @@ async function postTranslationSession(body: unknown): Promise<RouteResponse> {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      'X-Request-Id': TEST_REQUEST_ID,
     },
     body: JSON.stringify(body),
   });
@@ -577,4 +736,39 @@ function createAbortError(): Error {
   const error = new Error('The operation was aborted');
   error.name = 'AbortError';
   return error;
+}
+
+function captureLifecycleLog(
+  level: TranslationLifecycleLogCall['level'],
+  args: readonly unknown[]
+): void {
+  const [record, message] = args;
+  if (!isRecord(record) || message !== TRANSLATION_LIFECYCLE_EVENT) {
+    return;
+  }
+
+  lifecycleLogCalls.push({
+    level,
+    record,
+    message,
+  });
+}
+
+function getTranslationLifecycleLogRecords(): readonly TranslationLifecycleLogCall[] {
+  return lifecycleLogCalls;
+}
+
+function expectLifecycleLogsToBeSafe(): void {
+  expectNoOpenAITranslationSecretLeak(lifecycleLogCalls);
+  const serialized = JSON.stringify(lifecycleLogCalls);
+
+  expect(serialized).not.toContain(TEST_OPENAI_API_KEY);
+  expect(serialized).not.toContain('cookie');
+  expect(serialized).not.toContain('transcript');
+  expect(serialized).not.toContain('clientSecret');
+  expect(serialized).not.toContain('raw upstream');
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }

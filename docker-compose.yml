@@ -34,6 +34,8 @@ services:
         VITE_OPENAI_MODEL: ${VITE_OPENAI_MODEL:-gpt-realtime}
         VITE_OPENAI_VOICE: ${VITE_OPENAI_VOICE:-alloy}
         VITE_OPENAI_INSTRUCTIONS: ${VITE_OPENAI_INSTRUCTIONS:-You are a helpful voice assistant. Keep responses conversational and concise.}
+        VITE_OPENAI_TRANSLATION_ENABLED: ${VITE_OPENAI_TRANSLATION_ENABLED:-false}
+        VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES: ${VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES:-30}
         VITE_ULTRAVOX_ENABLED: ${VITE_ULTRAVOX_ENABLED:-true}
         VITE_ULTRAVOX_VOICE: ${VITE_ULTRAVOX_VOICE:-Mark}
         VITE_ULTRAVOX_INSTRUCTIONS: ${VITE_ULTRAVOX_INSTRUCTIONS:-You are a helpful voice assistant. Keep responses conversational and concise.}

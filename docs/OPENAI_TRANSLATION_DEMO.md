@@ -294,6 +294,10 @@ OpenAI Translation starts a live WebRTC session after the app obtains a
 translation client secret and exchanges SDP with OpenAI. Treat every live
 session as billable provider usage.
 
+As of the 2026-05-12 official docs re-check, `gpt-realtime-translate` is priced
+by realtime audio duration rather than text tokens. Check the current OpenAI
+pricing page before any production demo, customer demo, or long-running test.
+
 Built-in frontend guardrails:
 
 - Default max session duration: 30 minutes.
@@ -320,6 +324,20 @@ Transcript and audio posture:
 - The app does not persist translation transcripts to a database.
 - Stop, provider switch, source-ended, and max-session paths clean up the
   active translation session.
+
+Server-side operational guardrails:
+
+- `POST /api/openai/translation-session` is part of the strict token route
+  limiter and duplicate in-flight guard.
+- Translation lifecycle logs use sanitized metadata only: request ID, route,
+  target language, status category/code, result, duration config source, and
+  safety-identifier status.
+- Translation lifecycle logs exclude raw request bodies, raw upstream bodies,
+  client secrets, API keys, cookies, authorization headers, audio, transcripts,
+  and SDP payloads.
+- `OpenAI-Safety-Identifier` remains deferred until the app has a stable
+  non-PII identifier. Do not derive it from IP address, user agent, cookies,
+  authorization headers, transcripts, audio, or provider responses.
 
 Production caveats:
 

@@ -80,6 +80,9 @@ jobs:
           pull: true
           cache-from: type=gha,scope=voice-agent-production
           cache-to: type=gha,mode=max,scope=voice-agent-production
+          build-args: |
+            VITE_OPENAI_TRANSLATION_ENABLED=${{ vars.VITE_OPENAI_TRANSLATION_ENABLED || 'false' }}
+            VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES=${{ vars.VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES || '30' }}
 
       - name: Select deploy image reference
         id: deploy-image

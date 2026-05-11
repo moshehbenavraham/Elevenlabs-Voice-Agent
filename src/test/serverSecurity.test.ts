@@ -14,6 +14,7 @@ interface SecurityConfig {
 interface SecurityModule {
   readonly DEFAULT_DEV_ORIGIN: string;
   readonly DEFAULT_JSON_BODY_LIMIT: string;
+  readonly OPENAI_TRANSLATION_TOKEN_ENDPOINT_PATH: string;
   readonly TOKEN_ENDPOINT_PATHS: readonly string[];
   normalizeOrigin: (value: unknown) => string | null;
   parseAllowedOrigins: (
@@ -207,16 +208,24 @@ describe('server security utilities', () => {
   });
 
   it('publishes token endpoint coverage and blocks raw Gemini key return in production', () => {
+    expect(security.OPENAI_TRANSLATION_TOKEN_ENDPOINT_PATH).toBe('/api/openai/translation-session');
     expect(security.TOKEN_ENDPOINT_PATHS).toEqual([
       '/api/openai/session',
-      '/api/openai/translation-session',
+      security.OPENAI_TRANSLATION_TOKEN_ENDPOINT_PATH,
       '/api/xai/session',
       '/api/elevenlabs/signed-url',
       '/api/ultravox/call',
       '/api/retell/create-web-call',
       '/api/gemini/session',
     ]);
-    expect(security.TOKEN_ENDPOINT_PATHS).toContain('/api/openai/translation-session');
+    expect(security.TOKEN_ENDPOINT_PATHS).toContain(
+      security.OPENAI_TRANSLATION_TOKEN_ENDPOINT_PATH
+    );
+    expect(
+      security.TOKEN_ENDPOINT_PATHS.filter(
+        (path) => path === security.OPENAI_TRANSLATION_TOKEN_ENDPOINT_PATH
+      )
+    ).toHaveLength(1);
 
     expect(security.mapProviderError('xAI', 429)).toEqual({
       error: 'xAI API error',

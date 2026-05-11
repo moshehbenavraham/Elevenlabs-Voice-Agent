@@ -4,9 +4,10 @@ export const MAX_PROVIDER_STRING_LENGTH = 4096;
 export const MAX_SMALL_STRING_LENGTH = 256;
 export const MAX_OBJECT_KEYS = 32;
 export const MAX_OBJECT_DEPTH = 4;
+export const OPENAI_TRANSLATION_TOKEN_ENDPOINT_PATH = '/api/openai/translation-session';
 export const TOKEN_ENDPOINT_PATHS = [
   '/api/openai/session',
-  '/api/openai/translation-session',
+  OPENAI_TRANSLATION_TOKEN_ENDPOINT_PATH,
   '/api/xai/session',
   '/api/elevenlabs/signed-url',
   '/api/ultravox/call',

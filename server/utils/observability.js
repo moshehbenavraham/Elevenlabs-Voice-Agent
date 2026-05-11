@@ -1,12 +1,30 @@
 import pino from 'pino';
 import { randomUUID } from 'crypto';
 import { sanitizeLogInput } from './sanitize.js';
+import {
+  TRANSLATION_LIFECYCLE_EVENT,
+  buildTranslationLifecycleMetadata,
+} from './translationSafety.js';
 
 export const REQUEST_ID_HEADER = 'x-request-id';
 
 const DEFAULT_MAX_LATENCY_SAMPLES = 100;
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{8,128}$/;
 const STATUS_CLASSES = ['1xx', '2xx', '3xx', '4xx', '5xx'];
+export const TRANSLATION_LIFECYCLE_LOG_FIELDS = [
+  'event',
+  'phase',
+  'result',
+  'route',
+  'requestId',
+  'targetLanguage',
+  'statusCategory',
+  'statusCode',
+  'errorCode',
+  'durationConfig',
+  'safetyIdentifier',
+  'elapsedMs',
+];
 
 const isProduction = process.env.NODE_ENV === 'production';
 const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
@@ -185,6 +203,37 @@ export function getSafeRequestMetadata(req) {
       contentLength: safeContentLength(headers['content-length']),
     },
   };
+}
+
+export function createTranslationLifecycleLogRecord(input = {}) {
+  const metadata = buildTranslationLifecycleMetadata(input);
+
+  return TRANSLATION_LIFECYCLE_LOG_FIELDS.reduce((record, field) => {
+    if (metadata[field] !== undefined) {
+      record[field] = metadata[field];
+    }
+    return record;
+  }, {});
+}
+
+export function logTranslationLifecycleEvent(input = {}, options = {}) {
+  const logger = options.logger || serverLogger;
+  const record = createTranslationLifecycleLogRecord(input);
+  const message = TRANSLATION_LIFECYCLE_EVENT;
+  const statusCode = Number(record.statusCode || 0);
+
+  if (statusCode >= 500) {
+    logger.error(record, message);
+    return record;
+  }
+
+  if (record.result === 'failure') {
+    logger.warn(record, message);
+    return record;
+  }
+
+  logger.info(record, message);
+  return record;
 }
 
 export function createRequestMetrics(options = {}) {

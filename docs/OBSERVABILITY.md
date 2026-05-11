@@ -104,6 +104,39 @@ docker compose logs voice-agent | grep '<request-id>'
 npm run server
 ```
 
+## OpenAI Translation Lifecycle Logs
+
+`POST /api/openai/translation-session` emits metadata-only lifecycle events
+with event name `openai.translation.lifecycle`. These records help operators
+inspect token/session startup behavior without exposing translation content or
+provider payloads.
+
+Allowed fields:
+
+- `event`
+- `phase`
+- `result`
+- `route`
+- `requestId`
+- `targetLanguage`
+- `statusCategory`
+- `statusCode`
+- `errorCode`
+- `durationConfig`
+- `safetyIdentifier`
+- `elapsedMs`
+
+Lifecycle phases include validation failure, missing server configuration,
+upstream request start, upstream failure, upstream timeout, invalid upstream
+response, network failure, and success. `durationConfig` includes the resolved
+max-session minutes/seconds, default, hard maximum, and config source.
+`safetyIdentifier` reports only status and reason; it never logs a stable user
+identifier value.
+
+Translation lifecycle logs exclude raw request bodies, raw upstream response
+bodies, client secrets, provider API keys, cookies, authorization headers,
+audio, transcripts, and SDP payloads.
+
 ## Environment Controls
 
 Server runtime variables:
