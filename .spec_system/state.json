@@ -301,6 +301,21 @@
       "date": "2026-05-12",
       "session": "phase05-session02-evaluation-harness-and-sample-workflow",
       "status": "completed"
+    },
+    {
+      "date": "2026-05-12",
+      "session": "phase05-session03-backend-raw-audio-bridge-spike",
+      "status": "planned"
+    },
+    {
+      "date": "2026-05-12",
+      "session": "phase05-session03-backend-raw-audio-bridge-spike",
+      "status": "validated"
+    },
+    {
+      "date": "2026-05-12",
+      "session": "phase05-session03-backend-raw-audio-bridge-spike",
+      "status": "completed"
     }
   ]
 }

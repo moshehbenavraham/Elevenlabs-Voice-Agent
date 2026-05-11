@@ -24,35 +24,35 @@ A multi-provider voice AI application built with React and TypeScript, supportin
 ## System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Browser Environment                          │
-├─────────────────────────────────────────────────────────────────────┤
-│  ┌───────────────┐  ┌─────────────────────────────────────────────┐ │
-│  │   React App   │  │           Provider Layer                     │ │
-│  │ (ProviderCtx) │  │  ┌─────────────┐  ┌─────────────────────┐   │ │
-│  │               │◄─┤  │ ElevenLabs  │  │   xAI (Grok)        │   │ │
-│  │  Tab System   │  │  │ VoiceContext│  │  XAIVoiceContext    │   │ │
-│  └───────────────┘  │  └─────────────┘  └─────────────────────┘   │ │
-│         │           └─────────────────────────────────────────────┘ │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────────┐  │
-│  │ Audio Utils │  │  Web Audio  │  │      WebSocket/HTTP         │  │
-│  │ (PCM/Base64)│  │     API     │  │     Communication           │  │
-│  └─────────────┘  └─────────────┘  └─────────────────────────────┘  │
-├─────────────────────────────────────────────────────────────────────┤
-│                         Platform APIs                                │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ ┌─────────────┐  │
-│  │ getUserMedia│  │AudioWorklet │  │AudioContext │ │  WebSocket  │  │
-│  └─────────────┘  └─────────────┘  └─────────────┘ └─────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
-           │                                     │
-┌──────────┴────────────┐           ┌───────────┴────────────┐
-│   Backend (Express)   │           │      Provider APIs      │
-│  ┌─────────────────┐  │           │  ┌─────────────────┐   │
-│  │ /api/elevenlabs │  │           │  │   ElevenLabs    │   │
-│  │ /api/xai        │  │           │  │   xAI Realtime  │   │
-│  │ /api/health     │  │           │  │   (Future)      │   │
-│  └─────────────────┘  │           │  └─────────────────┘   │
-└───────────────────────┘           └────────────────────────┘
++---------------------------------------------------------------------+
+|                         Browser Environment                          |
++---------------------------------------------------------------------+
+|  +---------------+  +---------------------------------------------+ |
+|  |   React App   |  |           Provider Layer                     | |
+|  | (ProviderCtx) |  |  +-------------+  +---------------------+   | |
+|  |               |<-+  | ElevenLabs  |  |   xAI (Grok)        |   | |
+|  |  Tab System   |  |  | VoiceContext|  |  XAIVoiceContext    |   | |
+|  +---------------+  |  +-------------+  +---------------------+   | |
+|         |           +---------------------------------------------+ |
+|  +-------------+  +-------------+  +-----------------------------+  |
+|  | Audio Utils |  |  Web Audio  |  |      WebSocket/HTTP         |  |
+|  | (PCM/Base64)|  |     API     |  |     Communication           |  |
+|  +-------------+  +-------------+  +-----------------------------+  |
++---------------------------------------------------------------------+
+|                         Platform APIs                                |
+|  +-------------+  +-------------+  +-------------+ +-------------+  |
+|  | getUserMedia|  |AudioWorklet |  |AudioContext | |  WebSocket  |  |
+|  +-------------+  +-------------+  +-------------+ +-------------+  |
++---------------------------------------------------------------------+
+           |                                     |
++----------+------------+           +-----------+------------+
+|   Backend (Express)   |           |      Provider APIs      |
+|  +-----------------+  |           |  +-----------------+   |
+|  | /api/elevenlabs |  |           |  |   ElevenLabs    |   |
+|  | /api/xai        |  |           |  |   xAI Realtime  |   |
+|  | /api/health     |  |           |  |   (Future)      |   |
+|  +-----------------+  |           |  +-----------------+   |
++-----------------------+           +------------------------+
 ```
 
 ## Multi-Provider Architecture
@@ -87,14 +87,14 @@ export interface VoiceProvider {
 
 ```
 ProviderContext (active provider selection)
-    ├── ElevenLabs VoiceContext (SDK with reconnection)
-    ├── XAIVoiceContext (WebSocket + ephemeral token)
-    ├── OpenAIVoiceContext (WebSocket + ephemeral token)
-    ├── OpenAITranslationProvider (feature-flagged browser translation MVP)
-    ├── UltravoxVoiceContext (SDK with joinUrl)
-    ├── useVapiVoice (SDK with public web token)
-    ├── useRetellVoice (SDK with backend access token)
-    └── GeminiVoiceContext (WebSocket + ephemeral token + AudioWorklet)
+    |-- ElevenLabs VoiceContext (SDK with reconnection)
+    |-- XAIVoiceContext (WebSocket + ephemeral token)
+    |-- OpenAIVoiceContext (WebSocket + ephemeral token)
+    |-- OpenAITranslationProvider (feature-flagged browser translation MVP)
+    |-- UltravoxVoiceContext (SDK with joinUrl)
+    |-- useVapiVoice (SDK with public web token)
+    |-- useRetellVoice (SDK with backend access token)
+    \-- GeminiVoiceContext (WebSocket + ephemeral token + AudioWorklet)
 ```
 
 **Key Benefits**:
@@ -110,48 +110,48 @@ ProviderContext (active provider selection)
 
 ```
 App
-├── ThemeProvider
-├── ProviderProvider              # NEW: Active provider selection
-├── Router
-│   ├── Index (Main Page)
-│   │   ├── ProviderTabs          # NEW: Tab navigation for providers
-│   │   │   └── ProviderTab       # Individual tab component
-│   │   ├── ElevenLabs Provider
-│   │   │   ├── HeroSection
-│   │   │   ├── VoiceButton
-│   │   │   ├── VoiceStatus
-│   │   │   ├── VoiceVisualizer
-│   │   │   └── ElevenLabsEmptyState
-│   │   ├── xAI Provider          # xAI voice integration
-│   │   │   ├── XAIVoiceButton
-│   │   │   ├── XAIVoiceStatus
-│   │   │   ├── XAIVoiceVisualizer
-│   │   │   └── XAIEmptyState
-│   │   ├── Gemini Provider       # Gemini Live voice integration
-│   │   │   ├── GeminiButton
-│   │   │   ├── GeminiVoiceStatus
-│   │   │   ├── GeminiVoiceSelector
-│   │   │   └── GeminiEmptyState
-│   │   ├── OpenAI Translation Provider # Feature-flagged browser translation MVP
-│   │   │   └── OpenAITranslationProvider
-│   │   ├── BackgroundEffects
-│   │   └── ConfigurationDialog   # Settings modal (Phase 03)
-│   └── NotFound
-├── Settings Components           # NEW: Phase 03
-│   ├── ConfigurationDialog       # Main settings dialog
-│   ├── ProviderSettingsPanel     # Tabbed provider settings
-│   ├── OpenAISettingsTab         # OpenAI voice/prompt config
-│   ├── XAISettingsTab            # xAI voice/prompt config
-│   ├── ElevenLabsSettingsTab     # ElevenLabs info display
-│   ├── ConnectionDiagnostics     # Provider connection status
-│   └── SettingsFooter            # Reset/save actions
-├── UI Components
-│   ├── EmptyState                # Generic empty state component
-│   ├── Button, Card, Dialog
-│   └── ... (50+ shadcn/ui components)
-└── Global Components
-    ├── ThemeToggle
-    └── AnimatedText
+|-- ThemeProvider
+|-- ProviderProvider              # NEW: Active provider selection
+|-- Router
+|   |-- Index (Main Page)
+|   |   |-- ProviderTabs          # NEW: Tab navigation for providers
+|   |   |   \-- ProviderTab       # Individual tab component
+|   |   |-- ElevenLabs Provider
+|   |   |   |-- HeroSection
+|   |   |   |-- VoiceButton
+|   |   |   |-- VoiceStatus
+|   |   |   |-- VoiceVisualizer
+|   |   |   \-- ElevenLabsEmptyState
+|   |   |-- xAI Provider          # xAI voice integration
+|   |   |   |-- XAIVoiceButton
+|   |   |   |-- XAIVoiceStatus
+|   |   |   |-- XAIVoiceVisualizer
+|   |   |   \-- XAIEmptyState
+|   |   |-- Gemini Provider       # Gemini Live voice integration
+|   |   |   |-- GeminiButton
+|   |   |   |-- GeminiVoiceStatus
+|   |   |   |-- GeminiVoiceSelector
+|   |   |   \-- GeminiEmptyState
+|   |   |-- OpenAI Translation Provider # Feature-flagged browser translation MVP
+|   |   |   \-- OpenAITranslationProvider
+|   |   |-- BackgroundEffects
+|   |   \-- ConfigurationDialog   # Settings modal (Phase 03)
+|   \-- NotFound
+|-- Settings Components           # NEW: Phase 03
+|   |-- ConfigurationDialog       # Main settings dialog
+|   |-- ProviderSettingsPanel     # Tabbed provider settings
+|   |-- OpenAISettingsTab         # OpenAI voice/prompt config
+|   |-- XAISettingsTab            # xAI voice/prompt config
+|   |-- ElevenLabsSettingsTab     # ElevenLabs info display
+|   |-- ConnectionDiagnostics     # Provider connection status
+|   \-- SettingsFooter            # Reset/save actions
+|-- UI Components
+|   |-- EmptyState                # Generic empty state component
+|   |-- Button, Card, Dialog
+|   \-- ... (50+ shadcn/ui components)
+\-- Global Components
+    |-- ThemeToggle
+    \-- AnimatedText
 ```
 
 ### Component Responsibilities
@@ -186,73 +186,73 @@ App
 - CSS variable management
 - User preference persistence
 
-## 📊 Data Flow
+## Data Flow
 
 ### Voice Interaction Flow
 
 ```
-User Input → Microphone → getUserMedia → MediaRecorder →
-Audio Processing → ElevenLabs API → Voice Response →
-Audio Playback → Visual Feedback → User Interface Update
+User Input -> Microphone -> getUserMedia -> MediaRecorder ->
+Audio Processing -> ElevenLabs API -> Voice Response ->
+Audio Playback -> Visual Feedback -> User Interface Update
 ```
 
 ### State Flow
 
 ```
-User Action → Event Handler → State Update →
-Component Re-render → UI Update → Side Effects
+User Action -> Event Handler -> State Update ->
+Component Re-render -> UI Update -> Side Effects
 ```
 
 ### API Communication Flow
 
 ```
-Component → Custom Hook → API Service →
-HTTP/WebSocket → ElevenLabs API → Response →
-State Update → UI Update
+Component -> Custom Hook -> API Service ->
+HTTP/WebSocket -> ElevenLabs API -> Response ->
+State Update -> UI Update
 ```
 
-## 🎤 Voice Processing Pipeline
+## Voice Processing Pipeline
 
 ### Audio Input Pipeline
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Microphone     │───▶│  getUserMedia   │───▶│  MediaRecorder  │
-│  Permission     │    │  Audio Stream   │    │  Audio Capture  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Permission     │    │  Audio Context  │    │  Audio Buffer   │
-│  Management     │    │  Configuration  │    │  Processing     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │                       │
-                                ▼                       ▼
-                    ┌─────────────────┐    ┌─────────────────┐
-                    │  Frequency      │    │  ElevenLabs     │
-                    │  Analysis       │    │  API Request    │
-                    └─────────────────┘    └─────────────────┘
++-----------------+    +-----------------+    +-----------------+
+|  Microphone     |--->|  getUserMedia   |--->|  MediaRecorder  |
+|  Permission     |    |  Audio Stream   |    |  Audio Capture  |
++-----------------+    +-----------------+    +-----------------+
+         |                       |                       |
+         v                       v                       v
++-----------------+    +-----------------+    +-----------------+
+|  Permission     |    |  Audio Context  |    |  Audio Buffer   |
+|  Management     |    |  Configuration  |    |  Processing     |
++-----------------+    +-----------------+    +-----------------+
+                                |                       |
+                                v                       v
+                    +-----------------+    +-----------------+
+                    |  Frequency      |    |  ElevenLabs     |
+                    |  Analysis       |    |  API Request    |
+                    +-----------------+    +-----------------+
 ```
 
 ### Audio Output Pipeline
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  ElevenLabs     │───▶│  Audio Response │───▶│  Audio Element  │
-│  API Response   │    │  Processing     │    │  Playback       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Response       │    │  Audio Buffer   │    │  Volume Control │
-│  Validation     │    │  Management     │    │  & Effects      │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │                       │
-                                ▼                       ▼
-                    ┌─────────────────┐    ┌─────────────────┐
-                    │  Visualization  │    │  User Interface │
-                    │  Update         │    │  Update         │
-                    └─────────────────┘    └─────────────────┘
++-----------------+    +-----------------+    +-----------------+
+|  ElevenLabs     |--->|  Audio Response |--->|  Audio Element  |
+|  API Response   |    |  Processing     |    |  Playback       |
++-----------------+    +-----------------+    +-----------------+
+         |                       |                       |
+         v                       v                       v
++-----------------+    +-----------------+    +-----------------+
+|  Response       |    |  Audio Buffer   |    |  Volume Control |
+|  Validation     |    |  Management     |    |  & Effects      |
++-----------------+    +-----------------+    +-----------------+
+                                |                       |
+                                v                       v
+                    +-----------------+    +-----------------+
+                    |  Visualization  |    |  User Interface |
+                    |  Update         |    |  Update         |
+                    +-----------------+    +-----------------+
 ```
 
 ## State Management
@@ -372,27 +372,27 @@ class ConversationManager {
 ### API Layer Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Component Layer                          │
-├─────────────────────────────────────────────────────────────┤
-│                    Custom Hooks                             │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐  │
-│  │useElevenLabs    │  │useVoiceRecording│  │useAudioPlay │  │
-│  │Conversation     │  │                 │  │             │  │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘  │
-├─────────────────────────────────────────────────────────────┤
-│                    Service Layer                            │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐  │
-│  │ElevenLabs       │  │Audio Processing │  │Error        │  │
-│  │Service          │  │Service          │  │Handling     │  │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘  │
-├─────────────────────────────────────────────────────────────┤
-│                    SDK Layer                                │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────┐  │
-│  │ElevenLabs       │  │WebSocket        │  │HTTP Client  │  │
-│  │SDK              │  │Connection       │  │             │  │
-│  └─────────────────┘  └─────────────────┘  └─────────────┘  │
-└─────────────────────────────────────────────────────────────┘
++-------------------------------------------------------------+
+|                    Component Layer                          |
++-------------------------------------------------------------+
+|                    Custom Hooks                             |
+|  +-----------------+  +-----------------+  +-------------+  |
+|  |useElevenLabs    |  |useVoiceRecording|  |useAudioPlay |  |
+|  |Conversation     |  |                 |  |             |  |
+|  +-----------------+  +-----------------+  +-------------+  |
++-------------------------------------------------------------+
+|                    Service Layer                            |
+|  +-----------------+  +-----------------+  +-------------+  |
+|  |ElevenLabs       |  |Audio Processing |  |Error        |  |
+|  |Service          |  |Service          |  |Handling     |  |
+|  +-----------------+  +-----------------+  +-------------+  |
++-------------------------------------------------------------+
+|                    SDK Layer                                |
+|  +-----------------+  +-----------------+  +-------------+  |
+|  |ElevenLabs       |  |WebSocket        |  |HTTP Client  |  |
+|  |SDK              |  |Connection       |  |             |  |
+|  +-----------------+  +-----------------+  +-------------+  |
++-------------------------------------------------------------+
 ```
 
 ## Backend Services
@@ -403,13 +403,13 @@ The application uses an Express.js backend (port 3001) for secure API key manage
 
 ```
 server/
-├── index.js              # Main Express server
-└── routes/
-    ├── xai.js            # xAI ephemeral token endpoint
-    ├── openai.js         # OpenAI voice and translation token endpoints
-    ├── ultravox.js       # Ultravox call creation endpoint
-    ├── retell.js         # Retell web call creation endpoint
-    └── gemini.js         # Gemini ephemeral token endpoint
+|-- index.js              # Main Express server
+\-- routes/
+    |-- xai.js            # xAI ephemeral token endpoint
+    |-- openai.js         # OpenAI voice and translation token endpoints
+    |-- ultravox.js       # Ultravox call creation endpoint
+    |-- retell.js         # Retell web call creation endpoint
+    \-- gemini.js         # Gemini ephemeral token endpoint
 ```
 
 ### API Endpoints
@@ -452,25 +452,34 @@ OpenAI voice-agent context:
   feature-flagged translation tab with source selection, language selection,
   status, transcript, mix, and export controls.
 
+### Future Raw-Audio Translation Media
+
+The current translation product path remains browser WebRTC. A future backend
+raw-audio bridge is documented as architecture only in
+[Raw-Audio Bridge Spike](./ongoing-projects/raw-audio-bridge-spike.md). That
+spike covers server-side media sources such as telephony, SIP, broadcast ingest,
+or media workers, and explicitly does not ship a route, webhook, provider tab,
+or default UI path.
+
 ### xAI Token Flow
 
 ```
 Frontend                    Backend                     xAI API
-   │                          │                           │
-   │ POST /api/xai/session    │                           │
-   │─────────────────────────>│                           │
-   │                          │ POST /v1/realtime/        │
-   │                          │      client_secrets       │
-   │                          │──────────────────────────>│
-   │                          │                           │
-   │                          │ { client_secret }         │
-   │                          │<──────────────────────────│
-   │                          │                           │
-   │ { token, expiresAt }     │                           │
-   │<─────────────────────────│                           │
-   │                          │                           │
-   │ WebSocket: wss://api.x.ai/v1/realtime?model=grok-2-public
-   │─────────────────────────────────────────────────────>│
+   |                          |                           |
+   | POST /api/xai/session    |                           |
+   |------------------------->|                           |
+   |                          | POST /v1/realtime/        |
+   |                          |      client_secrets       |
+   |                          |-------------------------->|
+   |                          |                           |
+   |                          | { client_secret }         |
+   |                          |<--------------------------|
+   |                          |                           |
+   | { token, expiresAt }     |                           |
+   |<-------------------------|                           |
+   |                          |                           |
+   | WebSocket: wss://api.x.ai/v1/realtime?model=grok-2-public
+   |----------------------------------------------------->|
 ```
 
 ### Realtime Audio Processing (xAI and OpenAI)
@@ -540,7 +549,7 @@ getFID(console.log);
 getLCP(console.log);
 ```
 
-## 🔐 Security Architecture
+## Security Architecture
 
 ### API Security
 
@@ -598,7 +607,7 @@ const getUserConsent = async (): Promise<boolean> => {
 };
 ```
 
-## 📱 Mobile Architecture
+## Mobile Architecture
 
 ### Responsive Design Strategy
 
@@ -663,7 +672,7 @@ const MobileOptimizedComponent = () => {
 };
 ```
 
-## 🌐 Browser Compatibility
+## Browser Compatibility
 
 ### Feature Detection
 
@@ -718,7 +727,7 @@ if (!navigator.mediaDevices.getUserMedia) {
 }
 ```
 
-## 🔧 Build Architecture
+## Build Architecture
 
 ### Development Environment
 
@@ -762,7 +771,7 @@ export default defineConfig({
 });
 ```
 
-## 📊 Monitoring and Analytics
+## Monitoring and Analytics
 
 ### Performance Monitoring
 
@@ -795,62 +804,62 @@ class ErrorBoundary extends React.Component {
 
 ```
 src/test/
-├── setup.ts                        # Test configuration and mocks
-├── ProviderContext.test.tsx        # Provider context tests
-├── ProviderTabs.test.tsx           # Tab component tests
-├── OpenAITranslationProvider.test.tsx # Translation provider tests
-├── openaiTranslation.test.ts       # Translation config helper tests
-├── openaiTranslationRoute.test.ts  # Translation backend route tests
-├── settingsStorage.test.ts         # Settings persistence tests
-├── ConfigurationDialog.test.tsx    # Modal accessibility tests
-├── UltravoxVoiceContext.test.tsx   # Ultravox context tests
-├── UltravoxProvider.test.tsx       # Ultravox provider tests
-├── useVapiVoice.test.ts            # Vapi hook tests
-├── VapiProvider.test.tsx           # Vapi provider tests
-├── useRetellVoice.test.ts          # Retell hook tests
-├── RetellProvider.test.tsx         # Retell provider tests
-├── useGeminiVoice.test.tsx         # Gemini hook tests (41 tests)
-├── GeminiProvider.test.tsx         # Gemini provider tests (56 tests)
-├── GeminiEmptyState.test.tsx       # Gemini empty state tests (11 tests)
-└── ... (679 tests total across 33 files)
+|-- setup.ts                        # Test configuration and mocks
+|-- ProviderContext.test.tsx        # Provider context tests
+|-- ProviderTabs.test.tsx           # Tab component tests
+|-- OpenAITranslationProvider.test.tsx # Translation provider tests
+|-- openaiTranslation.test.ts       # Translation config helper tests
+|-- openaiTranslationRoute.test.ts  # Translation backend route tests
+|-- settingsStorage.test.ts         # Settings persistence tests
+|-- ConfigurationDialog.test.tsx    # Modal accessibility tests
+|-- UltravoxVoiceContext.test.tsx   # Ultravox context tests
+|-- UltravoxProvider.test.tsx       # Ultravox provider tests
+|-- useVapiVoice.test.ts            # Vapi hook tests
+|-- VapiProvider.test.tsx           # Vapi provider tests
+|-- useRetellVoice.test.ts          # Retell hook tests
+|-- RetellProvider.test.tsx         # Retell provider tests
+|-- useGeminiVoice.test.tsx         # Gemini hook tests (41 tests)
+|-- GeminiProvider.test.tsx         # Gemini provider tests (56 tests)
+|-- GeminiEmptyState.test.tsx       # Gemini empty state tests (11 tests)
+\-- ... (679 tests total across 33 files)
 
 src/lib/gemini/__tests__/
-├── audioUtils.test.ts              # PCM encoding/decoding tests (28 tests)
-├── genai-live-client.test.ts       # WebSocket client tests (26 tests)
-└── config.test.ts                  # Voice/model config tests (43 tests)
+|-- audioUtils.test.ts              # PCM encoding/decoding tests (28 tests)
+|-- genai-live-client.test.ts       # WebSocket client tests (26 tests)
+\-- config.test.ts                  # Voice/model config tests (43 tests)
 ```
 
 ### E2E Tests (Playwright)
 
 ```
 tests/e2e/
-├── fixtures/                   # Test fixtures and helpers
-│   ├── audio-mock.fixture.ts   # Audio API mocking
-│   └── index.ts
-├── page-objects/
-│   └── VoicePage.ts            # Page object model
-├── providers/                  # Provider-specific tests
-│   ├── elevenlabs.spec.ts
-│   ├── openai.spec.ts
-│   ├── xai.spec.ts
-│   └── gemini.spec.ts          # Gemini provider tests (19 tests)
-├── voice-ui/                   # Voice UI component tests
-│   ├── voice-button.spec.ts
-│   ├── voice-selector.spec.ts
-│   ├── conversation-panel.spec.ts
-│   └── function-calling.spec.ts
-├── error-handling/             # Error and reconnection tests
-│   ├── api-errors.spec.ts
-│   ├── reconnection.spec.ts
-│   └── elevenlabs-reconnection.spec.ts
-├── smoke/                      # Smoke tests
-│   ├── app-load.spec.ts
-│   ├── tab-navigation.spec.ts
-│   └── provider-render.spec.ts
-└── utils/                      # Mock utilities
-    ├── audio-mock.ts
-    ├── websocket-mock.ts
-    └── mock-server.ts
+|-- fixtures/                   # Test fixtures and helpers
+|   |-- audio-mock.fixture.ts   # Audio API mocking
+|   \-- index.ts
+|-- page-objects/
+|   \-- VoicePage.ts            # Page object model
+|-- providers/                  # Provider-specific tests
+|   |-- elevenlabs.spec.ts
+|   |-- openai.spec.ts
+|   |-- xai.spec.ts
+|   \-- gemini.spec.ts          # Gemini provider tests (19 tests)
+|-- voice-ui/                   # Voice UI component tests
+|   |-- voice-button.spec.ts
+|   |-- voice-selector.spec.ts
+|   |-- conversation-panel.spec.ts
+|   \-- function-calling.spec.ts
+|-- error-handling/             # Error and reconnection tests
+|   |-- api-errors.spec.ts
+|   |-- reconnection.spec.ts
+|   \-- elevenlabs-reconnection.spec.ts
+|-- smoke/                      # Smoke tests
+|   |-- app-load.spec.ts
+|   |-- tab-navigation.spec.ts
+|   \-- provider-render.spec.ts
+\-- utils/                      # Mock utilities
+    |-- audio-mock.ts
+    |-- websocket-mock.ts
+    \-- mock-server.ts
 ```
 
 ### Reconnection Pattern
@@ -868,7 +877,7 @@ const { reconnect, cancelReconnect, reconnectionState } = useReconnection({
 });
 ```
 
-## 🔮 Future Architecture Considerations
+## Future Architecture Considerations
 
 ### Scalability
 
@@ -891,7 +900,7 @@ const { reconnect, cancelReconnect, reconnectionState } = useReconnection({
 
 ---
 
-## 📚 Additional Resources
+## Additional Resources
 
 - [React Architecture Patterns](https://reactjs.org/docs/thinking-in-react.html)
 - [Web Audio API Documentation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)

@@ -4,7 +4,7 @@
 **Sessions**: 5
 **Estimated Duration**: 5-8 days
 
-**Progress**: 2/5 sessions (40%)
+**Progress**: 3/5 sessions (60%)
 
 ---
 
@@ -20,7 +20,7 @@ Phase 05 extends the completed browser translation MVP toward production readine
 | ------- | --------------------------------------- | ----------- | ---------- | ---------- |
 | 01      | Production Safety and Usage Controls    | Complete    | 14-20      | 2026-05-12 |
 | 02      | Evaluation Harness and Sample Workflow  | Complete    | 12-18      | 2026-05-12 |
-| 03      | Backend/Raw-Audio Bridge Spike          | Not Started | 12-18      | -          |
+| 03      | Backend/Raw-Audio Bridge Spike          | Complete    | 12-18      | 2026-05-12 |
 | 04      | Room/Telephony Translation Architecture | Not Started | 12-18      | -          |
 | 05      | External Subtitle Overlay Assessment    | Not Started | 12-16      | -          |
 
@@ -30,12 +30,12 @@ Phase 05 extends the completed browser translation MVP toward production readine
 
 1. Session 01: Production Safety and Usage Controls (validated 2026-05-12)
 2. Session 02: Evaluation Harness and Sample Workflow (validated 2026-05-12)
+3. Session 03: Backend/Raw-Audio Bridge Spike (validated 2026-05-12)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 03: Backend/Raw-Audio Bridge Spike
 - Session 04: Room/Telephony Translation Architecture
 - Session 05: External Subtitle Overlay Assessment
 
