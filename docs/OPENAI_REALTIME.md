@@ -3,7 +3,7 @@
 This document captures the current OpenAI Realtime voice-agent integration and
 the browser translation runtime in this repository. It consolidates the durable
 implementation notes from the initial OpenAI provider research and the Phase 02
-through Phase 04 translation work.
+through completed Phase 04 translation work.
 
 ## Scope
 
@@ -177,7 +177,7 @@ Completed work:
   cleanup, diagnostics, export behavior, browser smoke flows, and
   demo-readiness regressions.
 
-Phase 04 hardening status:
+Phase 04 hardening status is complete:
 
 - Lifecycle cleanup, duplicate-trigger prevention, source-ended handling, and
   provider-switch teardown are implemented.
@@ -186,6 +186,9 @@ Phase 04 hardening status:
   the translation runtime and demo-readiness paths.
 - Operational demo guidance lives in the
   [OpenAI Translation Demo Guide](./OPENAI_TRANSLATION_DEMO.md).
+
+Phase 05 is the next planned expansion. See the spec PRD for the current
+roadmap and session scope before starting a new phase.
 
 ## Configuration
 

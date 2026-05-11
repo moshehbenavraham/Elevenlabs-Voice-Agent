@@ -1,7 +1,7 @@
 # Considerations
 
 > Institutional memory for AI assistants. Updated between phases via carryforward.
-> **Line budget**: 600 max | **Last updated**: Phase 03 (2026-05-11)
+> **Line budget**: 600 max | **Last updated**: Phase 04 (2026-05-12)
 
 ---
 
@@ -11,25 +11,19 @@ Items requiring attention in upcoming phases. Review before each session.
 
 ### Technical Debt
 
-<!-- Max 5 items -->
+- [P04] **Chromium-only translation smoke coverage**: Browser smoke tests cover Chromium only. Expand to other engines only if cross-browser validation becomes a release requirement.
 
 ### External Dependencies
 
-<!-- Max 5 items -->
-
-- [P02] **OpenAI translation endpoint volatility**: Live translation still depends on `gpt-realtime-translate`, `/v1/realtime/translations/client_secrets`, and `/v1/realtime/translations/calls`. Re-check official docs before any protocol changes.
-- [P01] **Public deployment verification**: External scanner and public HTTPS verification still need a real deployment URL. Do not treat localhost verification as the final production check.
+- [P04] **Docker frontend env propagation**: The translation guide now documents build-time `VITE_OPENAI_TRANSLATION_ENABLED` and `VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES`, but Docker and Compose plumbing still must pass them into frontend builds.
+- [P02] **OpenAI translation endpoint volatility**: Live translation still depends on `gpt-realtime-translate`, `/v1/realtime/translations/client_secrets`, and `/v1/realtime/translations/calls`. Re-check official docs before any protocol change.
 
 ### Performance / Security
-
-<!-- Max 5 items -->
 
 - [P01] **Process-local rate limiting**: Production rate limiting is still process-local. Multi-instance deployments need platform-level or shared-store enforcement.
 - [P01] **Production CSP compatibility**: Security headers deliberately keep some provider allowances for current SDK behavior. Tightening CSP should be tested provider by provider.
 
 ### Architecture
-
-<!-- Max 5 items -->
 
 - [P02] **Translation protocol separation**: OpenAI live translation is not a normal OpenAI voice-agent session. Do not reuse prompt, tool, or `response.create` assumptions from the existing OpenAI provider.
 
@@ -41,8 +35,8 @@ Proven patterns and anti-patterns. Reference during implementation.
 
 ### What Worked
 
-<!-- Max 15 items -->
-
+- [P04] **Dedicated translation runbook**: Centralizing setup, demo, troubleshooting, and verification in one guide kept the operational story consistent across README, demo mode, and environment docs.
+- [P04] **Route-safe diagnostics**: Stable category/code metadata is enough for browser-visible errors as long as raw upstream payloads stay out of client state.
 - [P03] **Single-stop cleanup path**: Keeping auto-stop, manual stop, source-ended, and provider-switch teardown on one guarded path prevented duplicate cleanup and state races.
 - [P03] **Separate source capture from runtime setup**: Treating media acquisition as a distinct hook made the translation runtime easier to compose and test.
 - [P03] **Hook-owned resource boundaries**: Owning peer connection, data channel, remote stream, source tracks, abort controller, and timers in one hook kept stop and unmount deterministic.
@@ -61,8 +55,7 @@ Proven patterns and anti-patterns. Reference during implementation.
 
 ### What to Avoid
 
-<!-- Max 10 items -->
-
+- [P04] **Leaving build-time env wiring implicit**: Documentation now calls out the translation build-time flags, but Docker and Compose should not assume those variables are present unless the build path proves it.
 - [P03] **Parallel stop paths**: Duplicate cleanup entry points make auto-stop, manual stop, and unmount race each other.
 - [P00] **Implicit localhost fallback in production CORS**: Production should never inherit demo-only permissiveness or localhost defaults.
 - [P01] **Raw provider bodies in logs or responses**: Preserve stable error mapping and sanitized summaries instead of forwarding upstream payloads.
@@ -70,8 +63,7 @@ Proven patterns and anti-patterns. Reference during implementation.
 
 ### Tool/Library Notes
 
-<!-- Max 5 items -->
-
+- [P04] **Accessible diagnostic names**: E2E and provider tests should query the real accessible label exposed by the diagnostics panel, not a guessed summary label.
 - [P01] **`docker compose config`**: Use it as a fast interpolation check before trusting a deployment compose file.
 - [P01] **`npm run deploy:verify`**: Keep the verifier in the loop for health, headers, and request-ID checks after server changes.
 - [P01] **`actionlint` + YAML parsing**: Workflow linting caught CI/CD contract drift early and kept the existing job names stable.
@@ -82,15 +74,14 @@ Proven patterns and anti-patterns. Reference during implementation.
 
 Recently closed items (buffer - rotates out after 2 phases).
 
-| Phase | Item                                      | Resolution                                                                                                                                                  |
-| ----- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| P03   | Translation teardown coverage             | Phase 03 added deterministic cleanup for peer connections, data channels, remote streams, source tracks, abort controllers, and timers on stop and unmount. |
-| P02   | Translation token boundary                | Phase 02 added a dedicated translation client-secret route and kept `OPENAI_API_KEY` out of browser-visible state.                                          |
-| P01   | Demo and production CORS permissiveness   | Replaced implicit localhost fallback with strict exact-origin production CORS and same-origin defaults.                                                     |
-| P01   | Stale token/session limiter paths         | Centralized the real token/session routes and applied strict limiter coverage there.                                                                        |
-| P01   | Raw Gemini API key exposure in production | Blocked returning the raw server API key to browsers.                                                                                                       |
-| P01   | Raw function arguments/results in logs    | Sanitized function execution logs to remove raw argument and result payloads.                                                                               |
-| P00   | Unicode encoding in .env.example          | Replaced Unicode arrows with ASCII characters for shellcheck compliance.                                                                                    |
+| Phase | Item                                            | Resolution                                                                                                                                                    |
+| ----- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P04   | OpenAI Translation demo documentation gap       | Added a dedicated maintainer guide and updated README, demo mode, troubleshooting, environment, and API docs with translation setup and verification details. |
+| P04   | Translation lifecycle and diagnostics hardening | Cleanup, retryability, and sanitized failure mapping are now stable across hook, provider, source, and route layers.                                          |
+| P03   | Translation teardown coverage                   | Phase 03 added deterministic cleanup for peer connections, data channels, remote streams, source tracks, abort controllers, and timers on stop and unmount.   |
+| P03   | Translation token boundary                      | Phase 02 added a dedicated translation client-secret route and kept `OPENAI_API_KEY` out of browser-visible state.                                            |
+| P03   | Demo and production CORS permissiveness         | Replaced implicit localhost fallback with strict exact-origin production CORS and same-origin defaults.                                                       |
+| P03   | Raw Gemini API key exposure in production       | Blocked returning the raw server API key to browsers.                                                                                                         |
 
 ---
 
