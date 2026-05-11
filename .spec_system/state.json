@@ -22,7 +22,7 @@
     "2": {
       "name": "Translation Foundation",
       "description": "Establish the OpenAI Translation API contract, backend token route, shared frontend config, provider-tab scaffold, and focused backend/config tests",
-      "status": "not_started",
+      "status": "in_progress",
       "session_count": 4
     },
     "3": {
@@ -53,7 +53,8 @@
     "phase01-session02-github-actions-cicd-pipeline",
     "phase01-session03-cloud-deployment-configuration",
     "phase01-session04-monitoring-observability",
-    "phase01-session05-production-security-hardening"
+    "phase01-session05-production-security-hardening",
+    "phase02-session01-translation-api-contract-and-server-route"
   ],
   "next_session_history": [
     {
@@ -114,6 +115,16 @@
     {
       "date": "2026-05-11",
       "session": "phase01-session05-production-security-hardening",
+      "status": "completed"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase02-session01-translation-api-contract-and-server-route",
+      "status": "planned"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase02-session01-translation-api-contract-and-server-route",
       "status": "completed"
     }
   ]

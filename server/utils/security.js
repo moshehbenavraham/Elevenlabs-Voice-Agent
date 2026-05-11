@@ -6,6 +6,7 @@ export const MAX_OBJECT_KEYS = 32;
 export const MAX_OBJECT_DEPTH = 4;
 export const TOKEN_ENDPOINT_PATHS = [
   '/api/openai/session',
+  '/api/openai/translation-session',
   '/api/xai/session',
   '/api/elevenlabs/signed-url',
   '/api/ultravox/call',

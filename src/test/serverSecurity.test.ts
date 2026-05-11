@@ -209,6 +209,7 @@ describe('server security utilities', () => {
   it('publishes token endpoint coverage and blocks raw Gemini key return in production', () => {
     expect(security.TOKEN_ENDPOINT_PATHS).toEqual([
       '/api/openai/session',
+      '/api/openai/translation-session',
       '/api/xai/session',
       '/api/elevenlabs/signed-url',
       '/api/ultravox/call',

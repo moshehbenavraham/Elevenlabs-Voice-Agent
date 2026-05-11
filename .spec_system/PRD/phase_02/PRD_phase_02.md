@@ -1,10 +1,10 @@
 # PRD Phase 02: Translation Foundation
 
-**Status**: Not Started
+**Status**: In Progress
 **Sessions**: 4
 **Estimated Duration**: 2-4 days
 
-**Progress**: 0/4 sessions (0%)
+**Progress**: 1/4 sessions (25%)
 
 ---
 
@@ -16,24 +16,23 @@ Phase 02 establishes the foundation for a dedicated OpenAI live translation tab.
 
 ## Progress Tracker
 
-| Session | Name                                      | Status      | Est. Tasks | Validated |
-| ------- | ----------------------------------------- | ----------- | ---------- | --------- |
-| 01      | Translation API Contract and Server Route | Not Started | 14-18      | -         |
-| 02      | Shared Translation Config Library         | Not Started | 12-16      | -         |
-| 03      | Provider-Tab Scaffold                     | Not Started | 12-18      | -         |
-| 04      | Backend and Config Tests                  | Not Started | 14-20      | -         |
+| Session | Name                                      | Status      | Est. Tasks | Validated  |
+| ------- | ----------------------------------------- | ----------- | ---------- | ---------- |
+| 01      | Translation API Contract and Server Route | Completed   | 14-18      | 2026-05-11 |
+| 02      | Shared Translation Config Library         | Not Started | 12-16      | -          |
+| 03      | Provider-Tab Scaffold                     | Not Started | 12-18      | -          |
+| 04      | Backend and Config Tests                  | Not Started | 14-20      | -          |
 
 ---
 
 ## Completed Sessions
 
-None yet.
+1. Session 01: Translation API Contract and Server Route
 
 ---
 
 ## Upcoming Sessions
 
-- Session 01: Translation API Contract and Server Route
 - Session 02: Shared Translation Config Library
 - Session 03: Provider-Tab Scaffold
 - Session 04: Backend and Config Tests

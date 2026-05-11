@@ -1,7 +1,7 @@
 {
   "name": "voice-agent-pupuplatter",
   "private": true,
-  "version": "1.0.61",
+  "version": "1.0.62",
   "type": "module",
   "scripts": {
     "predev": "node scripts/ensure-config-stub.mjs",

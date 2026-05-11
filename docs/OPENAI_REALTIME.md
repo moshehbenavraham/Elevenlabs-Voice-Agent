@@ -1,18 +1,21 @@
 # OpenAI Realtime Voice Provider
 
-This document captures the current OpenAI Realtime voice-agent integration in
-this repository. It consolidates the durable implementation notes from the
-initial OpenAI provider research.
+This document captures the current OpenAI Realtime voice-agent integration and
+the server-side live translation client-secret boundary in this repository. It
+consolidates the durable implementation notes from the initial OpenAI provider
+research.
 
 ## Scope
 
-The OpenAI provider is a voice-agent conversation tab. It is not the planned
-OpenAI live translation tab.
+The OpenAI provider is a voice-agent conversation tab. OpenAI live translation
+uses a separate protocol surface and currently has only the backend
+client-secret route needed by a future translation tab.
 
-| Capability            | Current OpenAI voice provider  | Planned translation feature             |
+| Capability            | Current OpenAI voice provider  | Translation foundation                  |
 | --------------------- | ------------------------------ | --------------------------------------- |
+| Backend token route   | `/api/openai/session`          | `/api/openai/translation-session`       |
 | Endpoint family       | `/v1/realtime`                 | `/v1/realtime/translations`             |
-| Frontend transport    | WebSocket                      | WebRTC                                  |
+| Frontend transport    | WebSocket                      | Future WebRTC                           |
 | Default model in repo | `gpt-realtime`                 | `gpt-realtime-translate`                |
 | Main React state      | `OpenAIVoiceContext`           | Future translation hook/context         |
 | Event pattern         | Assistant turns and tool calls | Translation audio and transcript deltas |
@@ -39,6 +42,57 @@ The backend route intentionally keeps the main OpenAI API key server-side. The
 route also accepts both currently observed client-secret response shapes:
 `{ value, expires_at }` and `{ client_secret: { value, expires_at } }`.
 
+## Translation Client Secret Boundary
+
+`POST /api/openai/translation-session` creates short-lived browser credentials
+for future WebRTC translation sessions. The route validates the requested
+target output language before key lookup and before any OpenAI request.
+
+Request:
+
+```json
+{
+  "targetLanguage": "es"
+}
+```
+
+Supported target output languages:
+
+```text
+es, pt, fr, ja, ru, zh, de, ko, hi, id, vi, it, en
+```
+
+Backend behavior:
+
+1. Validate that the request body contains only `targetLanguage`.
+2. Normalize supported two-letter language codes to lowercase.
+3. Use server-side `OPENAI_API_KEY` to call
+   `POST /v1/realtime/translations/client_secrets`.
+4. Send a translation session payload with
+   `model: "gpt-realtime-translate"` and
+   `audio.output.language: "<targetLanguage>"`.
+5. Return only normalized browser-safe fields.
+
+Response:
+
+```json
+{
+  "clientSecret": "ek_...",
+  "expiresAt": "2026-05-11T15:31:00.000Z",
+  "targetLanguage": "es",
+  "model": "gpt-realtime-translate"
+}
+```
+
+The route does not return raw OpenAI response bodies, authorization headers,
+the server API key, or secret-bearing debug fields. It is included in the
+strict token rate limiter and duplicate in-flight guard through
+`TOKEN_ENDPOINT_PATHS`.
+
+The route intentionally does not create a WebRTC call, post SDP to
+`/v1/realtime/translations/calls`, render transcripts, or add a translation
+provider tab. Those pieces are owned by later translation sessions.
+
 ## Configuration
 
 Required server-side variable:
@@ -52,6 +106,7 @@ Common frontend variables:
 ```bash
 VITE_OPENAI_ENABLED=true
 VITE_OPENAI_MODEL=gpt-realtime
+VITE_OPENAI_TRANSLATION_ENABLED=false
 VITE_API_BASE_URL=http://localhost:3001
 ```
 
@@ -206,6 +261,8 @@ Use this order for OpenAI voice failures:
 ## References
 
 - [OpenAI Realtime conversations](https://developers.openai.com/api/docs/guides/realtime-conversations)
+- [OpenAI Realtime translation](https://developers.openai.com/api/docs/guides/realtime-translation)
+- [OpenAI GPT Realtime Translate model](https://developers.openai.com/api/docs/models/gpt-realtime-translate)
 - [OpenAI Realtime client events](https://developers.openai.com/api/reference/resources/realtime)
 - [OpenAI Realtime client secrets](https://developers.openai.com/api/reference/resources/realtime/subresources/client_secrets)
 - [OpenAI Realtime WebRTC guide](https://developers.openai.com/api/docs/guides/realtime-webrtc)
