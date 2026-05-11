@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   OPENAI_TRANSLATION_BACKEND_SESSION_ROUTE,
+  OPENAI_TRANSLATION_DEFAULT_AUDIO_MIX_PERCENT,
   OPENAI_TRANSLATION_ENDPOINTS,
   OPENAI_TRANSLATION_INPUT_TRANSCRIPTION_MODEL,
+  OPENAI_TRANSLATION_LANGUAGE_COUNT,
   OPENAI_TRANSLATION_MODEL,
   OPENAI_TRANSLATION_TARGET_LANGUAGES,
   assertTranslationTargetLanguage,
@@ -13,6 +15,7 @@ import {
   buildTranslationSessionUpdate,
   clampTranslationAudioMixPercent,
   getOriginalAudioVolume,
+  getTranslationTargetLanguages,
   getTranslatedAudioVolume,
   getTranslationTargetLanguage,
   getTranslationTargetLanguageCodes,
@@ -20,6 +23,30 @@ import {
   normalizeTranslationTargetLanguage,
   validateTranslationTargetLanguage,
 } from '@/lib/openaiTranslation';
+import type {
+  OpenAITranslationSessionRequestDescriptor,
+  OpenAITranslationTargetLanguage,
+} from '@/types/openai-translation';
+
+const EXPECTED_PRD_TARGET_LANGUAGES = [
+  { code: 'es', label: 'Spanish' },
+  { code: 'pt', label: 'Portuguese' },
+  { code: 'fr', label: 'French' },
+  { code: 'ja', label: 'Japanese' },
+  { code: 'ru', label: 'Russian' },
+  { code: 'zh', label: 'Chinese' },
+  { code: 'de', label: 'German' },
+  { code: 'ko', label: 'Korean' },
+  { code: 'hi', label: 'Hindi' },
+  { code: 'id', label: 'Indonesian' },
+  { code: 'vi', label: 'Vietnamese' },
+  { code: 'it', label: 'Italian' },
+  { code: 'en', label: 'English' },
+] as const satisfies readonly OpenAITranslationTargetLanguage[];
+
+const EXPECTED_PRD_TARGET_LANGUAGE_CODES = EXPECTED_PRD_TARGET_LANGUAGES.map(
+  (language) => language.code
+);
 
 describe('openaiTranslation', () => {
   describe('translation constants', () => {
@@ -35,27 +62,21 @@ describe('openaiTranslation', () => {
     });
 
     it('contains exactly the PRD target output languages in order', () => {
-      expect(getTranslationTargetLanguageCodes()).toEqual([
-        'es',
-        'pt',
-        'fr',
-        'ja',
-        'ru',
-        'zh',
-        'de',
-        'ko',
-        'hi',
-        'id',
-        'vi',
-        'it',
-        'en',
-      ]);
-      expect(new Set(getTranslationTargetLanguageCodes()).size).toBe(13);
-      expect(OPENAI_TRANSLATION_TARGET_LANGUAGES).toHaveLength(13);
+      const languageCodes = getTranslationTargetLanguageCodes();
+      const labels = OPENAI_TRANSLATION_TARGET_LANGUAGES.map((language) => language.label);
+
+      expect(languageCodes).toEqual(EXPECTED_PRD_TARGET_LANGUAGE_CODES);
+      expect(getTranslationTargetLanguages()).toEqual(EXPECTED_PRD_TARGET_LANGUAGES);
+      expect(OPENAI_TRANSLATION_TARGET_LANGUAGES).toEqual(EXPECTED_PRD_TARGET_LANGUAGES);
+      expect(OPENAI_TRANSLATION_LANGUAGE_COUNT).toBe(13);
+      expect(new Set(languageCodes).size).toBe(languageCodes.length);
+      expect(new Set(labels).size).toBe(labels.length);
     });
 
     it('uses ASCII-only English labels', () => {
       for (const language of OPENAI_TRANSLATION_TARGET_LANGUAGES) {
+        expect(language.code).toMatch(/^[a-z]{2}$/);
+        expect(language.label).toMatch(/^[\x20-\x7E]+$/);
         for (const character of language.label) {
           expect(character.charCodeAt(0)).toBeLessThanOrEqual(127);
         }
@@ -108,9 +129,15 @@ describe('openaiTranslation', () => {
       expect(clampTranslationAudioMixPercent(-5)).toBe(0);
       expect(clampTranslationAudioMixPercent(105)).toBe(100);
       expect(clampTranslationAudioMixPercent('40.5')).toBe(40.5);
+      expect(clampTranslationAudioMixPercent(33.335)).toBe(33.34);
+      expect(clampTranslationAudioMixPercent('', 25)).toBe(25);
+      expect(clampTranslationAudioMixPercent(null, 15.5)).toBe(15.5);
       expect(clampTranslationAudioMixPercent('not-number')).toBe(85);
       expect(clampTranslationAudioMixPercent(Number.NaN)).toBe(85);
       expect(clampTranslationAudioMixPercent(Number.POSITIVE_INFINITY)).toBe(85);
+      expect(clampTranslationAudioMixPercent(undefined, Number.POSITIVE_INFINITY)).toBe(
+        OPENAI_TRANSLATION_DEFAULT_AUDIO_MIX_PERCENT
+      );
     });
 
     it('builds deterministic original and translated volume state', () => {
@@ -123,8 +150,28 @@ describe('openaiTranslation', () => {
         translatedLabel: 'Translated 40.5%',
         originalLabel: 'Original 59.5%',
       });
+      expect(buildTranslationAudioMixState(33.335)).toEqual({
+        translatedPercent: 33.34,
+        originalPercent: 66.66,
+        translatedVolume: 0.3334,
+        originalVolume: 0.6666,
+        valueLabel: '33.34% translated',
+        translatedLabel: 'Translated 33.34%',
+        originalLabel: 'Original 66.66%',
+      });
+      expect(buildTranslationAudioMixState('')).toEqual({
+        translatedPercent: 85,
+        originalPercent: 15,
+        translatedVolume: 0.85,
+        originalVolume: 0.15,
+        valueLabel: '85% translated',
+        translatedLabel: 'Translated 85%',
+        originalLabel: 'Original 15%',
+      });
       expect(getTranslatedAudioVolume(25)).toBe(0.25);
       expect(getOriginalAudioVolume(25)).toBe(0.75);
+      expect(getTranslatedAudioVolume(150)).toBe(1);
+      expect(getOriginalAudioVolume(-10)).toBe(1);
     });
   });
 
@@ -201,15 +248,18 @@ describe('openaiTranslation', () => {
         targetLanguage: 'id',
       });
 
-      const descriptor = buildTranslationSessionRequestDescriptor(' VI ');
+      const descriptor: OpenAITranslationSessionRequestDescriptor =
+        buildTranslationSessionRequestDescriptor(' VI ');
       expect(descriptor.url).toBe('/api/openai/translation-session');
       expect(descriptor.init.method).toBe('POST');
       expect(descriptor.init.headers).toEqual({
         'Content-Type': 'application/json',
       });
+      expect(descriptor.init.body).toBe('{"targetLanguage":"vi"}');
       expect(JSON.parse(descriptor.init.body)).toEqual({
         targetLanguage: 'vi',
       });
+      expect(Object.keys(JSON.parse(descriptor.init.body))).toEqual(['targetLanguage']);
     });
   });
 });

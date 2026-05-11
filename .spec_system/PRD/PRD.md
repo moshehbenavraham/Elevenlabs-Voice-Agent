@@ -145,14 +145,14 @@ The next product expansion is a dedicated OpenAI live language translation tab u
 
 This system delivers the product via phases. Each phase is implemented via multiple 2-4 hour sessions (12-25 tasks each).
 
-| Phase | Name                                     | Sessions | Status      | Completed  |
-| ----- | ---------------------------------------- | -------- | ----------- | ---------- |
-| 00    | Ngrok Demo Mode Integration              | 4        | Complete    | 2026-01-18 |
-| 01    | Production Deployment & DevOps           | 5        | Complete    | 2026-05-11 |
-| 02    | Translation Foundation                   | 4        | In Progress | -          |
-| 03    | Browser Translation MVP                  | 5        | Planned     | -          |
-| 04    | Hardening, Quality, and Demo Readiness   | 5        | Planned     | -          |
-| 05    | Production Extensions and Media Variants | 5        | Planned     | -          |
+| Phase | Name                                     | Sessions | Status   | Completed  |
+| ----- | ---------------------------------------- | -------- | -------- | ---------- |
+| 00    | Ngrok Demo Mode Integration              | 4        | Complete | 2026-01-18 |
+| 01    | Production Deployment & DevOps           | 5        | Complete | 2026-05-11 |
+| 02    | Translation Foundation                   | 4        | Complete | 2026-05-11 |
+| 03    | Browser Translation MVP                  | 5        | Planned  | -          |
+| 04    | Hardening, Quality, and Demo Readiness   | 5        | Planned  | -          |
+| 05    | Production Extensions and Media Variants | 5        | Planned  | -          |
 
 ## Phase 00: Ngrok Demo Mode Integration
 
@@ -226,6 +226,8 @@ Phase 02 starts the translation work because Phases 00 and 01 are already reserv
 | 02      | Shared Translation Config Library         | Not Started | Add typed frontend constants, supported output languages, validation helpers, audio-mix helpers, and session-update builders.  | 12-16 tasks | `src/lib/openaiTranslation.ts`, `src/types/`, `src/test/`                                                                       | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/livekit-translation-demo/lib/realtime-translation-config.js`, `EXAMPLE/open-realtime-translate/src/shared/languages.ts`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/src/public/audio-mix.js` |
 | 03      | Provider-Tab Scaffold                     | Not Started | Add the new translation provider identity, feature flag, icon, empty state, and provider-switch cleanup placeholders.          | 12-18 tasks | `src/types/voice-provider.ts`, `src/contexts/ProviderContext.tsx`, `src/components/tabs/ProviderTab.tsx`, `src/pages/Index.tsx` | Existing repo OpenAI/Gemini provider patterns; reference translation labels from `EXAMPLE/open-realtime-translate/src/shared/languages.ts`                                                                                                                                                                                                                                     |
 | 04      | Backend and Config Tests                  | Not Started | Cover route validation, OpenAI response sanitization, missing key handling, language list correctness, and audio-mix clamping. | 14-20 tasks | `src/test/`, route tests under existing test conventions, `vitest.config.ts` as needed                                          | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/test/session.test.js`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/test/audio-mix.test.js`, `EXAMPLE/LinguaForge/yt-translate-poc/test/server.test.js`               |
+
+Session details archived in `.spec_system/archive/phases/phase_02/`.
 
 ## Phase 03: Browser Translation MVP
 
@@ -627,7 +629,7 @@ Do not require the user to provide an audio or video file for the baseline Phase
 - [x] Password protection active when configured via NGROK_AUTH_USER/NGROK_AUTH_PASS
 - [x] Demo card generated with shareable URLs, credentials, and quick-start instructions
 - [x] Phase 01 sessions audited and validated through the spec workflow
-- [ ] Phase 02 defines and validates the OpenAI translation backend route, shared config, provider-tab scaffold, and focused backend/config tests
+- [x] Phase 02 defines and validates the OpenAI translation backend route, shared config, provider-tab scaffold, and focused backend/config tests
 - [ ] Phase 03 delivers a usable OpenAI Translation tab with source capture, language selection, translated audio playback, transcripts, and export controls
 - [ ] Phase 04 hardens translation lifecycle cleanup, diagnostics, automated tests, and documentation to demo-ready quality
 - [ ] Phase 05 documents or prototypes production safety controls, evaluation workflow, raw-audio bridge, room/telephony architecture, and optional subtitle overlay posture

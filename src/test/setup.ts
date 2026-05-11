@@ -23,46 +23,48 @@ const mockGradient = {
 };
 
 // Mock HTMLCanvasElement.getContext to avoid jsdom warning
-HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
-  fillRect: vi.fn(),
-  clearRect: vi.fn(),
-  getImageData: vi.fn(() => ({ data: [] })),
-  putImageData: vi.fn(),
-  createImageData: vi.fn(() => []),
-  setTransform: vi.fn(),
-  drawImage: vi.fn(),
-  save: vi.fn(),
-  fillText: vi.fn(),
-  restore: vi.fn(),
-  beginPath: vi.fn(),
-  moveTo: vi.fn(),
-  lineTo: vi.fn(),
-  closePath: vi.fn(),
-  stroke: vi.fn(),
-  translate: vi.fn(),
-  scale: vi.fn(),
-  rotate: vi.fn(),
-  arc: vi.fn(),
-  fill: vi.fn(),
-  measureText: vi.fn(() => ({ width: 0 })),
-  transform: vi.fn(),
-  rect: vi.fn(),
-  clip: vi.fn(),
-  createRadialGradient: vi.fn(() => mockGradient),
-  createLinearGradient: vi.fn(() => mockGradient),
-  fillStyle: '',
-  strokeStyle: '',
-  globalAlpha: 1,
-  globalCompositeOperation: 'source-over',
-  lineWidth: 1,
-  lineCap: 'butt',
-  lineJoin: 'miter',
-  shadowBlur: 0,
-  shadowColor: 'transparent',
-  shadowOffsetX: 0,
-  shadowOffsetY: 0,
-  canvas: { width: 800, height: 600 },
-})) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+if (typeof HTMLCanvasElement !== 'undefined') {
+  HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+    fillRect: vi.fn(),
+    clearRect: vi.fn(),
+    getImageData: vi.fn(() => ({ data: [] })),
+    putImageData: vi.fn(),
+    createImageData: vi.fn(() => []),
+    setTransform: vi.fn(),
+    drawImage: vi.fn(),
+    save: vi.fn(),
+    fillText: vi.fn(),
+    restore: vi.fn(),
+    beginPath: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    closePath: vi.fn(),
+    stroke: vi.fn(),
+    translate: vi.fn(),
+    scale: vi.fn(),
+    rotate: vi.fn(),
+    arc: vi.fn(),
+    fill: vi.fn(),
+    measureText: vi.fn(() => ({ width: 0 })),
+    transform: vi.fn(),
+    rect: vi.fn(),
+    clip: vi.fn(),
+    createRadialGradient: vi.fn(() => mockGradient),
+    createLinearGradient: vi.fn(() => mockGradient),
+    fillStyle: '',
+    strokeStyle: '',
+    globalAlpha: 1,
+    globalCompositeOperation: 'source-over',
+    lineWidth: 1,
+    lineCap: 'butt',
+    lineJoin: 'miter',
+    shadowBlur: 0,
+    shadowColor: 'transparent',
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+    canvas: { width: 800, height: 600 },
+  })) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+}
 
 // Mock IntersectionObserver for components that use it
 class MockIntersectionObserver implements IntersectionObserver {
@@ -91,19 +93,21 @@ global.ResizeObserver = class ResizeObserver {
 };
 
 // Mock matchMedia for components that use it
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation((query) => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
-});
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}
 
 // Mock Web Audio API for AudioVisualizer component
 class MockAudioContext {
@@ -129,13 +133,15 @@ class MockAudioContext {
 global.AudioContext = MockAudioContext as unknown as typeof AudioContext;
 
 // Mock navigator.mediaDevices for microphone access
-Object.defineProperty(navigator, 'mediaDevices', {
-  value: {
-    getUserMedia: vi.fn().mockResolvedValue({
-      getTracks: () => [],
-    }),
-  },
-});
+if (typeof navigator !== 'undefined') {
+  Object.defineProperty(navigator, 'mediaDevices', {
+    value: {
+      getUserMedia: vi.fn().mockResolvedValue({
+        getTracks: () => [],
+      }),
+    },
+  });
+}
 
 // Mock Daily call object for Vapi SDK
 export const mockDailyCall = {

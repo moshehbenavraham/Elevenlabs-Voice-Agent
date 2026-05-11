@@ -216,6 +216,7 @@ describe('server security utilities', () => {
       '/api/retell/create-web-call',
       '/api/gemini/session',
     ]);
+    expect(security.TOKEN_ENDPOINT_PATHS).toContain('/api/openai/translation-session');
 
     expect(security.mapProviderError('xAI', 429)).toEqual({
       error: 'xAI API error',
