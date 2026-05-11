@@ -1,6 +1,12 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import type { FC, ReactNode } from 'react';
-import { type ProviderType, DEFAULT_PROVIDER, PROVIDERS } from '@/types';
+import {
+  type ProviderType,
+  DEFAULT_PROVIDER,
+  getVisibleProviderTypes,
+  isProviderAvailableInEnv,
+  isProviderType,
+} from '@/types/voice-provider';
 
 const STORAGE_KEY = 'voice-ai-provider';
 
@@ -11,7 +17,7 @@ interface ProviderContextType {
   setActiveProvider: (provider: ProviderType) => void;
   /** Check if a provider is available */
   isProviderAvailable: (provider: ProviderType) => boolean;
-  /** Get list of all provider types */
+  /** Get list of visible provider types */
   providers: ProviderType[];
 }
 
@@ -31,40 +37,48 @@ export function useProvider(): ProviderContextType {
 }
 
 /**
- * Validate and get initial provider from localStorage
- * Falls back to DEFAULT_PROVIDER if invalid or unavailable
+ * Check if a provider can be selected in the current environment.
  */
-function getInitialProvider(): ProviderType {
-  if (typeof window === 'undefined') return DEFAULT_PROVIDER;
+function isSelectableProvider(
+  provider: ProviderType,
+  visibleProviders: readonly ProviderType[]
+): boolean {
+  return visibleProviders.includes(provider) && isProviderAvailableInEnv(provider);
+}
+
+/**
+ * Get default fallback from the visible provider list.
+ */
+function getFallbackProvider(visibleProviders: readonly ProviderType[]): ProviderType {
+  if (isSelectableProvider(DEFAULT_PROVIDER, visibleProviders)) {
+    return DEFAULT_PROVIDER;
+  }
+
+  return (
+    visibleProviders.find((provider) => isProviderAvailableInEnv(provider)) ?? DEFAULT_PROVIDER
+  );
+}
+
+/**
+ * Validate and get initial provider from localStorage.
+ * Falls back to DEFAULT_PROVIDER if invalid, unavailable, or hidden.
+ */
+function getInitialProvider(visibleProviders: readonly ProviderType[]): ProviderType {
+  if (typeof window === 'undefined') return getFallbackProvider(visibleProviders);
 
   try {
     const savedProvider = localStorage.getItem(STORAGE_KEY);
 
-    // Validate saved value is a valid provider type
-    if (savedProvider && isValidProvider(savedProvider)) {
-      return savedProvider as ProviderType;
+    if (savedProvider && isProviderType(savedProvider)) {
+      return isSelectableProvider(savedProvider, visibleProviders)
+        ? savedProvider
+        : getFallbackProvider(visibleProviders);
     }
   } catch {
-    // localStorage may be unavailable (private browsing, etc.)
+    // localStorage may be unavailable in private browsing or restricted contexts.
   }
 
-  return DEFAULT_PROVIDER;
-}
-
-/**
- * Check if a value is a valid provider type
- */
-function isValidProvider(value: string): value is ProviderType {
-  return (
-    value === 'elevenlabs' ||
-    value === 'elevenlabs-sdk' ||
-    value === 'xai' ||
-    value === 'openai' ||
-    value === 'ultravox' ||
-    value === 'vapi' ||
-    value === 'retell' ||
-    value === 'gemini'
-  );
+  return getFallbackProvider(visibleProviders);
 }
 
 interface ProviderProviderProps {
@@ -76,7 +90,10 @@ interface ProviderProviderProps {
  * Persists the active provider selection to localStorage
  */
 export const ProviderProvider: FC<ProviderProviderProps> = ({ children }) => {
-  const [activeProvider, setActiveProviderState] = useState<ProviderType>(getInitialProvider);
+  const providers = useMemo(() => [...getVisibleProviderTypes()], []);
+  const [activeProvider, setActiveProviderState] = useState<ProviderType>(() =>
+    getInitialProvider(providers)
+  );
 
   // Persist to localStorage when provider changes
   useEffect(() => {
@@ -87,38 +104,37 @@ export const ProviderProvider: FC<ProviderProviderProps> = ({ children }) => {
     }
   }, [activeProvider]);
 
-  // List of all provider types
-  const providers: ProviderType[] = [
-    'elevenlabs',
-    'elevenlabs-sdk',
-    'xai',
-    'openai',
-    'ultravox',
-    'vapi',
-    'retell',
-    'gemini',
-  ];
-
   // Check if a provider is available
-  const isProviderAvailable = useCallback((provider: ProviderType): boolean => {
-    return PROVIDERS[provider]?.isAvailable ?? false;
-  }, []);
+  const isProviderAvailable = useCallback(
+    (provider: ProviderType): boolean => {
+      return providers.includes(provider) && isProviderAvailableInEnv(provider);
+    },
+    [providers]
+  );
 
   // Set active provider with validation
-  const setActiveProvider = useCallback((provider: ProviderType) => {
-    if (!isValidProvider(provider)) {
-      console.warn(`Invalid provider type: ${provider}`);
-      return;
-    }
+  const setActiveProvider = useCallback(
+    (provider: ProviderType) => {
+      if (!isProviderType(provider)) {
+        console.warn(`Invalid provider type: ${provider}`);
+        return;
+      }
 
-    // Only allow switching to available providers
-    if (!PROVIDERS[provider]?.isAvailable) {
-      console.warn(`Provider ${provider} is not available`);
-      return;
-    }
+      if (!providers.includes(provider)) {
+        console.warn(`Provider ${provider} is hidden`);
+        return;
+      }
 
-    setActiveProviderState(provider);
-  }, []);
+      // Only allow switching to available providers.
+      if (!isProviderAvailableInEnv(provider)) {
+        console.warn(`Provider ${provider} is not available`);
+        return;
+      }
+
+      setActiveProviderState(provider);
+    },
+    [providers]
+  );
 
   const value: ProviderContextType = {
     activeProvider,

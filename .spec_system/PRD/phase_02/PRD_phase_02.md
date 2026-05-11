@@ -4,7 +4,7 @@
 **Sessions**: 4
 **Estimated Duration**: 2-4 days
 
-**Progress**: 2/4 sessions (50%)
+**Progress**: 3/4 sessions (75%)
 
 ---
 
@@ -20,7 +20,7 @@ Phase 02 establishes the foundation for a dedicated OpenAI live translation tab.
 | ------- | ----------------------------------------- | ----------- | ---------- | ---------- |
 | 01      | Translation API Contract and Server Route | Completed   | 14-18      | 2026-05-11 |
 | 02      | Shared Translation Config Library         | Completed   | 12-16      | 2026-05-11 |
-| 03      | Provider-Tab Scaffold                     | Not Started | 12-18      | -          |
+| 03      | Provider-Tab Scaffold                     | Completed   | 12-18      | 2026-05-11 |
 | 04      | Backend and Config Tests                  | Not Started | 14-20      | -          |
 
 ---
@@ -29,12 +29,12 @@ Phase 02 establishes the foundation for a dedicated OpenAI live translation tab.
 
 1. Session 01: Translation API Contract and Server Route
 2. Session 02: Shared Translation Config Library
+3. Session 03: Provider-Tab Scaffold
 
 ---
 
 ## Upcoming Sessions
 
-- Session 03: Provider-Tab Scaffold
 - Session 04: Backend and Config Tests
 
 ---
@@ -95,7 +95,7 @@ Phase complete when:
 - [x] Backend translation client-secret route exists and validates target language server-side.
 - [ ] OpenAI client-secret responses are normalized and sanitized before reaching the browser.
 - [x] Shared translation config exposes the documented 13 target languages and audio mix helpers.
-- [ ] Provider tab scaffold can be feature-gated without disrupting existing providers.
+- [x] Provider tab scaffold can be feature-gated without disrupting existing providers.
 - [ ] Focused route/config tests cover validation, missing key handling, sanitization, language list correctness, and audio mix clamping.
 
 ---

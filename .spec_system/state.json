@@ -55,7 +55,8 @@
     "phase01-session04-monitoring-observability",
     "phase01-session05-production-security-hardening",
     "phase02-session01-translation-api-contract-and-server-route",
-    "phase02-session02-shared-translation-config-library"
+    "phase02-session02-shared-translation-config-library",
+    "phase02-session03-provider-tab-scaffold"
   ],
   "next_session_history": [
     {
@@ -136,6 +137,16 @@
     {
       "date": "2026-05-11",
       "session": "phase02-session02-shared-translation-config-library",
+      "status": "completed"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase02-session03-provider-tab-scaffold",
+      "status": "planned"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase02-session03-provider-tab-scaffold",
       "status": "completed"
     }
   ]

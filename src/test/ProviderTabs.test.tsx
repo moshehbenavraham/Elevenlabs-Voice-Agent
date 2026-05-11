@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ProviderTabs } from '@/components/tabs/ProviderTabs';
 import { ProviderProvider } from '@/contexts/ProviderContext';
 
@@ -35,6 +35,11 @@ describe('ProviderTabs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorageMock.clear();
+    vi.stubEnv('VITE_OPENAI_TRANSLATION_ENABLED', 'false');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   describe('rendering', () => {
@@ -53,6 +58,22 @@ describe('ProviderTabs', () => {
       expect(screen.getByRole('tab', { name: /vapi/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /retell/i })).toBeInTheDocument();
       expect(screen.getByRole('tab', { name: /gemini/i })).toBeInTheDocument();
+      expect(screen.queryByRole('tab', { name: /^openai translation$/i })).not.toBeInTheDocument();
+    });
+
+    it('renders OpenAI Translation tab when feature flag is enabled', () => {
+      vi.stubEnv('VITE_OPENAI_TRANSLATION_ENABLED', 'true');
+
+      render(
+        <TestWrapper>
+          <ProviderTabs />
+        </TestWrapper>
+      );
+
+      const translationTab = screen.getByRole('tab', { name: /^openai translation$/i });
+      expect(translationTab).toBeInTheDocument();
+      expect(translationTab).not.toBeDisabled();
+      expect(screen.getByText('Translate')).toBeInTheDocument();
     });
 
     it('renders with correct aria-label', () => {
@@ -103,6 +124,19 @@ describe('ProviderTabs', () => {
       // OpenAI is now enabled via env var
       expect(openaiTab).not.toBeDisabled();
     });
+
+    it('enables OpenAI Translation tab when VITE_OPENAI_TRANSLATION_ENABLED=true', () => {
+      vi.stubEnv('VITE_OPENAI_TRANSLATION_ENABLED', 'true');
+
+      render(
+        <TestWrapper>
+          <ProviderTabs />
+        </TestWrapper>
+      );
+
+      const translationTab = screen.getByRole('tab', { name: /^openai translation$/i });
+      expect(translationTab).not.toBeDisabled();
+    });
   });
 
   describe('interaction', () => {
@@ -140,6 +174,24 @@ describe('ProviderTabs', () => {
       // OpenAI should now be selected since it's enabled
       expect(openaiTab).toHaveAttribute('data-state', 'active');
       expect(onProviderChange).toHaveBeenCalledWith('openai');
+    });
+
+    it('switches to OpenAI Translation tab when enabled and clicked', async () => {
+      vi.stubEnv('VITE_OPENAI_TRANSLATION_ENABLED', 'true');
+      const user = userEvent.setup();
+      const onProviderChange = vi.fn();
+
+      render(
+        <TestWrapper>
+          <ProviderTabs onProviderChange={onProviderChange} />
+        </TestWrapper>
+      );
+
+      const translationTab = screen.getByRole('tab', { name: /^openai translation$/i });
+      await user.click(translationTab);
+
+      expect(translationTab).toHaveAttribute('data-state', 'active');
+      expect(onProviderChange).toHaveBeenCalledWith('openai-translation');
     });
   });
 

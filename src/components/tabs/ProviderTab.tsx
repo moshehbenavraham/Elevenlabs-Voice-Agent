@@ -5,6 +5,7 @@ import {
   AudioWaveform,
   Bot,
   Headphones,
+  Languages,
   Mic,
   PhoneCall,
   Sparkle,
@@ -61,6 +62,7 @@ const PROVIDER_ICONS: Record<ProviderType, React.ComponentType<{ className?: str
   'elevenlabs-sdk': Mic,
   xai: Bot,
   openai: Sparkles,
+  'openai-translation': Languages,
   ultravox: AudioWaveform,
   vapi: PhoneCall,
   retell: Headphones,
@@ -75,6 +77,7 @@ const MOBILE_LABELS: Record<ProviderType, string> = {
   'elevenlabs-sdk': 'SDK',
   xai: 'xAI',
   openai: 'OpenAI',
+  'openai-translation': 'Translate',
   ultravox: 'Ultravox',
   vapi: 'Vapi',
   retell: 'Retell',
@@ -136,6 +139,7 @@ export function ProviderTab({
         value={provider}
         disabled={disabled}
         title={disabled ? disabledReason : label}
+        aria-label={label}
         data-testid={`provider-tab-${provider}`}
         className={cn(
           // Base styles - min 44px touch target, mobile-first compact sizing

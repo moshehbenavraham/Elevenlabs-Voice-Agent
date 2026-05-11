@@ -65,7 +65,7 @@ interface ProviderTabsProps {
  * ARIA: Radix UI Tabs provides proper tablist/tab/tabpanel roles automatically
  */
 export function ProviderTabs({ children, className, onProviderChange }: ProviderTabsProps) {
-  const { activeProvider, setActiveProvider, providers } = useProvider();
+  const { activeProvider, setActiveProvider, isProviderAvailable, providers } = useProvider();
   const prefersReducedMotion = useReducedMotion();
   const tabListRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -111,6 +111,10 @@ export function ProviderTabs({ children, className, onProviderChange }: Provider
 
   const handleValueChange = (value: string) => {
     const provider = value as ProviderType;
+
+    if (!providers.includes(provider) || !isProviderAvailable(provider)) {
+      return;
+    }
 
     // Call optional callback for disconnect handling
     if (onProviderChange) {
@@ -174,13 +178,14 @@ export function ProviderTabs({ children, className, onProviderChange }: Provider
         >
           {providers.map((providerType) => {
             const provider = PROVIDERS[providerType];
+            const isAvailable = isProviderAvailable(providerType);
             return (
               <ProviderTab
                 key={providerType}
                 provider={providerType}
                 label={provider.name}
-                disabled={!provider.isAvailable}
-                disabledReason={!provider.isAvailable ? `${provider.name} coming soon` : undefined}
+                disabled={!isAvailable}
+                disabledReason={!isAvailable ? `${provider.name} coming soon` : undefined}
                 isActive={activeProvider === providerType}
                 reduceMotion={prefersReducedMotion}
               />

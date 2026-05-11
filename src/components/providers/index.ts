@@ -32,6 +32,8 @@ export {
   checkOpenAIConfiguration,
 } from './OpenAIProvider';
 
+export { OpenAITranslationProvider } from './OpenAITranslationProvider';
+
 export {
   UltravoxProvider,
   UltravoxVoiceButton,

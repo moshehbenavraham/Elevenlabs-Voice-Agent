@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ProviderProvider, useProvider } from '@/contexts/ProviderContext';
 import type { ReactNode } from 'react';
 
@@ -32,6 +32,11 @@ describe('ProviderContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorageMock.clear();
+    vi.stubEnv('VITE_OPENAI_TRANSLATION_ENABLED', 'false');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   describe('useProvider hook', () => {
@@ -54,6 +59,22 @@ describe('ProviderContext', () => {
         'retell',
         'gemini',
       ]);
+    });
+
+    it('hides OpenAI Translation provider when feature flag is disabled', () => {
+      const { result } = renderHook(() => useProvider(), { wrapper });
+
+      expect(result.current.providers).not.toContain('openai-translation');
+      expect(result.current.isProviderAvailable('openai-translation')).toBe(false);
+    });
+
+    it('includes OpenAI Translation provider when feature flag is enabled', () => {
+      vi.stubEnv('VITE_OPENAI_TRANSLATION_ENABLED', 'true');
+
+      const { result } = renderHook(() => useProvider(), { wrapper });
+
+      expect(result.current.providers).toContain('openai-translation');
+      expect(result.current.isProviderAvailable('openai-translation')).toBe(true);
     });
 
     it('correctly identifies available providers', () => {
@@ -92,6 +113,31 @@ describe('ProviderContext', () => {
 
       expect(result.current.activeProvider).toBe('openai');
     });
+
+    it('does not switch to OpenAI Translation when feature flag is disabled', () => {
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const { result } = renderHook(() => useProvider(), { wrapper });
+
+      act(() => {
+        result.current.setActiveProvider('openai-translation');
+      });
+
+      expect(result.current.activeProvider).toBe('elevenlabs');
+      expect(consoleWarnSpy).toHaveBeenCalledWith('Provider openai-translation is hidden');
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('switches to OpenAI Translation when feature flag is enabled', () => {
+      vi.stubEnv('VITE_OPENAI_TRANSLATION_ENABLED', 'true');
+      const { result } = renderHook(() => useProvider(), { wrapper });
+
+      act(() => {
+        result.current.setActiveProvider('openai-translation');
+      });
+
+      expect(result.current.activeProvider).toBe('openai-translation');
+    });
   });
 
   describe('localStorage persistence', () => {
@@ -115,6 +161,28 @@ describe('ProviderContext', () => {
       const { result } = renderHook(() => useProvider(), { wrapper });
 
       expect(result.current.activeProvider).toBe('elevenlabs');
+    });
+
+    it('falls back to default for saved OpenAI Translation when feature flag is disabled', () => {
+      localStorageMock.getItem.mockReturnValueOnce('openai-translation');
+
+      const { result } = renderHook(() => useProvider(), { wrapper });
+
+      expect(result.current.activeProvider).toBe('elevenlabs');
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('voice-ai-provider', 'elevenlabs');
+    });
+
+    it('uses saved OpenAI Translation when feature flag is enabled', () => {
+      vi.stubEnv('VITE_OPENAI_TRANSLATION_ENABLED', 'true');
+      localStorageMock.getItem.mockReturnValueOnce('openai-translation');
+
+      const { result } = renderHook(() => useProvider(), { wrapper });
+
+      expect(result.current.activeProvider).toBe('openai-translation');
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        'voice-ai-provider',
+        'openai-translation'
+      );
     });
   });
 

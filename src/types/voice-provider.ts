@@ -14,10 +14,26 @@ export type ProviderType =
   | 'elevenlabs-sdk'
   | 'xai'
   | 'openai'
+  | 'openai-translation'
   | 'ultravox'
   | 'vapi'
   | 'retell'
   | 'gemini';
+
+/**
+ * Canonical provider ordering for navigation.
+ */
+export const PROVIDER_ORDER = [
+  'elevenlabs',
+  'elevenlabs-sdk',
+  'xai',
+  'openai',
+  'openai-translation',
+  'ultravox',
+  'vapi',
+  'retell',
+  'gemini',
+] as const satisfies readonly ProviderType[];
 
 /**
  * Message role type for conversation messages
@@ -113,69 +129,118 @@ export interface ProviderConfig {
   disabledReason?: string;
 }
 
+function isEnabledEnvValue(value: unknown): boolean {
+  return value === 'true' || value === true;
+}
+
 /**
- * Check if ElevenLabs Widget is enabled via environment variable
+ * Check if ElevenLabs Widget is enabled via environment variable.
  */
 const isElevenLabsWidgetEnabled = (): boolean => {
-  const envValue = import.meta.env.VITE_ELEVENLABS_ENABLED;
-  return envValue === 'true' || envValue === true;
+  return isEnabledEnvValue(import.meta.env.VITE_ELEVENLABS_ENABLED);
 };
 
 /**
- * Check if ElevenLabs SDK is enabled via environment variable
+ * Check if ElevenLabs SDK is enabled via environment variable.
  */
 const isElevenLabsSDKEnabled = (): boolean => {
-  const envValue = import.meta.env.VITE_ELEVENLABS_SDK_ENABLED;
-  return envValue === 'true' || envValue === true;
+  return isEnabledEnvValue(import.meta.env.VITE_ELEVENLABS_SDK_ENABLED);
 };
 
 /**
- * Check if xAI provider is enabled via environment variable
+ * Check if xAI provider is enabled via environment variable.
  */
 const isXAIEnabled = (): boolean => {
-  const envValue = import.meta.env.VITE_XAI_ENABLED;
-  return envValue === 'true' || envValue === true;
+  return isEnabledEnvValue(import.meta.env.VITE_XAI_ENABLED);
 };
 
 /**
- * Check if OpenAI provider is enabled via environment variable
+ * Check if OpenAI provider is enabled via environment variable.
  */
 const isOpenAIEnabled = (): boolean => {
-  const envValue = import.meta.env.VITE_OPENAI_ENABLED;
-  return envValue === 'true' || envValue === true;
+  return isEnabledEnvValue(import.meta.env.VITE_OPENAI_ENABLED);
 };
 
 /**
- * Check if Ultravox provider is enabled via environment variable
+ * Check if OpenAI Translation provider is enabled via environment variable.
+ */
+export const isOpenAITranslationEnabled = (): boolean => {
+  return isEnabledEnvValue(import.meta.env.VITE_OPENAI_TRANSLATION_ENABLED);
+};
+
+/**
+ * Check if Ultravox provider is enabled via environment variable.
  */
 const isUltravoxEnabled = (): boolean => {
-  const envValue = import.meta.env.VITE_ULTRAVOX_ENABLED;
-  return envValue === 'true' || envValue === true;
+  return isEnabledEnvValue(import.meta.env.VITE_ULTRAVOX_ENABLED);
 };
 
 /**
- * Check if Vapi provider is enabled via environment variable
+ * Check if Vapi provider is enabled via environment variable.
  */
 const isVapiEnabled = (): boolean => {
-  const envValue = import.meta.env.VITE_VAPI_ENABLED;
-  return envValue === 'true' || envValue === true;
+  return isEnabledEnvValue(import.meta.env.VITE_VAPI_ENABLED);
 };
 
 /**
- * Check if Retell provider is enabled via environment variable
+ * Check if Retell provider is enabled via environment variable.
  */
 const isRetellEnabled = (): boolean => {
-  const envValue = import.meta.env.VITE_RETELL_ENABLED;
-  return envValue === 'true' || envValue === true;
+  return isEnabledEnvValue(import.meta.env.VITE_RETELL_ENABLED);
 };
 
 /**
- * Check if Gemini provider is enabled via environment variable
+ * Check if Gemini provider is enabled via environment variable.
  */
 const isGeminiEnabled = (): boolean => {
-  const envValue = import.meta.env.VITE_GEMINI_ENABLED;
-  return envValue === 'true' || envValue === true;
+  return isEnabledEnvValue(import.meta.env.VITE_GEMINI_ENABLED);
 };
+
+/**
+ * Check if a value is a valid provider type.
+ */
+export function isProviderType(value: string): value is ProviderType {
+  return PROVIDER_ORDER.includes(value as ProviderType);
+}
+
+/**
+ * Check if a provider is enabled in the current Vite environment.
+ */
+export function isProviderAvailableInEnv(provider: ProviderType): boolean {
+  switch (provider) {
+    case 'elevenlabs':
+      return isElevenLabsWidgetEnabled();
+    case 'elevenlabs-sdk':
+      return isElevenLabsSDKEnabled();
+    case 'xai':
+      return isXAIEnabled();
+    case 'openai':
+      return isOpenAIEnabled();
+    case 'openai-translation':
+      return isOpenAITranslationEnabled();
+    case 'ultravox':
+      return isUltravoxEnabled();
+    case 'vapi':
+      return isVapiEnabled();
+    case 'retell':
+      return isRetellEnabled();
+    case 'gemini':
+      return isGeminiEnabled();
+  }
+}
+
+/**
+ * Get provider tabs visible in the current environment.
+ */
+export function getVisibleProviderTypes(): readonly ProviderType[] {
+  return PROVIDER_ORDER.filter((provider) => {
+    if (provider === 'openai-translation') {
+      return isOpenAITranslationEnabled();
+    }
+
+    return true;
+  });
+}
 
 /**
  * Default provider configurations
@@ -212,6 +277,14 @@ export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
     isAvailable: isOpenAIEnabled(),
     requiresApiKey: true,
     icon: 'Sparkles',
+  },
+  'openai-translation': {
+    id: 'openai-translation',
+    name: 'OpenAI Translation',
+    description: 'Realtime speech translation scaffold',
+    isAvailable: isOpenAITranslationEnabled(),
+    requiresApiKey: true,
+    icon: 'Languages',
   },
   ultravox: {
     id: 'ultravox',
