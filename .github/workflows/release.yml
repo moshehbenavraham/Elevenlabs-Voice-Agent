@@ -67,7 +67,7 @@ jobs:
           if-no-files-found: error
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           body_path: RELEASE_NOTES.md
           generate_release_notes: false
@@ -84,7 +84,7 @@ jobs:
     if: ${{ always() && needs.release.result == 'failure' }}
     steps:
       - name: Create failure issue
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const title = `Release workflow failed for ${context.ref}`;
