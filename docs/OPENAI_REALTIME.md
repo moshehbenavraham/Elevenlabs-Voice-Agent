@@ -3,7 +3,7 @@
 This document captures the current OpenAI Realtime voice-agent integration and
 the browser translation runtime in this repository. It consolidates the durable
 implementation notes from the initial OpenAI provider research and the Phase 02
-and Phase 03 translation work.
+through Phase 04 translation work.
 
 ## Scope
 
@@ -47,7 +47,7 @@ route also accepts both currently observed client-secret response shapes:
 ## Translation Client Secret Boundary
 
 `POST /api/openai/translation-session` creates short-lived browser credentials
-for future WebRTC translation sessions. The route validates the requested
+for WebRTC translation sessions. The route validates the requested
 target output language before key lookup and before any OpenAI request.
 
 Request:
@@ -107,7 +107,7 @@ strict token rate limiter and duplicate in-flight guard through
 ## Shared Translation Config
 
 `src/lib/openaiTranslation.ts` is the frontend-safe shared config surface for
-future OpenAI translation UI and hook work. It is a pure TypeScript module with
+OpenAI translation UI and hook work. It is a pure TypeScript module with
 no React imports, DOM access, browser media ownership, WebRTC state, data
 channels, localStorage, or network calls.
 
@@ -118,7 +118,7 @@ Primary exports:
 | `OPENAI_TRANSLATION_MODEL`                     | Default model, `gpt-realtime-translate`                     |
 | `OPENAI_TRANSLATION_INPUT_TRANSCRIPTION_MODEL` | Optional source transcript model, `gpt-realtime-whisper`    |
 | `OPENAI_TRANSLATION_BACKEND_SESSION_ROUTE`     | Local route, `/api/openai/translation-session`              |
-| `OPENAI_TRANSLATION_ENDPOINTS`                 | OpenAI translation endpoint metadata for later WebRTC work  |
+| `OPENAI_TRANSLATION_ENDPOINTS`                 | OpenAI translation endpoint metadata for WebRTC runtime     |
 | `OPENAI_TRANSLATION_TARGET_LANGUAGES`          | Ordered 13-language list with ASCII English labels          |
 | `validateTranslationTargetLanguage`            | Explicit validation result for user-provided language input |
 | `normalizeTranslationTargetLanguage`           | Trim/lowercase helper that returns a supported code or null |
@@ -174,14 +174,18 @@ Completed work:
   tab when `VITE_OPENAI_TRANSLATION_ENABLED=true`.
 - Focused tests cover route validation, response sanitization, language list
   drift, audio mix clamping, token limiter coverage, source capture, runtime
-  cleanup, and export behavior.
+  cleanup, diagnostics, export behavior, browser smoke flows, and
+  demo-readiness regressions.
 
-Remaining Phase 04 work:
+Phase 04 hardening status:
 
-- Harden translation lifecycle cleanup, diagnostics, and stop-path coverage.
-- Expand automated unit, integration, and E2E coverage for browser permission
-  failures, provider switching, and demo-readiness regressions.
-- Refresh operational and documentation guidance as the hardening phase lands.
+- Lifecycle cleanup, duplicate-trigger prevention, source-ended handling, and
+  provider-switch teardown are implemented.
+- Browser, token, SDP, WebRTC, media, and offline diagnostics are implemented.
+- Unit, integration, and focused Chromium Playwright coverage are in place for
+  the translation runtime and demo-readiness paths.
+- Operational demo guidance lives in the
+  [OpenAI Translation Demo Guide](./OPENAI_TRANSLATION_DEMO.md).
 
 ## Configuration
 
@@ -197,8 +201,13 @@ Common frontend variables:
 VITE_OPENAI_ENABLED=true
 VITE_OPENAI_MODEL=gpt-realtime
 VITE_OPENAI_TRANSLATION_ENABLED=false
+VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES=30
 VITE_API_BASE_URL=http://localhost:3001
 ```
+
+For OpenAI Translation setup, local/demo run steps, browser-tab audio limits,
+and usage guardrails, see the
+[OpenAI Translation Demo Guide](./OPENAI_TRANSLATION_DEMO.md).
 
 Voice selection is managed by `src/lib/voiceConfig.ts` and persisted in
 `localStorage`. The current OpenAI voice IDs are `alloy`, `ash`, `ballad`,

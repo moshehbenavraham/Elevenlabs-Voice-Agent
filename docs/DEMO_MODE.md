@@ -232,16 +232,17 @@ Copy the Demo URL from the demo card and share it with:
 
 ### Providers That Work in Demo Mode
 
-| Provider          | Works in Demo | Notes                                |
-| ----------------- | ------------- | ------------------------------------ |
-| ElevenLabs Widget | Yes           | No changes needed                    |
-| ElevenLabs SDK    | Yes           | No changes needed                    |
-| OpenAI Realtime   | Yes           | Backend generates ephemeral tokens   |
-| xAI Grok          | Yes           | Backend generates ephemeral tokens   |
-| Ultravox          | Yes           | Backend creates call with joinUrl    |
-| Vapi              | Yes           | Frontend-only, uses public web token |
-| Retell            | Yes           | Backend generates access tokens      |
-| Gemini Live       | Yes           | Backend generates ephemeral tokens   |
+| Provider           | Works in Demo | Notes                                        |
+| ------------------ | ------------- | -------------------------------------------- |
+| ElevenLabs Widget  | Yes           | No changes needed                            |
+| ElevenLabs SDK     | Yes           | No changes needed                            |
+| OpenAI Realtime    | Yes           | Backend generates ephemeral tokens           |
+| OpenAI Translation | Yes           | Backend generates translation client secrets |
+| xAI Grok           | Yes           | Backend generates ephemeral tokens           |
+| Ultravox           | Yes           | Backend creates call with joinUrl            |
+| Vapi               | Yes           | Frontend-only, uses public web token         |
+| Retell             | Yes           | Backend generates access tokens              |
+| Gemini Live        | Yes           | Backend generates ephemeral tokens           |
 
 ### Provider Configuration for Demo
 
@@ -255,6 +256,43 @@ All providers work through ngrok tunnels. The key is that:
 ### HTTPS Requirement
 
 All voice providers require HTTPS for microphone access. ngrok tunnels provide HTTPS automatically, solving the localhost HTTPS limitation.
+
+### OpenAI Translation Demo Checks
+
+OpenAI Translation uses the same single-tunnel demo architecture as the rest of
+the app. Express serves the built frontend and `/api/*` routes on port 3001, so
+the browser calls `POST /api/openai/translation-session` through the same ngrok
+origin. Do not configure a second backend tunnel for translation demos.
+For the full runbook, see the
+[OpenAI Translation Demo Guide](./OPENAI_TRANSLATION_DEMO.md).
+
+Before starting a shared translation demo:
+
+1. Set `OPENAI_API_KEY` in `.env` for the server runtime.
+2. Set `VITE_OPENAI_TRANSLATION_ENABLED=true` before `npm run demo` builds the
+   frontend.
+3. Optionally set `VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES=30` or a shorter
+   demo-specific value.
+4. Keep `VITE_API_BASE_URL=/` or allow demo mode to generate an empty runtime
+   API base URL for same-origin requests.
+5. Start demo mode with `npm run demo`.
+
+For recipients:
+
+- If ngrok shows an interstitial page, they must click through before the app
+  can request microphone or tab permissions.
+- If `NGROK_AUTH_USER` and `NGROK_AUTH_PASS` are set, they must authenticate
+  before browser media permission prompts appear.
+- Start with `Microphone` to confirm media capture and translation startup.
+- Use `Tab audio` only in browsers that support tab capture, and choose a tab
+  that is actively playing audio with audio sharing enabled.
+- If a selected tab/window/screen exposes no audio track, the app reports the
+  no-audio-track state; choose a browser tab with share audio enabled or fall
+  back to microphone.
+
+For live OpenAI checks, confirm the usage budget before clicking Start. The
+browser receives only short-lived translation credentials; the server-side
+`OPENAI_API_KEY` must never be exposed as a `VITE_*` value or browser config.
 
 ## Troubleshooting
 

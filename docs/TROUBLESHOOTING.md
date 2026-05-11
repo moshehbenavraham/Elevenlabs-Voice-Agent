@@ -12,6 +12,7 @@ This troubleshooting guide covers common issues, error messages, and solutions f
 - [Voice and Audio Issues](#voice-and-audio-issues)
 - [API Integration Issues](#api-integration-issues)
 - [OpenAI Realtime Issues](#openai-realtime-issues)
+- [OpenAI Translation Issues](#openai-translation-issues)
 - [Vapi WebRTC Issues](#vapi-webrtc-issues)
 - [Browser Compatibility Issues](#browser-compatibility-issues)
 - [Mobile-Specific Issues](#mobile-specific-issues)
@@ -388,6 +389,100 @@ Quick checks:
 - Check development console logs for `[OpenAIVoiceContext:*]` messages.
 - If token creation returns `401`, `403`, or `429`, inspect backend logs from
   `server/routes/openai.js` before changing frontend WebSocket code.
+
+### OpenAI Translation Issues
+
+OpenAI Translation uses a separate browser WebRTC translation flow from the
+OpenAI voice-agent provider. For setup and demo runbooks, see the
+[OpenAI Translation Demo Guide](./OPENAI_TRANSLATION_DEMO.md).
+
+#### Translation tab is missing
+
+Quick checks:
+
+- Confirm `VITE_OPENAI_TRANSLATION_ENABLED=true` was present before the
+  frontend was started or built.
+- Restart Vite after changing `.env` in local development.
+- Rebuild and redeploy the production image after changing frontend `VITE_*`
+  values.
+- Confirm provider-tab tests or manual navigation are looking for the OpenAI
+  Translation tab, not the regular OpenAI voice tab.
+
+#### Client-secret request fails
+
+The browser requests `POST /api/openai/translation-session` before opening the
+WebRTC translation call.
+
+Quick checks:
+
+- Confirm `OPENAI_API_KEY` is set in the backend runtime environment.
+- Confirm the key is not exposed through any `VITE_*` variable.
+- Confirm the browser can reach `/api/openai/translation-session` through the
+  configured `VITE_API_BASE_URL`.
+- In demo mode, prefer same-origin relative requests through the ngrok URL.
+- Check backend logs from `server/routes/openai.js` for OpenAI `401`, `403`,
+  `429`, timeout, or invalid-response handling.
+- Confirm the request body contains only a supported `targetLanguage` code.
+
+#### SDP exchange fails
+
+After the app receives a translation client secret, the browser exchanges an
+SDP offer with OpenAI's translation calls endpoint.
+
+Quick checks:
+
+- Confirm the client-secret request succeeded before debugging SDP.
+- Check browser network failures to
+  `https://api.openai.com/v1/realtime/translations/calls`.
+- Retry once after transient `408`, `429`, or `5xx` responses.
+- Do not log or paste raw client secrets, authorization headers, or SDP bodies
+  into issue reports.
+- If failures persist with valid credentials and network access, capture the
+  sanitized UI diagnostic and backend status category.
+
+#### WebRTC connects but translated audio does not play
+
+Quick checks:
+
+- Confirm the page is HTTPS or localhost.
+- Confirm the browser allows autoplay after the user's Start action.
+- Check whether the translated audio element is present and not muted.
+- Stop and restart the current translation session to reset peer connection,
+  data channel, audio element, timers, and source tracks.
+- Try another browser if the issue reproduces only in one WebRTC stack.
+
+#### Offline or network interrupted
+
+Quick checks:
+
+- Confirm `navigator.onLine` and the browser network panel show connectivity.
+- Stop the current translation session before changing providers or retrying.
+- In demo mode, verify the ngrok tunnel and local Express process are still
+  running.
+- For remote demos, confirm the recipient passed the ngrok interstitial or
+  basic auth prompt before starting media capture.
+
+#### Permission denied, cancelled capture, or unsupported source
+
+Quick checks:
+
+- Microphone requires `navigator.mediaDevices.getUserMedia` in HTTPS or
+  localhost and browser/OS microphone permission.
+- Tab audio requires `navigator.mediaDevices.getDisplayMedia`, a supported
+  browser, and a share target that can expose audio.
+- If the user cancels the picker, ask them to start again; this is not an
+  OpenAI route failure.
+- If the browser reports unsupported capture, fall back to `Microphone` or use
+  a browser known to support tab audio sharing.
+
+#### Browser-tab share has no audio track
+
+Quick checks:
+
+- Choose a browser tab, not a full screen or app window, when possible.
+- Enable the browser's share-audio checkbox if it is shown.
+- Start audio playback in the source tab before sharing it.
+- If no audio track is exposed, switch to another tab or use `Microphone`.
 
 ### Vapi WebRTC Issues
 

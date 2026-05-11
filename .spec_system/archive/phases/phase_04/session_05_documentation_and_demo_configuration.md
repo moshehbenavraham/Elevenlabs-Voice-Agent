@@ -1,7 +1,7 @@
 # Session 05: Documentation and Demo Configuration
 
 **Session ID**: `phase04-session05-documentation-and-demo-configuration`
-**Status**: Not Started
+**Status**: Complete
 **Estimated Tasks**: 12-18
 **Estimated Duration**: 2-4 hours
 
@@ -34,9 +34,9 @@ Document translation environment flags, run steps, known limitations, cost and u
 
 ## Prerequisites
 
-- [ ] Sessions 01 through 04 are complete.
-- [ ] Current docs touched by out-of-band changes are reviewed before editing.
-- [ ] Environment variable names and defaults are verified against code.
+- [x] Sessions 01 through 04 are complete.
+- [x] Current docs touched by out-of-band changes are reviewed before editing.
+- [x] Environment variable names and defaults are verified against code.
 
 ---
 
@@ -52,8 +52,8 @@ Document translation environment flags, run steps, known limitations, cost and u
 
 ## Success Criteria
 
-- [ ] A maintainer can enable and run the translation tab from the docs without reading code.
-- [ ] Browser support and permission limitations are documented.
-- [ ] Demo-mode behavior is documented for local and ngrok-style runs.
-- [ ] Cost and session-duration guardrails are documented.
-- [ ] Documentation changes avoid exposing secrets or encouraging browser-side API keys.
+- [x] A maintainer can enable and run the translation tab from the docs without reading code.
+- [x] Browser support and permission limitations are documented.
+- [x] Demo-mode behavior is documented for local and ngrok-style runs.
+- [x] Cost and session-duration guardrails are documented.
+- [x] Documentation changes avoid exposing secrets or encouraging browser-side API keys.

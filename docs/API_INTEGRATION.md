@@ -2,11 +2,15 @@
 
 This guide covers the integration of ElevenLabs API with the Voice Agent application.
 
-## 🎯 Overview
+## Overview
 
 The ElevenLabs Voice Agent uses the ElevenLabs Conversational AI API to provide real-time voice interactions. This document provides comprehensive guidance on integration, configuration, and best practices.
 
-## 📋 Table of Contents
+OpenAI Translation uses a separate server-minted WebRTC translation flow. See
+the [OpenAI Translation Demo Guide](./OPENAI_TRANSLATION_DEMO.md) for
+translation setup, ngrok checks, browser capture limits, and cost guardrails.
+
+## Table of Contents
 
 - [Quick Start](#quick-start)
 - [API Setup](#api-setup)
@@ -20,7 +24,7 @@ The ElevenLabs Voice Agent uses the ElevenLabs Conversational AI API to provide 
 - [Production Considerations](#production-considerations)
 - [Troubleshooting](#troubleshooting)
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Get API Access
 
@@ -58,7 +62,7 @@ const MyComponent = () => {
 };
 ```
 
-## 🔧 API Setup
+## API Setup
 
 ### Account Requirements
 
@@ -89,7 +93,7 @@ const API_ENDPOINTS = {
 };
 ```
 
-## ⚙️ SDK Configuration
+## SDK Configuration
 
 ### Installation
 
@@ -210,7 +214,7 @@ const useElevenLabsConversation = () => {
 };
 ```
 
-## 🔐 Authentication
+## Authentication
 
 ### API Key Management
 
@@ -262,7 +266,7 @@ const validateSession = async (conversation: any): Promise<boolean> => {
 };
 ```
 
-## 💬 Conversation Management
+## Conversation Management
 
 ### Starting a Conversation with React SDK
 
@@ -453,7 +457,7 @@ const useElevenLabsConversation = () => {
 };
 ```
 
-## 🎵 Audio Processing
+## Audio Processing
 
 ### Audio Input Configuration
 
@@ -573,7 +577,7 @@ class AudioPlayer {
 }
 ```
 
-## 🚫 Error Handling
+## Error Handling
 
 ### Error Types
 
@@ -672,7 +676,7 @@ const withRetry = async <T>(
 };
 ```
 
-## ⏱️ Rate Limiting
+## Rate Limiting
 
 ### Rate Limit Configuration
 
@@ -733,7 +737,7 @@ class RateLimiter {
 }
 ```
 
-## 🧪 Testing
+## Testing
 
 ### Unit Testing React SDK
 
@@ -860,7 +864,7 @@ describe('Voice Component Integration', () => {
 });
 ```
 
-## 🏭 Production Considerations
+## Production Considerations
 
 ### Environment Configuration for React SDK
 
@@ -995,7 +999,7 @@ const OptimizedVoiceComponent = React.memo(({ agentId }: { agentId: string }) =>
 });
 ```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -1108,7 +1112,7 @@ const diagnoseError = (error: any) => {
 };
 ```
 
-## 📞 Support Resources
+## Support Resources
 
 ### ElevenLabs Resources
 
@@ -1135,4 +1139,4 @@ const diagnoseError = (error: any) => {
 **Last Updated**: January 8, 2025
 **Next Review**: April 8, 2025
 
-This integration guide provides comprehensive coverage of ElevenLabs API integration. For specific implementation questions, refer to the [support resources](#support-resources) or create an issue in the repository. 🎤
+This integration guide provides comprehensive coverage of ElevenLabs API integration. For specific implementation questions, refer to the [support resources](#support-resources) or create an issue in the repository.

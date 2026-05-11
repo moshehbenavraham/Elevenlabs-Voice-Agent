@@ -103,12 +103,13 @@ OPENAI_API_KEY=sk-your_openai_api_key_here
 VITE_OPENAI_ENABLED=true
 VITE_OPENAI_VOICE=alloy  # Options: alloy, ash, ballad, coral, echo, sage, shimmer, verse
 VITE_OPENAI_TRANSLATION_ENABLED=false  # Optional translation tab
+VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES=30  # Optional translation guard
 VITE_API_BASE_URL=http://localhost:3001
 ```
 
 OpenAI uses the Realtime API with ephemeral tokens for secure WebSocket connections. The backend generates short-lived tokens (60s expiry) so your API key is never exposed to the client.
 
-OpenAI Translation uses the same server-side `OPENAI_API_KEY` to mint browser-safe translation client secrets through `POST /api/openai/translation-session`. The tab is hidden unless `VITE_OPENAI_TRANSLATION_ENABLED=true`; the browser runtime handles microphone and browser-tab capture, WebRTC translation sessions, transcript rendering, audio mix controls, and Markdown export.
+OpenAI Translation uses the same server-side `OPENAI_API_KEY` to mint browser-safe translation client secrets through `POST /api/openai/translation-session`. The tab is hidden unless `VITE_OPENAI_TRANSLATION_ENABLED=true`; the browser runtime handles microphone and browser-tab capture, WebRTC translation sessions, transcript rendering, audio mix controls, and Markdown export. Use the [OpenAI Translation Demo Guide](docs/OPENAI_TRANSLATION_DEMO.md) for local, production/Docker, ngrok, browser-capture, and cost-guardrail checks.
 
 #### Ultravox Setup
 
@@ -190,6 +191,7 @@ This project includes comprehensive documentation:
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - System design, components, and data flow
 - **[API Integration Guide](docs/API_INTEGRATION.md)** - Voice SDK integration and best practices
 - **[OpenAI Realtime Provider](docs/OPENAI_REALTIME.md)** - OpenAI token flow, translation client-secret boundary, session events, and PCM audio pipeline
+- **[OpenAI Translation Demo Guide](docs/OPENAI_TRANSLATION_DEMO.md)** - Enable, demo, troubleshoot, and cost-bound OpenAI live translation
 - **[Voice Features Documentation](docs/VOICE_FEATURES.md)** - Voice orb, audio visualization, and voice interactions
 - **[Mobile Optimization Guide](docs/MOBILE_OPTIMIZATION.md)** - Touch interactions, PWA features, and mobile performance
 
@@ -212,21 +214,22 @@ This project includes comprehensive documentation:
 
 ### Quick Links
 
-| Type      | Documentation                                   | Description                       |
-| --------- | ----------------------------------------------- | --------------------------------- |
-| [DEPLOY]  | **[Deployment](docs/DEPLOYMENT.md)**            | Coolify, GHCR, SSH deployment     |
-| [CI]      | **[CI/CD](docs/CI_CD.md)**                      | Workflow checks and GHCR deploy   |
-| [OBS]     | **[Observability](docs/OBSERVABILITY.md)**      | Health, metrics, logs, alerts     |
-| [DEMO]    | **[Demo Mode](docs/DEMO_MODE.md)**              | ngrok demo mode setup             |
-| [ARCH]    | **[Architecture](docs/ARCHITECTURE.md)**        | Technical system design           |
-| [VOICE]   | **[Voice Features](docs/VOICE_FEATURES.md)**    | Voice AI functionality            |
-| [MOBILE]  | **[Mobile Guide](docs/MOBILE_OPTIMIZATION.md)** | Mobile optimization               |
-| [API]     | **[API Integration](docs/API_INTEGRATION.md)**  | Voice SDK integration guide       |
-| [OPENAI]  | **[OpenAI Realtime](docs/OPENAI_REALTIME.md)**  | OpenAI provider internals         |
-| [HELP]    | **[Troubleshooting](docs/TROUBLESHOOTING.md)**  | Problem resolution                |
-| [SPEC]    | **[Spec System PRD](.spec_system/PRD/PRD.md)**  | Phase roadmap and session history |
-| [CONTRIB] | **[Contributing](CONTRIBUTING.md)**             | Development guidelines            |
-| [SECURE]  | **[Security](docs/SECURITY.md)**                | Security policies                 |
+| Type      | Documentation                                             | Description                       |
+| --------- | --------------------------------------------------------- | --------------------------------- |
+| [DEPLOY]  | **[Deployment](docs/DEPLOYMENT.md)**                      | Coolify, GHCR, SSH deployment     |
+| [CI]      | **[CI/CD](docs/CI_CD.md)**                                | Workflow checks and GHCR deploy   |
+| [OBS]     | **[Observability](docs/OBSERVABILITY.md)**                | Health, metrics, logs, alerts     |
+| [DEMO]    | **[Demo Mode](docs/DEMO_MODE.md)**                        | ngrok demo mode setup             |
+| [ARCH]    | **[Architecture](docs/ARCHITECTURE.md)**                  | Technical system design           |
+| [VOICE]   | **[Voice Features](docs/VOICE_FEATURES.md)**              | Voice AI functionality            |
+| [MOBILE]  | **[Mobile Guide](docs/MOBILE_OPTIMIZATION.md)**           | Mobile optimization               |
+| [API]     | **[API Integration](docs/API_INTEGRATION.md)**            | Voice SDK integration guide       |
+| [OPENAI]  | **[OpenAI Realtime](docs/OPENAI_REALTIME.md)**            | OpenAI provider internals         |
+| [TRANS]   | **[OpenAI Translation](docs/OPENAI_TRANSLATION_DEMO.md)** | Translation demo runbook          |
+| [HELP]    | **[Troubleshooting](docs/TROUBLESHOOTING.md)**            | Problem resolution                |
+| [SPEC]    | **[Spec System PRD](.spec_system/PRD/PRD.md)**            | Phase roadmap and session history |
+| [CONTRIB] | **[Contributing](CONTRIBUTING.md)**                       | Development guidelines            |
+| [SECURE]  | **[Security](docs/SECURITY.md)**                          | Security policies                 |
 
 ## [START] Quick Start
 
@@ -846,6 +849,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Current Version**: v1.0.31
+**Current Version**: v1.0.75
 
 **[!] Important**: For production use, implement proper API key management and server-side authentication for providers requiring backend support.

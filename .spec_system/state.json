@@ -34,7 +34,7 @@
     "4": {
       "name": "Hardening, Quality, and Demo Readiness",
       "description": "Harden translation lifecycle cleanup, diagnostics, unit/integration/E2E coverage, and documentation for repeated local demos",
-      "status": "in_progress",
+      "status": "complete",
       "session_count": 5
     },
     "5": {
@@ -66,7 +66,8 @@
     "phase04-session01-lifecycle-reliability",
     "phase04-session02-error-states-and-diagnostics",
     "phase04-session03-unit-and-integration-coverage",
-    "phase04-session04-e2e-and-browser-smoke-tests"
+    "phase04-session04-e2e-and-browser-smoke-tests",
+    "phase04-session05-documentation-and-demo-configuration"
   ],
   "next_session_history": [
     {
@@ -257,6 +258,21 @@
     {
       "date": "2026-05-11",
       "session": "phase04-session04-e2e-and-browser-smoke-tests",
+      "status": "completed"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase04-session05-documentation-and-demo-configuration",
+      "status": "planned"
+    },
+    {
+      "date": "2026-05-12",
+      "session": "phase04-session05-documentation-and-demo-configuration",
+      "status": "validated"
+    },
+    {
+      "date": "2026-05-12",
+      "session": "phase04-session05-documentation-and-demo-configuration",
       "status": "completed"
     }
   ]

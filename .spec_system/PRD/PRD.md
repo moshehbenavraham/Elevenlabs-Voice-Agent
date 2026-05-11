@@ -4,9 +4,9 @@
 
 Voice-Agent-PuPuPlatter is a multi-provider voice AI demo platform showcasing real-time voice integrations with ElevenLabs, OpenAI Realtime, xAI Grok, Ultravox, Vapi, Retell, and Google Gemini Live APIs. The platform provides a unified glassmorphism UI for demonstrating and comparing voice AI providers with WebSocket-based real-time conversations, audio visualization, and function calling capabilities.
 
-This PRD was reconciled against the repository on 2026-05-11 after out-of-band implementation work. Phase 00 is complete. Phase 01 is complete after formal Phase 01 validation and update workflow closure. Phase 03 is complete after formal validation and update workflow closure. Phase 04 has started, and Sessions 01 through 03 are complete after validation and update workflow closure.
+This PRD was reconciled against the repository on 2026-05-12 after formal Phase 04 validation and update workflow closure. Phases 00 through 04 are complete. Phase 05 remains planned as the next product expansion.
 
-The next product expansion is Phase 04 hardening for the dedicated OpenAI live language translation tab using `gpt-realtime-translate`. This feature is intentionally separate from the existing OpenAI voice-agent provider because OpenAI's live translation API uses dedicated `/v1/realtime/translations` sessions, browser WebRTC media, translated audio as a remote track, and transcript deltas over an `oai-events` data channel instead of normal assistant turns, tools, prompts, or `response.create`.
+The completed OpenAI live language translation tab uses `gpt-realtime-translate` and remains intentionally separate from the existing OpenAI voice-agent provider because OpenAI's live translation API uses dedicated `/v1/realtime/translations` sessions, browser WebRTC media, translated audio as a remote track, and transcript deltas over an `oai-events` data channel instead of normal assistant turns, tools, prompts, or `response.create`.
 
 ## Goals
 
@@ -145,14 +145,14 @@ The next product expansion is Phase 04 hardening for the dedicated OpenAI live l
 
 This system delivers the product via phases. Each phase is implemented via multiple 2-4 hour sessions (12-25 tasks each).
 
-| Phase | Name                                     | Sessions | Status      | Completed  |
-| ----- | ---------------------------------------- | -------- | ----------- | ---------- |
-| 00    | Ngrok Demo Mode Integration              | 4        | Complete    | 2026-01-18 |
-| 01    | Production Deployment & DevOps           | 5        | Complete    | 2026-05-11 |
-| 02    | Translation Foundation                   | 4        | Complete    | 2026-05-11 |
-| 03    | Browser Translation MVP                  | 5        | Complete    | 2026-05-11 |
-| 04    | Hardening, Quality, and Demo Readiness   | 5        | In Progress | -          |
-| 05    | Production Extensions and Media Variants | 5        | Planned     | -          |
+| Phase | Name                                     | Sessions | Status   | Completed  |
+| ----- | ---------------------------------------- | -------- | -------- | ---------- |
+| 00    | Ngrok Demo Mode Integration              | 4        | Complete | 2026-01-18 |
+| 01    | Production Deployment & DevOps           | 5        | Complete | 2026-05-11 |
+| 02    | Translation Foundation                   | 4        | Complete | 2026-05-11 |
+| 03    | Browser Translation MVP                  | 5        | Complete | 2026-05-11 |
+| 04    | Hardening, Quality, and Demo Readiness   | 5        | Complete | 2026-05-12 |
+| 05    | Production Extensions and Media Variants | 5        | Planned  | -          |
 
 ## Phase 00: Ngrok Demo Mode Integration
 
@@ -269,19 +269,23 @@ Session details for Phase 03 are archived in `.spec_system/archive/phases/phase_
 
 ### Sessions
 
-| Session | Name                                 | Status      | Clear Objective                                                                                                                           | Target Size | Primary Repo Touchpoints                                                                                                 | EXAMPLE/ References                                                                                                                                                                                                                                                                                      |
-| ------- | ------------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 01      | Lifecycle Reliability                | Complete    | Harden start/stop, tab switching, abort handling, track cleanup, peer-connection cleanup, and duplicate-start protection.                 | 16-22 tasks | `src/hooks/useOpenAITranslation.ts`, `src/pages/Index.tsx`, provider cleanup code                                        | `EXAMPLE/LinguaForge/yt-translate-poc/public/index.html`, `EXAMPLE/open-realtime-translate/src/offscreen/offscreen.ts`                                                                                                                                                                                   |
-| 02      | Error States and Diagnostics         | Not Started | Add user-facing errors for unsupported browser APIs, token failures, SDP failures, WebRTC connection failures, and missing audio tracks.  | 14-20 tasks | `src/components/providers/OpenAITranslationProvider.tsx`, `src/hooks/useOpenAITranslation.ts`, `server/routes/openai.js` | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/src/public/app.js`, `EXAMPLE/LinguaForge/yt-translate-poc/public/index.html`                                                                                                  |
-| 03      | Unit and Integration Coverage        | Not Started | Add focused tests for config, event parsing, hook cleanup, capture option construction, route validation, and transcript export.          | 18-24 tasks | `src/test/`, `server/` route tests, `tests/e2e/utils/` as needed                                                         | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/test/`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/livekit-translation-demo/test/realtime-translation-config.test.mjs` |
-| 04      | E2E and Browser Smoke Tests          | Not Started | Add Playwright coverage for tab visibility, disabled states, permission failure UX, provider switching cleanup, and mocked WebRTC events. | 16-22 tasks | `tests/e2e/`, `tests/e2e/page-objects/VoicePage.ts`, `tests/e2e/utils/`                                                  | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/scripts/smoke-realtime.mjs`, `EXAMPLE/LinguaForge/yt-translate-poc/test/index-html.test.js`                                                                                   |
-| 05      | Documentation and Demo Configuration | Not Started | Document environment flags, run steps, known limitations, cost/usage notes, and demo-mode behavior.                                       | 12-18 tasks | `README.md`, `docs/DEMO_MODE.md`, `docs/API_INTEGRATION.md`, `.env.example`                                              | `EXAMPLE/README.md`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/README.md`, `EXAMPLE/LinguaForge/README.md`, `EXAMPLE/open-realtime-translate/README.md`                                                                 |
+| Session | Name                                 | Status   | Clear Objective                                                                                                                           | Target Size | Primary Repo Touchpoints                                                                                                 | EXAMPLE/ References                                                                                                                                                                                                                                                                                      |
+| ------- | ------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01      | Lifecycle Reliability                | Complete | Harden start/stop, tab switching, abort handling, track cleanup, peer-connection cleanup, and duplicate-start protection.                 | 16-22 tasks | `src/hooks/useOpenAITranslation.ts`, `src/pages/Index.tsx`, provider cleanup code                                        | `EXAMPLE/LinguaForge/yt-translate-poc/public/index.html`, `EXAMPLE/open-realtime-translate/src/offscreen/offscreen.ts`                                                                                                                                                                                   |
+| 02      | Error States and Diagnostics         | Complete | Add user-facing errors for unsupported browser APIs, token failures, SDP failures, WebRTC connection failures, and missing audio tracks.  | 14-20 tasks | `src/components/providers/OpenAITranslationProvider.tsx`, `src/hooks/useOpenAITranslation.ts`, `server/routes/openai.js` | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/src/public/app.js`, `EXAMPLE/LinguaForge/yt-translate-poc/public/index.html`                                                                                                  |
+| 03      | Unit and Integration Coverage        | Complete | Add focused tests for config, event parsing, hook cleanup, capture option construction, route validation, and transcript export.          | 18-24 tasks | `src/test/`, `server/` route tests, `tests/e2e/utils/` as needed                                                         | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/test/`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/livekit-translation-demo/test/realtime-translation-config.test.mjs` |
+| 04      | E2E and Browser Smoke Tests          | Complete | Add Playwright coverage for tab visibility, disabled states, permission failure UX, provider switching cleanup, and mocked WebRTC events. | 16-22 tasks | `tests/e2e/`, `tests/e2e/page-objects/VoicePage.ts`, `tests/e2e/utils/`                                                  | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/scripts/smoke-realtime.mjs`, `EXAMPLE/LinguaForge/yt-translate-poc/test/index-html.test.js`                                                                                   |
+| 05      | Documentation and Demo Configuration | Complete | Document environment flags, run steps, known limitations, cost/usage notes, and demo-mode behavior.                                       | 12-18 tasks | `README.md`, `docs/DEMO_MODE.md`, `docs/API_INTEGRATION.md`, `.env.example`                                              | `EXAMPLE/README.md`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/README.md`, `EXAMPLE/LinguaForge/README.md`, `EXAMPLE/open-realtime-translate/README.md`                                                                 |
 
-Session details in `.spec_system/PRD/phase_04/`.
+Session details archived in `.spec_system/archive/phases/phase_04/`.
 
 ### Completed Sessions
 
 1. Session 01: Lifecycle Reliability (validated 2026-05-11)
+2. Session 02: Error States and Diagnostics (validated 2026-05-11)
+3. Session 03: Unit and Integration Coverage (validated 2026-05-11)
+4. Session 04: E2E and Browser Smoke Tests (validated 2026-05-11)
+5. Session 05: Documentation and Demo Configuration (validated 2026-05-12)
 
 ## Phase 05: Production Extensions and Media Variants
 
@@ -646,15 +650,15 @@ Do not require the user to provide an audio or video file for the baseline Phase
 - [x] Demo card generated with shareable URLs, credentials, and quick-start instructions
 - [x] Phase 01 sessions audited and validated through the spec workflow
 - [x] Phase 02 defines and validates the OpenAI translation backend route, shared config, provider-tab scaffold, and focused backend/config tests
-- [ ] Phase 03 delivers a usable OpenAI Translation tab with source capture, language selection, translated audio playback, transcripts, and export controls
-- [ ] Phase 04 hardens translation lifecycle cleanup, diagnostics, automated tests, and documentation to demo-ready quality
+- [x] Phase 03 delivers a usable OpenAI Translation tab with source capture, language selection, translated audio playback, transcripts, and export controls
+- [x] Phase 04 hardens translation lifecycle cleanup, diagnostics, automated tests, and documentation to demo-ready quality
 - [ ] Phase 05 documents or prototypes production safety controls, evaluation workflow, raw-audio bridge, room/telephony architecture, and optional subtitle overlay posture
-- [ ] Translation client secrets are minted only server-side and sanitized before reaching the browser
-- [ ] Translation sessions use WebRTC for browser media and the dedicated `/v1/realtime/translations/calls` endpoint
-- [ ] The first shipping translation MVP supports both microphone and browser-tab source modes, with browser-tab as the primary demo path and microphone as the quick-test/fallback path
-- [ ] Translation demos enforce a 30-minute default max-session guard and document any shorter test-mode override or longer local-demo configuration
+- [x] Translation client secrets are minted only server-side and sanitized before reaching the browser
+- [x] Translation sessions use WebRTC for browser media and the dedicated `/v1/realtime/translations/calls` endpoint
+- [x] The first shipping translation MVP supports both microphone and browser-tab source modes, with browser-tab as the primary demo path and microphone as the quick-test/fallback path
+- [x] Translation demos enforce a 30-minute default max-session guard and document any shorter test-mode override or longer local-demo configuration
 - [ ] Phase 05 evaluation can run from committed non-sensitive golden scripts/fixtures without requiring private user-provided media
-- [ ] Existing provider tabs continue to work after translation feature integration
+- [x] Existing provider tabs continue to work after translation feature integration
 
 ## Risks
 
