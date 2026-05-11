@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-12",
+  "description": "Repository-owned OpenAI Translation evaluation fixture metadata.",
+  "privacy": {
+    "requiresPrivateMedia": false,
+    "privateMediaPath": "tests/fixtures/translation/local/",
+    "localOutputPaths": ["tests/fixtures/translation/outputs/", "tests/fixtures/translation/runs/"],
+    "disallowedCommittedData": [
+      "customer media",
+      "private meeting recordings",
+      "raw provider payloads",
+      "api keys",
+      "cookies",
+      "authorization headers",
+      "unsanitized transcripts"
+    ]
+  },
+  "documents": [
+    {
+      "path": "docs/ongoing-projects/translation-evaluation.md",
+      "requiredHeadings": [
+        "Prerequisites",
+        "Safety And Budget Gates",
+        "Golden-Script Workflow",
+        "Latency Checkpoints",
+        "Manual Review Rubric",
+        "Private Local Media",
+        "Future CI Candidates"
+      ]
+    },
+    {
+      "path": "tests/fixtures/translation/README.md",
+      "requiredHeadings": [
+        "Committed Baseline",
+        "Local-Only Paths",
+        "Fixture States",
+        "Recording Or Generation Rules",
+        "Review Boundary"
+      ]
+    },
+    {
+      "path": "tests/fixtures/translation/golden-scripts.md",
+      "requiredHeadings": [
+        "Script ID: general-status-brief",
+        "Script ID: technical-release-check",
+        "Script ID: names-numbers-dates",
+        "Script ID: mixed-language-handoff"
+      ]
+    }
+  ],
+  "targetLanguages": [
+    { "code": "es", "label": "Spanish", "baseline": true },
+    { "code": "pt", "label": "Portuguese", "baseline": true },
+    { "code": "fr", "label": "French", "baseline": true },
+    { "code": "ja", "label": "Japanese", "baseline": true },
+    { "code": "ru", "label": "Russian", "baseline": false },
+    { "code": "zh", "label": "Chinese", "baseline": true },
+    { "code": "de", "label": "German", "baseline": true },
+    { "code": "ko", "label": "Korean", "baseline": true },
+    { "code": "hi", "label": "Hindi", "baseline": true },
+    { "code": "id", "label": "Indonesian", "baseline": false },
+    { "code": "vi", "label": "Vietnamese", "baseline": false },
+    { "code": "it", "label": "Italian", "baseline": true },
+    { "code": "en", "label": "English", "baseline": true }
+  ],
+  "latencyCheckpoints": [
+    {
+      "id": "capture-start",
+      "label": "Capture start",
+      "manual": true,
+      "targetMs": 3000,
+      "description": "Time from clicking Start to browser source capture becoming active."
+    },
+    {
+      "id": "translated-audio-ready",
+      "label": "Translated audio ready",
+      "manual": true,
+      "targetMs": 10000,
+      "description": "Time from first spoken phrase to translated audio playback becoming audible or ready."
+    },
+    {
+      "id": "transcript-delta",
+      "label": "Transcript delta",
+      "manual": true,
+      "targetMs": 10000,
+      "description": "Time from first spoken phrase to source or translated transcript text appearing."
+    },
+    {
+      "id": "session-stop",
+      "label": "Session stop",
+      "manual": true,
+      "targetMs": 3000,
+      "description": "Time from clicking Stop to current translation session cleanup completing."
+    }
+  ],
+  "fixtures": [
+    {
+      "order": 1,
+      "id": "general-status-brief",
+      "scriptId": "general-status-brief",
+      "category": "general-speech",
+      "state": "script-only",
+      "audio": {
+        "required": false,
+        "committedPath": null,
+        "localPathPattern": "tests/fixtures/translation/local/general-status-brief.*"
+      },
+      "targetLanguageCodes": ["es", "fr", "de"],
+      "reviewFocus": [
+        "meaning-completeness",
+        "workplace-terms",
+        "final-action-item",
+        "audio-start"
+      ],
+      "latencyCheckpointIds": [
+        "capture-start",
+        "translated-audio-ready",
+        "transcript-delta",
+        "session-stop"
+      ],
+      "expectedArtifacts": {
+        "transcriptExport": "optional-local",
+        "reviewNotes": "local-only"
+      }
+    },
+    {
+      "order": 2,
+      "id": "technical-release-check",
+      "scriptId": "technical-release-check",
+      "category": "technical-terms",
+      "state": "script-only",
+      "audio": {
+        "required": false,
+        "committedPath": null,
+        "localPathPattern": "tests/fixtures/translation/local/technical-release-check.*"
+      },
+      "targetLanguageCodes": ["es", "ja", "ko"],
+      "reviewFocus": [
+        "domain-terms",
+        "route-names",
+        "environment-variables",
+        "error-state-language"
+      ],
+      "latencyCheckpointIds": [
+        "capture-start",
+        "translated-audio-ready",
+        "transcript-delta",
+        "session-stop"
+      ],
+      "expectedArtifacts": {
+        "transcriptExport": "optional-local",
+        "reviewNotes": "local-only"
+      }
+    },
+    {
+      "order": 3,
+      "id": "names-numbers-dates",
+      "scriptId": "names-numbers-dates",
+      "category": "names-numbers-dates",
+      "state": "script-only",
+      "audio": {
+        "required": false,
+        "committedPath": null,
+        "localPathPattern": "tests/fixtures/translation/local/names-numbers-dates.*"
+      },
+      "targetLanguageCodes": ["pt", "it", "hi"],
+      "reviewFocus": [
+        "fictional-names",
+        "dates",
+        "times",
+        "currency",
+        "percentages",
+        "sample-counts"
+      ],
+      "latencyCheckpointIds": [
+        "capture-start",
+        "translated-audio-ready",
+        "transcript-delta",
+        "session-stop"
+      ],
+      "expectedArtifacts": {
+        "transcriptExport": "optional-local",
+        "reviewNotes": "local-only"
+      }
+    },
+    {
+      "order": 4,
+      "id": "mixed-language-handoff",
+      "scriptId": "mixed-language-handoff",
+      "category": "mixed-language",
+      "state": "script-only",
+      "audio": {
+        "required": false,
+        "committedPath": null,
+        "localPathPattern": "tests/fixtures/translation/local/mixed-language-handoff.*"
+      },
+      "targetLanguageCodes": ["en", "es", "zh"],
+      "reviewFocus": [
+        "mixed-language-segments",
+        "same-language-target",
+        "partial-output-boundaries",
+        "final-summary"
+      ],
+      "latencyCheckpointIds": [
+        "capture-start",
+        "translated-audio-ready",
+        "transcript-delta",
+        "session-stop"
+      ],
+      "expectedArtifacts": {
+        "transcriptExport": "optional-local",
+        "reviewNotes": "local-only"
+      }
+    }
+  ]
+}

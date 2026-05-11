@@ -1,0 +1,11 @@
+# Private maintainer media and local evaluation output.
+local/*
+!local/
+!local/.gitkeep
+
+outputs/
+runs/
+*.local.*
+*.private.*
+*.transcript.md
+*.provider-payload.json

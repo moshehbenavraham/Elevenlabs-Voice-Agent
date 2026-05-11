@@ -10,6 +10,11 @@ conversation. OpenAI Translation uses `POST /api/openai/translation-session`,
 server-minted browser credentials, WebRTC translation calls, translated audio
 playback, current-session transcript rows, and Markdown export.
 
+For repeatable pre-demo or release checks, use the maintained
+[OpenAI Translation Evaluation Workflow](./ongoing-projects/translation-evaluation.md).
+It defines non-sensitive golden scripts, fixture metadata, latency checkpoints,
+manual review rubrics, and private local-media guardrails.
+
 ## Prerequisites
 
 - Install project dependencies with `npm install`.
@@ -358,10 +363,13 @@ Production caveats:
 - [ ] Browser-tab capture is presented as browser and share-target dependent.
 - [ ] Stop, provider switch, source-ended, and max-session paths are described
       as current-session cleanup paths.
+- [ ] The evaluation workflow is used when a run needs repeatable golden
+      scripts, latency checkpoints, bilingual review, or local media guardrails.
 
 ## References
 
 - [OpenAI Realtime Provider](./OPENAI_REALTIME.md)
+- [OpenAI Translation Evaluation Workflow](./ongoing-projects/translation-evaluation.md)
 - [Demo Mode](./DEMO_MODE.md)
 - [Troubleshooting Guide](./TROUBLESHOOTING.md)
 - [Environment Variables](./environments.md)
