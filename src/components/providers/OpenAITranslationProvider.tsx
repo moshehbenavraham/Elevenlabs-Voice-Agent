@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObjec
 import { motion } from 'framer-motion';
 import { Languages, Play, Square } from 'lucide-react';
 import { TranslationTranscriptPanel } from '@/components/conversation/TranslationTranscriptPanel';
+import { OpenAITranslationAudioMixControls } from '@/components/providers/OpenAITranslationAudioMixControls';
 import { OpenAITranslationAudioPlayer } from '@/components/providers/OpenAITranslationAudioPlayer';
+import { OpenAITranslationExportControls } from '@/components/providers/OpenAITranslationExportControls';
 import { OpenAITranslationLanguageSelect } from '@/components/providers/OpenAITranslationLanguageSelect';
 import { OpenAITranslationLatestCaption } from '@/components/providers/OpenAITranslationLatestCaption';
 import { OpenAITranslationSourceSelector } from '@/components/providers/OpenAITranslationSourceSelector';
@@ -11,21 +13,31 @@ import {
   type OpenAITranslationUiStatus,
 } from '@/components/providers/OpenAITranslationStatusPanel';
 import { useOpenAITranslation } from '@/hooks/useOpenAITranslation';
+import { useOpenAITranslationSessionTimer } from '@/hooks/useOpenAITranslationSessionTimer';
 import { useOpenAITranslationSource } from '@/hooks/useOpenAITranslationSource';
 import {
+  OPENAI_TRANSLATION_DEFAULT_AUDIO_MIX_PERCENT,
   OPENAI_TRANSLATION_DEFAULT_TARGET_LANGUAGE,
+  buildOpenAITranslationTranscriptMarkdown,
+  buildTranslationAudioMixState,
+  formatOpenAITranslationDuration,
+  formatOpenAITranslationSessionEndReason,
   getOpenAITranslationSourceCapability,
   getOpenAITranslationSourceModes,
   getOpenAITranslationSourceModeMetadata,
   getLatestOpenAITranslationCaption,
   getTranslationTargetLanguage,
   isOpenAITranslationBusyStatus,
+  normalizeOpenAITranslationMaxSessionConfig,
   summarizeOpenAITranslationTranscripts,
 } from '@/lib/openaiTranslation';
 import { cn } from '@/lib/utils';
 import type {
   OpenAITranslationHookStatus,
   OpenAITranslationRuntimeError,
+  OpenAITranslationAutoStopReason,
+  OpenAITranslationSessionEndReason,
+  OpenAITranslationSessionMetadata,
   OpenAITranslationSourceError,
   OpenAITranslationSourceCapabilities,
   OpenAITranslationSourceMode,
@@ -47,6 +59,14 @@ interface PendingStart {
   readonly operationId: number;
   readonly mode: OpenAITranslationSourceMode;
   readonly targetLanguage: OpenAITranslationTargetLanguageCode;
+}
+
+interface TranslationSessionState {
+  readonly startedAt: number | null;
+  readonly endedAt: number | null;
+  readonly sourceMode: OpenAITranslationSourceMode | null;
+  readonly targetLanguage: OpenAITranslationTargetLanguageCode;
+  readonly endReason: OpenAITranslationSessionEndReason | null;
 }
 
 type TranslationAction = 'start' | 'stop';
@@ -95,11 +115,24 @@ export function OpenAITranslationProvider({
   const [targetLanguage, setTargetLanguage] = useState<OpenAITranslationTargetLanguageCode>(
     OPENAI_TRANSLATION_DEFAULT_TARGET_LANGUAGE
   );
+  const [audioMixPercent, setAudioMixPercent] = useState(
+    OPENAI_TRANSLATION_DEFAULT_AUDIO_MIX_PERCENT
+  );
+  const [sessionState, setSessionState] = useState<TranslationSessionState>(() =>
+    createIdleTranslationSessionState(OPENAI_TRANSLATION_DEFAULT_TARGET_LANGUAGE)
+  );
   const [actionInFlight, setActionInFlight] = useState<TranslationAction | null>(null);
   const [pendingStart, setPendingStart] = useState<PendingStart | null>(null);
   const operationIdRef = useRef(0);
   const pendingStartRef = useRef<PendingStart | null>(null);
   const stopPromiseRef = useRef<Promise<void> | null>(null);
+  const maxSessionConfig = useMemo(
+    () =>
+      normalizeOpenAITranslationMaxSessionConfig(
+        import.meta.env.VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES
+      ),
+    []
+  );
 
   useEffect(() => {
     refreshCapabilities();
@@ -121,6 +154,17 @@ export function OpenAITranslationProvider({
   const selectedSourceLabel = getOpenAITranslationSourceModeMetadata(activeSourceMode).shortLabel;
   const targetLanguageLabel =
     getTranslationTargetLanguage(targetLanguage)?.label ?? targetLanguage.toUpperCase();
+  const audioMixState = useMemo(
+    () => buildTranslationAudioMixState(audioMixPercent),
+    [audioMixPercent]
+  );
+  const sessionSourceMode = sessionState.sourceMode ?? activeSourceMode;
+  const shouldUseBrowserTabAudio = sessionSourceMode === 'browser-tab';
+  const originalAudioStream =
+    capturedSource?.mode === 'browser-tab' && sourceStatus === 'ready'
+      ? capturedSource.sourceStream
+      : null;
+  const translatedAudioVolume = shouldUseBrowserTabAudio ? audioMixState.translatedVolume : 1;
   const isRuntimeBusy = isOpenAITranslationBusyStatus(runtimeStatus);
   const isStartPending = actionInFlight === 'start' || isSourceRequesting || isRuntimeStarting;
   const isStopPending = actionInFlight === 'stop' || runtimeStatus === 'stopping';
@@ -153,37 +197,6 @@ export function OpenAITranslationProvider({
   );
   const isTranscriptActive =
     isRuntimeConnected || isRuntimeStarting || isStartPending || sourceStatus === 'ready';
-  const uiStatus = useMemo(
-    () =>
-      deriveOpenAITranslationUiStatus({
-        errorMessage,
-        isOffline,
-        isStartPending,
-        isStopPending,
-        runtimeError,
-        runtimeStatus,
-        translatedAudioStream,
-        selectedSourceLabel,
-        sourceError,
-        sourceStatus,
-        targetLanguageLabel,
-        transcriptSummary,
-      }),
-    [
-      errorMessage,
-      isOffline,
-      isStartPending,
-      isStopPending,
-      runtimeError,
-      runtimeStatus,
-      translatedAudioStream,
-      selectedSourceLabel,
-      sourceError,
-      sourceStatus,
-      targetLanguageLabel,
-      transcriptSummary,
-    ]
-  );
 
   const handleStart = useCallback(async (): Promise<void> => {
     if (isStartDisabled) {
@@ -201,6 +214,8 @@ export function OpenAITranslationProvider({
     pendingStartRef.current = nextPendingStart;
     setPendingStart(nextPendingStart);
     setActionInFlight('start');
+    setAudioMixPercent(OPENAI_TRANSLATION_DEFAULT_AUDIO_MIX_PERCENT);
+    setSessionState(createIdleTranslationSessionState(targetLanguage));
     resetRuntime();
 
     const captured =
@@ -220,34 +235,147 @@ export function OpenAITranslationProvider({
     targetLanguage,
   ]);
 
-  const stopTranslation = useCallback(async (): Promise<void> => {
-    if (stopPromiseRef.current) {
-      return stopPromiseRef.current;
-    }
+  const stopTranslation = useCallback(
+    async (reason: OpenAITranslationSessionEndReason = 'manual'): Promise<void> => {
+      if (stopPromiseRef.current) {
+        return stopPromiseRef.current;
+      }
 
-    operationIdRef.current += 1;
-    pendingStartRef.current = null;
-    setPendingStart(null);
+      operationIdRef.current += 1;
+      pendingStartRef.current = null;
+      setPendingStart(null);
 
-    const stopPromise = (async (): Promise<void> => {
-      setActionInFlight('stop');
+      const stopPromise = (async (): Promise<void> => {
+        setActionInFlight('stop');
+        try {
+          await stopRuntime();
+        } finally {
+          stopSource();
+          setSessionState((currentSession) =>
+            currentSession.startedAt !== null && currentSession.endedAt === null
+              ? {
+                  ...currentSession,
+                  endedAt: Date.now(),
+                  endReason: reason,
+                }
+              : currentSession
+          );
+          setActionInFlight(null);
+        }
+      })();
+
+      stopPromiseRef.current = stopPromise;
       try {
-        await stopRuntime();
+        await stopPromise;
       } finally {
-        stopSource();
-        setActionInFlight(null);
+        if (stopPromiseRef.current === stopPromise) {
+          stopPromiseRef.current = null;
+        }
       }
-    })();
+    },
+    [stopRuntime, stopSource]
+  );
 
-    stopPromiseRef.current = stopPromise;
-    try {
-      await stopPromise;
-    } finally {
-      if (stopPromiseRef.current === stopPromise) {
-        stopPromiseRef.current = null;
+  const handleAutoStop = useCallback(
+    (reason: OpenAITranslationAutoStopReason): void => {
+      void stopTranslation(reason);
+    },
+    [stopTranslation]
+  );
+  const sessionTimer = useOpenAITranslationSessionTimer({
+    isActive: isRuntimeConnected,
+    startedAt: sessionState.startedAt,
+    endedAt: sessionState.endedAt,
+    maxSeconds: maxSessionConfig.maxSeconds,
+    onAutoStop: handleAutoStop,
+  });
+  const sessionEndReason: OpenAITranslationSessionEndReason | null =
+    sessionState.endReason ??
+    (runtimeStatus === 'error' && sessionState.startedAt !== null ? 'runtime-error' : null);
+  const exportMetadata = useMemo<OpenAITranslationSessionMetadata>(
+    () => ({
+      startedAt: sessionState.startedAt,
+      endedAt: sessionState.endedAt,
+      durationSeconds: sessionTimer.elapsedSeconds,
+      sourceMode: sessionState.sourceMode ?? activeSourceMode,
+      targetLanguage: sessionState.targetLanguage,
+      endReason: sessionEndReason,
+    }),
+    [
+      activeSourceMode,
+      sessionState.endedAt,
+      sessionState.sourceMode,
+      sessionState.startedAt,
+      sessionState.targetLanguage,
+      sessionEndReason,
+      sessionTimer.elapsedSeconds,
+    ]
+  );
+  const elapsedLabel = formatOpenAITranslationDuration(sessionTimer.elapsedSeconds);
+  const maxSessionLabel = formatOpenAITranslationDuration(maxSessionConfig.maxSeconds);
+  const uiStatus = useMemo(
+    () =>
+      deriveOpenAITranslationUiStatus({
+        elapsedLabel,
+        errorMessage,
+        isOffline,
+        isStartPending,
+        isStopPending,
+        maxSessionLabel,
+        runtimeError,
+        runtimeStatus,
+        selectedSourceLabel,
+        sessionEndReason,
+        sourceError,
+        sourceStatus,
+        targetLanguageLabel,
+        transcriptSummary,
+        translatedAudioStream,
+      }),
+    [
+      elapsedLabel,
+      errorMessage,
+      isOffline,
+      isStartPending,
+      isStopPending,
+      maxSessionLabel,
+      runtimeError,
+      runtimeStatus,
+      selectedSourceLabel,
+      sessionEndReason,
+      sourceError,
+      sourceStatus,
+      targetLanguageLabel,
+      transcriptSummary,
+      translatedAudioStream,
+    ]
+  );
+
+  const handleSourceModeChange = useCallback(
+    (nextSourceMode: OpenAITranslationSourceMode): void => {
+      setSelectedSourceMode(nextSourceMode);
+
+      if (!isRuntimeConnected && !isRuntimeStarting && actionInFlight === null) {
+        setAudioMixPercent(OPENAI_TRANSLATION_DEFAULT_AUDIO_MIX_PERCENT);
       }
+    },
+    [actionInFlight, isRuntimeConnected, isRuntimeStarting]
+  );
+
+  const handleExportMarkdown = useCallback((): void => {
+    if (!transcriptSummary.hasEntries) {
+      throw new Error('No transcript lines are available for export.');
     }
-  }, [stopRuntime, stopSource]);
+
+    const generatedAt = Date.now();
+    const markdown = buildOpenAITranslationTranscriptMarkdown({
+      metadata: exportMetadata,
+      entries: transcripts,
+      generatedAt,
+    });
+
+    downloadOpenAITranslationMarkdown(markdown, buildOpenAITranslationExportFilename(generatedAt));
+  }, [exportMetadata, transcriptSummary.hasEntries, transcripts]);
 
   useEffect(() => {
     if (!pendingStart || !capturedSource || sourceStatus !== 'ready') {
@@ -279,11 +407,22 @@ export function OpenAITranslationProvider({
 
         if (!started) {
           stopSource();
+          setSessionState(createIdleTranslationSessionState(pendingStart.targetLanguage));
+          return;
         }
+
+        setSessionState({
+          startedAt: Date.now(),
+          endedAt: null,
+          sourceMode: readySource.mode,
+          targetLanguage: pendingStart.targetLanguage,
+          endReason: null,
+        });
       } catch (error) {
         if (!cancelled) {
           console.error('[OpenAITranslationProvider] Failed to start translation runtime', error);
           stopSource();
+          setSessionState(createIdleTranslationSessionState(pendingStart.targetLanguage));
         }
       } finally {
         if (!cancelled) {
@@ -303,6 +442,16 @@ export function OpenAITranslationProvider({
       cancelled = true;
     };
   }, [capturedSource, pendingStart, runtimeStart, sourceStatus, stopSource]);
+
+  useEffect(() => {
+    if (
+      sourceStatus === 'ended' &&
+      sessionState.startedAt !== null &&
+      sessionState.endedAt === null
+    ) {
+      void stopTranslation('source-ended');
+    }
+  }, [sessionState.endedAt, sessionState.startedAt, sourceStatus, stopTranslation]);
 
   useEffect(() => {
     if (!stopRef) {
@@ -374,7 +523,7 @@ export function OpenAITranslationProvider({
             <button
               type="button"
               onClick={() => {
-                void stopTranslation();
+                void stopTranslation('manual');
               }}
               disabled={isStopDisabled}
               aria-busy={isStopPending}
@@ -401,7 +550,7 @@ export function OpenAITranslationProvider({
                 selectedMode={activeSourceMode}
                 capabilities={sourceCapabilities}
                 disabled={areConfigurationControlsDisabled}
-                onModeChange={setSelectedSourceMode}
+                onModeChange={handleSourceModeChange}
               />
               <OpenAITranslationLanguageSelect
                 value={targetLanguage}
@@ -416,10 +565,41 @@ export function OpenAITranslationProvider({
               runtimeStatus={runtimeStatus}
             />
 
+            <OpenAITranslationExportControls
+              hasEntries={transcriptSummary.hasEntries}
+              onExportMarkdown={handleExportMarkdown}
+            />
+
             <OpenAITranslationAudioPlayer
               stream={translatedAudioStream}
               disabled={!translatedAudioStream}
+              label="Translated Audio"
+              activeDescription="Live translated output stream attached."
+              inactiveDescription="Waiting for translated audio."
+              playbackLabel="Translated audio playback"
+              streamKind="translated"
+              volume={translatedAudioVolume}
             />
+
+            {shouldUseBrowserTabAudio && (
+              <>
+                <OpenAITranslationAudioMixControls
+                  mixState={audioMixState}
+                  disabled={isStartPending || isStopPending}
+                  onMixChange={setAudioMixPercent}
+                />
+                <OpenAITranslationAudioPlayer
+                  stream={originalAudioStream}
+                  disabled={!originalAudioStream}
+                  label="Original Audio"
+                  activeDescription="Browser-tab source audio stream attached."
+                  inactiveDescription="Waiting for browser-tab source audio."
+                  playbackLabel="Original browser-tab audio playback"
+                  streamKind="original"
+                  volume={audioMixState.originalVolume}
+                />
+              </>
+            )}
           </div>
 
           <TranslationTranscriptPanel
@@ -434,13 +614,16 @@ export function OpenAITranslationProvider({
 }
 
 interface OpenAITranslationUiStatusInput {
+  readonly elapsedLabel: string;
   readonly errorMessage: string | null;
   readonly isOffline: boolean;
   readonly isStartPending: boolean;
   readonly isStopPending: boolean;
+  readonly maxSessionLabel: string;
   readonly runtimeError: OpenAITranslationRuntimeError | null;
   readonly runtimeStatus: OpenAITranslationHookStatus;
   readonly selectedSourceLabel: string;
+  readonly sessionEndReason: OpenAITranslationSessionEndReason | null;
   readonly sourceError: OpenAITranslationSourceError | null;
   readonly sourceStatus: OpenAITranslationSourceStatus;
   readonly targetLanguageLabel: string;
@@ -449,13 +632,16 @@ interface OpenAITranslationUiStatusInput {
 }
 
 function deriveOpenAITranslationUiStatus({
+  elapsedLabel,
   errorMessage,
   isOffline,
   isStartPending,
   isStopPending,
+  maxSessionLabel,
   runtimeError,
   runtimeStatus,
   selectedSourceLabel,
+  sessionEndReason,
   sourceError,
   sourceStatus,
   targetLanguageLabel,
@@ -467,14 +653,18 @@ function deriveOpenAITranslationUiStatus({
     `Runtime: ${describeRuntimeStatus(runtimeStatus)}`,
     `Selected: ${selectedSourceLabel} to ${targetLanguageLabel}`,
     `Transcript: ${describeTranscriptSummary(transcriptSummary)}`,
+    `Elapsed: ${elapsedLabel} / ${maxSessionLabel}`,
   ];
+  const detailsWithEndReason = sessionEndReason
+    ? [...details, `End reason: ${formatOpenAITranslationSessionEndReason(sessionEndReason)}`]
+    : details;
 
   if (errorMessage) {
     return {
       tone: 'error',
       title: 'Translation unavailable',
       message: errorMessage,
-      details,
+      details: detailsWithEndReason,
     };
   }
 
@@ -483,7 +673,7 @@ function deriveOpenAITranslationUiStatus({
       tone: 'warning',
       title: 'Browser offline',
       message: 'Reconnect before starting a translation session.',
-      details,
+      details: detailsWithEndReason,
     };
   }
 
@@ -493,7 +683,7 @@ function deriveOpenAITranslationUiStatus({
       tone: 'error',
       title: formatErrorTitle(error),
       message: error?.message ?? 'Translation failed unexpectedly.',
-      details: appendErrorCode(details, error),
+      details: appendErrorCode(detailsWithEndReason, error),
     };
   }
 
@@ -502,7 +692,7 @@ function deriveOpenAITranslationUiStatus({
       tone: 'busy',
       title: 'Stopping translation',
       message: 'Runtime and source resources are being released.',
-      details,
+      details: detailsWithEndReason,
     };
   }
 
@@ -511,7 +701,7 @@ function deriveOpenAITranslationUiStatus({
       tone: 'busy',
       title: 'Requesting client secret',
       message: 'The backend translation route is preparing an ephemeral session.',
-      details,
+      details: detailsWithEndReason,
     };
   }
 
@@ -520,7 +710,7 @@ function deriveOpenAITranslationUiStatus({
       tone: 'busy',
       title: 'Connecting translation',
       message: 'WebRTC negotiation is in progress.',
-      details,
+      details: detailsWithEndReason,
     };
   }
 
@@ -529,7 +719,7 @@ function deriveOpenAITranslationUiStatus({
       tone: 'busy',
       title: 'Requesting audio source',
       message: 'Approve the selected browser audio source to continue.',
-      details,
+      details: detailsWithEndReason,
     };
   }
 
@@ -540,7 +730,7 @@ function deriveOpenAITranslationUiStatus({
       message: translatedAudioStream
         ? 'Translated audio is attached and ready for playback.'
         : 'Translation is connected and waiting for remote audio.',
-      details,
+      details: detailsWithEndReason,
     };
   }
 
@@ -549,7 +739,7 @@ function deriveOpenAITranslationUiStatus({
       tone: 'success',
       title: 'Audio source ready',
       message: 'The selected source is captured and ready for translation startup.',
-      details,
+      details: detailsWithEndReason,
     };
   }
 
@@ -558,7 +748,7 @@ function deriveOpenAITranslationUiStatus({
       tone: 'warning',
       title: 'Audio source ended',
       message: 'Choose a source and start again when audio is available.',
-      details,
+      details: detailsWithEndReason,
     };
   }
 
@@ -566,8 +756,11 @@ function deriveOpenAITranslationUiStatus({
     return {
       tone: 'idle',
       title: 'Translation stopped',
-      message: 'Resources were released and the controls are ready for another session.',
-      details,
+      message:
+        sessionEndReason === 'max-session-duration'
+          ? 'The max-session guard stopped the session and released resources.'
+          : 'Resources were released and the controls are ready for another session.',
+      details: detailsWithEndReason,
     };
   }
 
@@ -575,7 +768,7 @@ function deriveOpenAITranslationUiStatus({
     tone: 'idle',
     title: 'Ready to translate',
     message: 'Choose a source and target language, then start translation.',
-    details,
+    details: detailsWithEndReason,
   };
 }
 
@@ -593,6 +786,54 @@ function resolveAvailableSourceMode(
       return getOpenAITranslationSourceCapability(capabilities, sourceMode.mode).canRequest;
     })?.mode ?? null
   );
+}
+
+function createIdleTranslationSessionState(
+  targetLanguage: OpenAITranslationTargetLanguageCode
+): TranslationSessionState {
+  return {
+    startedAt: null,
+    endedAt: null,
+    sourceMode: null,
+    targetLanguage,
+    endReason: null,
+  };
+}
+
+function downloadOpenAITranslationMarkdown(markdown: string, filename: string): void {
+  if (typeof Blob !== 'function') {
+    throw new Error('Markdown export is unavailable because Blob is not supported.');
+  }
+
+  if (typeof document === 'undefined' || !document.body) {
+    throw new Error('Markdown export is unavailable outside a browser document.');
+  }
+
+  if (typeof URL.createObjectURL !== 'function' || typeof URL.revokeObjectURL !== 'function') {
+    throw new Error('Markdown export is unavailable because object URLs are not supported.');
+  }
+
+  const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+  const objectUrl = URL.createObjectURL(blob);
+  let link: HTMLAnchorElement | null = null;
+
+  try {
+    link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = filename;
+    link.rel = 'noopener';
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+  } finally {
+    link?.remove();
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+function buildOpenAITranslationExportFilename(generatedAt: number): string {
+  const timestamp = new Date(generatedAt).toISOString().replace(/[:.]/g, '-');
+  return `openai-translation-${timestamp}.md`;
 }
 
 function describeSourceStatus(status: OpenAITranslationSourceStatus): string {

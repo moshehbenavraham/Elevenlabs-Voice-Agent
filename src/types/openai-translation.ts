@@ -116,6 +116,22 @@ export interface OpenAITranslationAudioMixState {
   readonly originalLabel: string;
 }
 
+export type OpenAITranslationAutoStopReason = 'max-session-duration';
+
+export type OpenAITranslationSessionEndReason =
+  | 'manual'
+  | 'source-ended'
+  | 'runtime-error'
+  | OpenAITranslationAutoStopReason;
+
+export interface OpenAITranslationMaxSessionConfig {
+  readonly maxMinutes: number;
+  readonly maxSeconds: number;
+  readonly defaultMinutes: number;
+  readonly hardMaxMinutes: number;
+  readonly source: 'default' | 'configured' | 'capped';
+}
+
 export type OpenAITranslationSourceMode = 'microphone' | 'browser-tab';
 
 export type OpenAITranslationSourceStatus =
@@ -263,6 +279,21 @@ export interface OpenAITranslationTranscriptSummary {
   readonly partialCount: number;
   readonly hasEntries: boolean;
   readonly hasTranslatedCaption: boolean;
+}
+
+export interface OpenAITranslationSessionMetadata {
+  readonly startedAt: number | null;
+  readonly endedAt: number | null;
+  readonly durationSeconds: number;
+  readonly sourceMode: OpenAITranslationSourceMode | null;
+  readonly targetLanguage: OpenAITranslationTargetLanguageCode;
+  readonly endReason: OpenAITranslationSessionEndReason | null;
+}
+
+export interface OpenAITranslationTranscriptExportPayload {
+  readonly metadata: OpenAITranslationSessionMetadata;
+  readonly entries: readonly OpenAITranslationTranscriptEntry[];
+  readonly generatedAt?: number;
 }
 
 export interface OpenAITranslationTranscriptEvent {

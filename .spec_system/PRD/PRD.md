@@ -4,9 +4,9 @@
 
 Voice-Agent-PuPuPlatter is a multi-provider voice AI demo platform showcasing real-time voice integrations with ElevenLabs, OpenAI Realtime, xAI Grok, Ultravox, Vapi, Retell, and Google Gemini Live APIs. The platform provides a unified glassmorphism UI for demonstrating and comparing voice AI providers with WebSocket-based real-time conversations, audio visualization, and function calling capabilities.
 
-This PRD was reconciled against the repository on 2026-05-11 after out-of-band implementation work. Phase 00 is complete. Phase 01 is complete after formal Phase 01 validation and update workflow closure.
+This PRD was reconciled against the repository on 2026-05-11 after out-of-band implementation work. Phase 00 is complete. Phase 01 is complete after formal Phase 01 validation and update workflow closure. Phase 03 is complete after formal validation and update workflow closure.
 
-The next product expansion is a dedicated OpenAI live language translation tab using `gpt-realtime-translate`. This feature is intentionally separate from the existing OpenAI voice-agent provider because OpenAI's live translation API uses dedicated `/v1/realtime/translations` sessions, browser WebRTC media, translated audio as a remote track, and transcript deltas over an `oai-events` data channel instead of normal assistant turns, tools, prompts, or `response.create`.
+The next product expansion is Phase 04 hardening for the dedicated OpenAI live language translation tab using `gpt-realtime-translate`. This feature is intentionally separate from the existing OpenAI voice-agent provider because OpenAI's live translation API uses dedicated `/v1/realtime/translations` sessions, browser WebRTC media, translated audio as a remote track, and transcript deltas over an `oai-events` data channel instead of normal assistant turns, tools, prompts, or `response.create`.
 
 ## Goals
 
@@ -246,7 +246,17 @@ Session details currently live in `.spec_system/specs/phase02-session*/`.
 | 02      | Source Capture Modes              | Complete    | Add source acquisition for microphone and browser-tab audio, including permission errors, track-ended handling, and `getDisplayMedia()` options. | 16-22 tasks | `src/hooks/useOpenAITranslationSource.ts`, `src/components/providers/OpenAITranslationProvider.tsx`            | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/src/public/capture-options.js`, `EXAMPLE/LinguaForge/yt-translate-poc/public/index.html`, `EXAMPLE/open-realtime-translate/src/offscreen/offscreen.ts`                      |
 | 03      | Translation Tab UI MVP            | Not Started | Build the initial provider screen with source selector, language selector, start/stop control, status, translated audio, and core responsive UI. | 18-24 tasks | `src/components/providers/OpenAITranslationProvider.tsx`, `src/pages/Index.tsx`, `src/components/ui/`          | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/src/public/index.html`, `EXAMPLE/LinguaForge/yt-translate-poc/public/index.html`                                                                                            |
 | 04      | Transcript and Caption Experience | Complete    | Add source/translated transcript state, latest-subtitle rendering, clear controls, and stable transcript panel behavior.                         | 14-20 tasks | `src/components/conversation/TranslationTranscriptPanel.tsx`, `src/hooks/useOpenAITranslation.ts`, `src/test/` | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/livekit-translation-demo/lib/realtime-translation.ts`, `EXAMPLE/open-realtime-translate/src/content/subtitle.ts`                                                                                     |
-| 05      | Audio Mix and Export Controls     | Not Started | Add original/translated mix controls for tab audio, transcript Markdown export, elapsed time, and the 30-minute default max-session guard.       | 14-20 tasks | `src/components/providers/OpenAITranslationProvider.tsx`, `src/lib/openaiTranslation.ts`                       | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/src/public/audio-mix.js`, `EXAMPLE/LinguaForge/yt-translate-poc/public/index.html`                                                                                          |
+| 05      | Audio Mix and Export Controls     | Complete    | Add original/translated mix controls for tab audio, transcript Markdown export, elapsed time, and the 30-minute default max-session guard.       | 14-20 tasks | `src/components/providers/OpenAITranslationProvider.tsx`, `src/lib/openaiTranslation.ts`                       | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/src/public/audio-mix.js`, `EXAMPLE/LinguaForge/yt-translate-poc/public/index.html`                                                                                          |
+
+Session details for Phase 03 are archived in `.spec_system/archive/phases/phase_03/`.
+
+### Completed Sessions
+
+1. Session 01: Reusable WebRTC Translation Hook (validated 2026-05-11)
+2. Session 02: Source Capture Modes (validated 2026-05-11)
+3. Session 03: Translation Tab UI MVP (validated 2026-05-11)
+4. Session 04: Transcript and Caption Experience (validated 2026-05-11)
+5. Session 05: Audio Mix and Export Controls (validated 2026-05-11)
 
 ## Phase 04: Hardening, Quality, and Demo Readiness
 

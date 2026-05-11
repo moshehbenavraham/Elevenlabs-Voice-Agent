@@ -28,7 +28,7 @@
     "3": {
       "name": "Browser Translation MVP",
       "description": "Deliver the first usable in-app translation tab for microphone and browser-tab audio using browser WebRTC, translated audio playback, transcripts, and export controls",
-      "status": "in_progress",
+      "status": "complete",
       "session_count": 5
     },
     "4": {
@@ -60,7 +60,9 @@
     "phase02-session04-backend-and-config-tests",
     "phase03-session01-reusable-webrtc-translation-hook",
     "phase03-session02-source-capture-modes",
-    "phase03-session03-translation-tab-ui-mvp"
+    "phase03-session03-translation-tab-ui-mvp",
+    "phase03-session04-transcript-and-caption-experience",
+    "phase03-session05-audio-mix-and-export-controls"
   ],
   "next_session_history": [
     {
@@ -196,6 +198,21 @@
     {
       "date": "2026-05-11",
       "session": "phase03-session04-transcript-and-caption-experience",
+      "status": "completed"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase03-session05-audio-mix-and-export-controls",
+      "status": "planned"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase03-session05-audio-mix-and-export-controls",
+      "status": "validated"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase03-session05-audio-mix-and-export-controls",
       "status": "completed"
     }
   ]

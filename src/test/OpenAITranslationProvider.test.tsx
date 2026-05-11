@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -109,6 +109,8 @@ describe('OpenAITranslationProvider', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
@@ -122,6 +124,7 @@ describe('OpenAITranslationProvider', () => {
     expect(screen.getByRole('combobox', { name: /target language/i })).toHaveValue('en');
     expect(screen.getByText(/ready to translate/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/translated audio playback/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /export markdown/i })).toBeDisabled();
     expect(screen.getByRole('log', { name: /translation transcript/i })).toBeInTheDocument();
     expect(screen.getByText(/translated captions will appear here/i)).toBeInTheDocument();
     expect(screen.getByText(/no transcript lines in the current session/i)).toBeInTheDocument();
@@ -254,6 +257,74 @@ describe('OpenAITranslationProvider', () => {
     expect(audioLoadMock).toHaveBeenCalled();
   });
 
+  it('renders browser-tab mix controls and applies translated and original audio volumes', () => {
+    const source = createSourceResult('browser-tab');
+    const translatedStream = createMediaStream();
+    sourceResult = createSourceHookResult({
+      status: 'ready',
+      mode: 'browser-tab',
+      stream: source.sourceStream,
+      audioTracks: source.audioTracks,
+      source,
+      isReady: true,
+      capabilities: {
+        ...availableCapabilities,
+        microphone: {
+          mode: 'microphone',
+          supported: false,
+          canRequest: false,
+          status: 'unsupported',
+          message: 'Microphone unavailable in this test.',
+        },
+      },
+      canCaptureMicrophone: false,
+    });
+    runtimeResult = createRuntimeHookResult({
+      status: 'connected',
+      isConnected: true,
+      translatedAudioStream: translatedStream,
+    });
+
+    render(<OpenAITranslationProvider />);
+
+    expect(screen.getByRole('heading', { name: /audio mix/i })).toBeInTheDocument();
+    expect(screen.getByRole('slider', { name: /translated audio mix/i })).toHaveAttribute(
+      'aria-valuetext',
+      '85% translated'
+    );
+
+    const translatedAudio = screen.getByLabelText(/translated audio playback/i) as HTMLAudioElement;
+    const originalAudio = screen.getByLabelText(
+      /original browser-tab audio playback/i
+    ) as HTMLAudioElement;
+    expect(translatedAudio.srcObject).toBe(translatedStream);
+    expect(originalAudio.srcObject).toBe(source.sourceStream);
+    expect(translatedAudio.volume).toBe(0.85);
+    expect(originalAudio.volume).toBe(0.15);
+  });
+
+  it('hides browser-tab original audio controls in microphone mode', () => {
+    const source = createSourceResult('microphone');
+    sourceResult = createSourceHookResult({
+      status: 'ready',
+      mode: 'microphone',
+      stream: source.sourceStream,
+      audioTracks: source.audioTracks,
+      source,
+      isReady: true,
+    });
+    runtimeResult = createRuntimeHookResult({
+      status: 'connected',
+      isConnected: true,
+      translatedAudioStream: createMediaStream(),
+    });
+
+    render(<OpenAITranslationProvider />);
+
+    expect(screen.queryByRole('heading', { name: /audio mix/i })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/original browser-tab audio playback/i)).not.toBeInTheDocument();
+  });
+
   it('renders active no-transcript states while connected', () => {
     runtimeResult = createRuntimeHookResult({ status: 'connected', isConnected: true });
 
@@ -264,6 +335,7 @@ describe('OpenAITranslationProvider', () => {
       screen.getByText(/listening for source and translated transcript lines/i)
     ).toBeInTheDocument();
     expect(screen.getByText(/transcript: waiting for lines/i)).toBeInTheDocument();
+    expect(screen.getByText(/elapsed: 00:00 \/ 30:00/i)).toBeInTheDocument();
   });
 
   it('renders latest caption and mixed transcript rows without translated audio', () => {
@@ -349,6 +421,140 @@ describe('OpenAITranslationProvider', () => {
     expect(sourceStopMock).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: /start translation/i })).toBeDisabled();
     expect(screen.getByRole('button', { name: /stop translation/i })).toBeEnabled();
+  });
+
+  it('exports the current transcript as Markdown and revokes the object URL', async () => {
+    const user = userEvent.setup();
+    const createObjectURLMock = vi.fn<(blob: Blob) => string>(() => 'blob:openai-translation');
+    const revokeObjectURLMock = vi.fn();
+    const anchorClickMock = vi.fn();
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: createObjectURLMock,
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: revokeObjectURLMock,
+    });
+    Object.defineProperty(window.HTMLAnchorElement.prototype, 'click', {
+      configurable: true,
+      value: anchorClickMock,
+    });
+    runtimeResult = createRuntimeHookResult({
+      status: 'stopped',
+      transcripts: [
+        {
+          id: 'source-1',
+          stream: 'source',
+          text: 'hello',
+          isFinal: true,
+          updatedAt: 10,
+        },
+        {
+          id: 'translated-1',
+          stream: 'translated',
+          text: 'hola',
+          isFinal: true,
+          updatedAt: 20,
+        },
+      ],
+    });
+
+    render(<OpenAITranslationProvider />);
+
+    await user.click(screen.getByRole('button', { name: /export markdown/i }));
+
+    await waitFor(() => {
+      expect(createObjectURLMock).toHaveBeenCalledTimes(1);
+      expect(anchorClickMock).toHaveBeenCalledTimes(1);
+      expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:openai-translation');
+      expect(screen.getByText(/transcript exported/i)).toBeInTheDocument();
+    });
+
+    const blob = createObjectURLMock.mock.calls[0]?.[0];
+    expect(blob).toBeInstanceOf(Blob);
+    if (!(blob instanceof Blob)) {
+      throw new Error('Expected Markdown export to create a Blob.');
+    }
+    await expect(blob.text()).resolves.toContain('| 2 | Translated | Final | hola |');
+  });
+
+  it('reports Markdown export setup failures', async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: vi.fn(() => {
+        throw new Error('object url unavailable');
+      }),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: vi.fn(),
+    });
+    runtimeResult = createRuntimeHookResult({
+      status: 'stopped',
+      transcripts: [
+        {
+          id: 'translated-1',
+          stream: 'translated',
+          text: 'hola',
+          isFinal: true,
+          updatedAt: 20,
+        },
+      ],
+    });
+
+    render(<OpenAITranslationProvider />);
+
+    await user.click(screen.getByRole('button', { name: /export markdown/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/transcript export failed/i);
+  });
+
+  it('auto-stops at the configured max-session duration using the shared stop path', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.UTC(2026, 4, 11, 17, 0, 0));
+    vi.stubEnv('VITE_OPENAI_TRANSLATION_MAX_SESSION_MINUTES', '0.05');
+    const source = createSourceResult('microphone');
+    sourceResult = createSourceHookResult({
+      status: 'ready',
+      mode: 'microphone',
+      stream: source.sourceStream,
+      audioTracks: source.audioTracks,
+      source,
+      isReady: true,
+    });
+    runtimeResult = createRuntimeHookResult();
+    let view: ReturnType<typeof render> | null = null;
+    runtimeStartMock.mockImplementation(async () => {
+      runtimeResult = createRuntimeHookResult({
+        status: 'connected',
+        isConnected: true,
+        translatedAudioStream: createMediaStream(),
+      });
+      view?.rerender(<OpenAITranslationProvider />);
+      return true;
+    });
+
+    view = render(<OpenAITranslationProvider />);
+
+    fireEvent.click(screen.getByRole('button', { name: /start translation/i }));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(runtimeStartMock).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(runtimeStopMock).toHaveBeenCalledTimes(1);
+    expect(sourceStopMock).toHaveBeenCalledTimes(1);
   });
 
   it('registers a provider-switch stop handler and clears it on unmount', async () => {

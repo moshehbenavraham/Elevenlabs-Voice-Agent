@@ -9,12 +9,14 @@ import type {
   OpenAITranslationErrorKind,
   OpenAITranslationHookStatus,
   OpenAITranslationInputAudioConfig,
+  OpenAITranslationMaxSessionConfig,
   OpenAITranslationNoiseReductionType,
   OpenAITranslationRuntimeRequestOptions,
   OpenAITranslationRuntimeError,
   OpenAITranslationSdpExchangeOptions,
   OpenAITranslationSessionConfig,
   OpenAITranslationSessionConfigOptions,
+  OpenAITranslationSessionEndReason,
   OpenAITranslationSessionRequest,
   OpenAITranslationSessionRequestDescriptor,
   OpenAITranslationSessionResponse,
@@ -33,6 +35,7 @@ import type {
   OpenAITranslationTranscriptEntry,
   OpenAITranslationTranscriptEvent,
   OpenAITranslationTranscriptEventPhase,
+  OpenAITranslationTranscriptExportPayload,
   OpenAITranslationTranscriptSummary,
   OpenAITranslationTranscriptStream,
 } from '@/types/openai-translation';
@@ -42,6 +45,8 @@ export const OPENAI_TRANSLATION_INPUT_TRANSCRIPTION_MODEL = 'gpt-realtime-whispe
 export const OPENAI_TRANSLATION_BACKEND_SESSION_ROUTE = '/api/openai/translation-session';
 export const OPENAI_TRANSLATION_DEFAULT_TARGET_LANGUAGE = 'en';
 export const OPENAI_TRANSLATION_DEFAULT_AUDIO_MIX_PERCENT = 85;
+export const OPENAI_TRANSLATION_DEFAULT_MAX_SESSION_MINUTES = 30;
+export const OPENAI_TRANSLATION_HARD_MAX_SESSION_MINUTES = 120;
 export const OPENAI_TRANSLATION_DEFAULT_NOISE_REDUCTION_TYPE = 'near_field';
 export const OPENAI_TRANSLATION_RUNTIME_REQUEST_TIMEOUT_MS = 30000;
 export const OPENAI_TRANSLATION_RUNTIME_RETRY_COUNT = 1;
@@ -743,6 +748,112 @@ export function getOriginalAudioVolume(value: unknown): number {
   return buildTranslationAudioMixState(value).originalVolume;
 }
 
+export function normalizeOpenAITranslationMaxSessionConfig(
+  value: unknown
+): OpenAITranslationMaxSessionConfig {
+  const parsedMinutes = coerceFiniteNumber(value);
+
+  if (parsedMinutes === null || parsedMinutes <= 0) {
+    return buildOpenAITranslationMaxSessionConfig(
+      OPENAI_TRANSLATION_DEFAULT_MAX_SESSION_MINUTES,
+      'default'
+    );
+  }
+
+  if (parsedMinutes > OPENAI_TRANSLATION_HARD_MAX_SESSION_MINUTES) {
+    return buildOpenAITranslationMaxSessionConfig(
+      OPENAI_TRANSLATION_HARD_MAX_SESSION_MINUTES,
+      'capped'
+    );
+  }
+
+  return buildOpenAITranslationMaxSessionConfig(parsedMinutes, 'configured');
+}
+
+export function formatOpenAITranslationDuration(seconds: unknown): string {
+  const parsedSeconds = coerceFiniteNumber(seconds);
+  const totalSeconds = Math.max(0, Math.floor(parsedSeconds ?? 0));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const remainingSeconds = totalSeconds % 60;
+
+  if (hours > 0) {
+    return `${hours}:${padDurationPart(minutes)}:${padDurationPart(remainingSeconds)}`;
+  }
+
+  return `${padDurationPart(minutes)}:${padDurationPart(remainingSeconds)}`;
+}
+
+export function formatOpenAITranslationSessionEndReason(
+  reason: OpenAITranslationSessionEndReason | null
+): string {
+  switch (reason) {
+    case 'manual':
+      return 'Manual stop';
+    case 'max-session-duration':
+      return 'Max-session limit';
+    case 'source-ended':
+      return 'Source ended';
+    case 'runtime-error':
+      return 'Runtime error';
+    case null:
+      return 'In progress';
+    default:
+      return assertNeverSessionEndReason(reason);
+  }
+}
+
+export function buildOpenAITranslationTranscriptMarkdown(
+  payload: OpenAITranslationTranscriptExportPayload
+): string {
+  const displayEntries = getOpenAITranslationTranscriptDisplayEntries(payload.entries);
+  const { metadata } = payload;
+  const targetLanguage = getTranslationTargetLanguage(metadata.targetLanguage);
+  const targetLanguageLabel = targetLanguage
+    ? `${targetLanguage.label} (${targetLanguage.code})`
+    : metadata.targetLanguage.toUpperCase();
+  const sourceModeLabel = metadata.sourceMode
+    ? getOpenAITranslationSourceModeMetadata(metadata.sourceMode).label
+    : 'Not available';
+  const generatedAt = formatOpenAITranslationTimestamp(payload.generatedAt ?? Date.now());
+  const startedAt = formatOpenAITranslationTimestamp(metadata.startedAt);
+  const endedAt = formatOpenAITranslationTimestamp(metadata.endedAt);
+  const duration = formatOpenAITranslationDuration(metadata.durationSeconds);
+  const endReason = formatOpenAITranslationSessionEndReason(metadata.endReason);
+  const markdownLines = [
+    '# OpenAI Translation Transcript',
+    '',
+    '## Session Metadata',
+    '',
+    `- Generated: ${generatedAt}`,
+    `- Started: ${startedAt}`,
+    `- Ended: ${endedAt}`,
+    `- Duration: ${duration}`,
+    `- Source mode: ${sourceModeLabel}`,
+    `- Target language: ${targetLanguageLabel}`,
+    `- End reason: ${endReason}`,
+    `- Transcript lines: ${displayEntries.length}`,
+    '',
+    '## Transcript',
+    '',
+  ];
+
+  if (displayEntries.length === 0) {
+    return `${markdownLines.join('\n')}No transcript lines were available.\n`;
+  }
+
+  markdownLines.push('| # | Stream | Status | Text |');
+  markdownLines.push('|---|--------|--------|------|');
+
+  for (const entry of displayEntries) {
+    markdownLines.push(
+      `| ${entry.sequence} | ${entry.streamLabel} | ${entry.statusLabel} | ${escapeMarkdownTableCell(entry.text)} |`
+    );
+  }
+
+  return `${markdownLines.join('\n')}\n`;
+}
+
 export function buildTranslationSessionConfig(
   options: OpenAITranslationSessionConfigOptions
 ): OpenAITranslationSessionConfig {
@@ -862,6 +973,46 @@ function coerceFiniteNumber(value: unknown): number | null {
   }
 
   return null;
+}
+
+function buildOpenAITranslationMaxSessionConfig(
+  minutes: number,
+  source: OpenAITranslationMaxSessionConfig['source']
+): OpenAITranslationMaxSessionConfig {
+  const maxSeconds = Math.max(1, Math.round(minutes * 60));
+
+  return {
+    maxMinutes: roundSessionMinutes(maxSeconds / 60),
+    maxSeconds,
+    defaultMinutes: OPENAI_TRANSLATION_DEFAULT_MAX_SESSION_MINUTES,
+    hardMaxMinutes: OPENAI_TRANSLATION_HARD_MAX_SESSION_MINUTES,
+    source,
+  };
+}
+
+function roundSessionMinutes(value: number): number {
+  return Number(value.toFixed(2));
+}
+
+function padDurationPart(value: number): string {
+  return String(value).padStart(2, '0');
+}
+
+function formatOpenAITranslationTimestamp(value: number | null | undefined): string {
+  const timestamp = coerceFiniteNumber(value);
+  if (timestamp === null || timestamp <= 0) {
+    return 'Not available';
+  }
+
+  return new Date(timestamp).toISOString();
+}
+
+function escapeMarkdownTableCell(value: string): string {
+  return value.replace(/\|/g, '\\|').replace(/\r?\n/g, '<br>');
+}
+
+function assertNeverSessionEndReason(reason: never): never {
+  throw new Error(`Unhandled OpenAI translation session end reason: ${String(reason)}`);
 }
 
 function parseDataChannelRecord(data: unknown):

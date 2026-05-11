@@ -1,28 +1,28 @@
 # PRD Phase 03: Browser Translation MVP
 
-**Status**: In Progress
+**Status**: Complete
 **Sessions**: 5
 **Estimated Duration**: 5-8 days
 
-**Progress**: 4/5 sessions (80%)
+**Progress**: 5/5 sessions (100%)
 
 ---
 
 ## Overview
 
-Phase 03 delivers the first usable OpenAI live translation tab inside the app. It adds browser WebRTC translation runtime, microphone and browser-tab source capture, translated audio playback, transcript display, caption controls, export controls, and lifecycle boundaries that keep translation separate from the existing OpenAI voice-agent provider.
+Phase 03 delivered the first usable OpenAI live translation tab inside the app. It added browser WebRTC translation runtime, microphone and browser-tab source capture, translated audio playback, transcript display, caption controls, export controls, and lifecycle boundaries that keep translation separate from the existing OpenAI voice-agent provider.
 
 ---
 
 ## Progress Tracker
 
-| Session | Name                              | Status      | Est. Tasks | Validated  |
-| ------- | --------------------------------- | ----------- | ---------- | ---------- |
-| 01      | Reusable WebRTC Translation Hook  | Complete    | 18-24      | 2026-05-11 |
-| 02      | Source Capture Modes              | Complete    | 16-22      | 2026-05-11 |
-| 03      | Translation Tab UI MVP            | Complete    | 18-24      | 2026-05-11 |
-| 04      | Transcript and Caption Experience | Complete    | 14-20      | 2026-05-11 |
-| 05      | Audio Mix and Export Controls     | Not Started | 14-20      | -          |
+| Session | Name                              | Status   | Est. Tasks | Validated  |
+| ------- | --------------------------------- | -------- | ---------- | ---------- |
+| 01      | Reusable WebRTC Translation Hook  | Complete | 18-24      | 2026-05-11 |
+| 02      | Source Capture Modes              | Complete | 16-22      | 2026-05-11 |
+| 03      | Translation Tab UI MVP            | Complete | 18-24      | 2026-05-11 |
+| 04      | Transcript and Caption Experience | Complete | 14-20      | 2026-05-11 |
+| 05      | Audio Mix and Export Controls     | Complete | 14-20      | 2026-05-11 |
 
 ---
 
@@ -32,12 +32,13 @@ Phase 03 delivers the first usable OpenAI live translation tab inside the app. I
 2. Session 02: Source Capture Modes (validated 2026-05-11)
 3. Session 03: Translation Tab UI MVP (validated 2026-05-11)
 4. Session 04: Transcript and Caption Experience (validated 2026-05-11)
+5. Session 05: Audio Mix and Export Controls (validated 2026-05-11)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 05: Audio Mix and Export Controls
+- None. Phase 03 is complete.
 
 ---
 

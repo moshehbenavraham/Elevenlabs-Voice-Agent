@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   OPENAI_TRANSLATION_BACKEND_SESSION_ROUTE,
   OPENAI_TRANSLATION_DEFAULT_AUDIO_MIX_PERCENT,
+  OPENAI_TRANSLATION_DEFAULT_MAX_SESSION_MINUTES,
   OPENAI_TRANSLATION_ENDPOINTS,
+  OPENAI_TRANSLATION_HARD_MAX_SESSION_MINUTES,
   OPENAI_TRANSLATION_INPUT_TRANSCRIPTION_MODEL,
   OPENAI_TRANSLATION_LANGUAGE_COUNT,
   OPENAI_TRANSLATION_MODEL,
@@ -11,6 +13,7 @@ import {
   OPENAI_TRANSLATION_TARGET_LANGUAGES,
   applyOpenAITranslationTranscriptEvent,
   assertTranslationTargetLanguage,
+  buildOpenAITranslationTranscriptMarkdown,
   buildOpenAITranslationDisplayMediaOptions,
   buildTranslationAudioMixState,
   buildTranslationSessionConfig,
@@ -22,6 +25,8 @@ import {
   createOpenAITranslationRuntimeError,
   detectOpenAITranslationSourceCapabilities,
   exchangeOpenAITranslationSdp,
+  formatOpenAITranslationDuration,
+  formatOpenAITranslationSessionEndReason,
   getLatestOpenAITranslationCaption,
   getOpenAITranslationSourceCapability,
   getOpenAITranslationSourceModeMetadata,
@@ -41,6 +46,7 @@ import {
   isOpenAITranslationTerminalStatus,
   mapOpenAITranslationSourceError,
   isTranslationTargetLanguage,
+  normalizeOpenAITranslationMaxSessionConfig,
   normalizeTranslationTargetLanguage,
   parseOpenAITranslationDataChannelMessage,
   requestOpenAITranslationClientSecret,
@@ -342,6 +348,110 @@ describe('openaiTranslation', () => {
       expect(getOriginalAudioVolume(25)).toBe(0.75);
       expect(getTranslatedAudioVolume(150)).toBe(1);
       expect(getOriginalAudioVolume(-10)).toBe(1);
+    });
+  });
+
+  describe('max session, duration, and export helpers', () => {
+    it('normalizes max-session config with defaults and hard caps', () => {
+      expect(OPENAI_TRANSLATION_DEFAULT_MAX_SESSION_MINUTES).toBe(30);
+      expect(OPENAI_TRANSLATION_HARD_MAX_SESSION_MINUTES).toBe(120);
+      expect(normalizeOpenAITranslationMaxSessionConfig(undefined)).toEqual({
+        maxMinutes: 30,
+        maxSeconds: 1800,
+        defaultMinutes: 30,
+        hardMaxMinutes: 120,
+        source: 'default',
+      });
+      expect(normalizeOpenAITranslationMaxSessionConfig('0.5')).toEqual({
+        maxMinutes: 0.5,
+        maxSeconds: 30,
+        defaultMinutes: 30,
+        hardMaxMinutes: 120,
+        source: 'configured',
+      });
+      expect(normalizeOpenAITranslationMaxSessionConfig(150)).toEqual({
+        maxMinutes: 120,
+        maxSeconds: 7200,
+        defaultMinutes: 30,
+        hardMaxMinutes: 120,
+        source: 'capped',
+      });
+
+      for (const value of ['', 'not-a-number', 0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+        expect(normalizeOpenAITranslationMaxSessionConfig(value).source).toBe('default');
+      }
+    });
+
+    it('formats elapsed durations and session end reasons deterministically', () => {
+      expect(formatOpenAITranslationDuration(0)).toBe('00:00');
+      expect(formatOpenAITranslationDuration(65.9)).toBe('01:05');
+      expect(formatOpenAITranslationDuration(3661)).toBe('1:01:01');
+      expect(formatOpenAITranslationDuration(-5)).toBe('00:00');
+      expect(formatOpenAITranslationDuration(Number.NaN)).toBe('00:00');
+      expect(formatOpenAITranslationSessionEndReason(null)).toBe('In progress');
+      expect(formatOpenAITranslationSessionEndReason('manual')).toBe('Manual stop');
+      expect(formatOpenAITranslationSessionEndReason('max-session-duration')).toBe(
+        'Max-session limit'
+      );
+    });
+
+    it('builds Markdown export with metadata and visible transcript ordering', () => {
+      const markdown = buildOpenAITranslationTranscriptMarkdown({
+        generatedAt: Date.UTC(2026, 4, 11, 17, 0, 0),
+        metadata: {
+          startedAt: Date.UTC(2026, 4, 11, 16, 58, 55),
+          endedAt: Date.UTC(2026, 4, 11, 17, 0, 0),
+          durationSeconds: 65,
+          sourceMode: 'browser-tab',
+          targetLanguage: 'es',
+          endReason: 'manual',
+        },
+        entries: [
+          {
+            id: 'source-1',
+            stream: 'source',
+            text: 'hello',
+            isFinal: true,
+            updatedAt: 10,
+          },
+          {
+            id: 'translated-1',
+            stream: 'translated',
+            text: 'hola | mundo\nline 2',
+            isFinal: false,
+            updatedAt: 20,
+          },
+        ],
+      });
+
+      expect(markdown).toContain('# OpenAI Translation Transcript');
+      expect(markdown).toContain('- Generated: 2026-05-11T17:00:00.000Z');
+      expect(markdown).toContain('- Duration: 01:05');
+      expect(markdown).toContain('- Source mode: Tab audio');
+      expect(markdown).toContain('- Target language: Spanish (es)');
+      expect(markdown).toContain('- End reason: Manual stop');
+      expect(markdown).toContain('| 1 | Source | Final | hello |');
+      expect(markdown).toContain('| 2 | Translated | Partial | hola \\| mundo<br>line 2 |');
+      expect(markdown).not.toContain('OPENAI_API_KEY');
+    });
+
+    it('builds a stable empty Markdown export when no lines are present', () => {
+      const markdown = buildOpenAITranslationTranscriptMarkdown({
+        generatedAt: Date.UTC(2026, 4, 11, 17, 0, 0),
+        metadata: {
+          startedAt: null,
+          endedAt: null,
+          durationSeconds: 0,
+          sourceMode: null,
+          targetLanguage: 'en',
+          endReason: null,
+        },
+        entries: [],
+      });
+
+      expect(markdown).toContain('- Started: Not available');
+      expect(markdown).toContain('- End reason: In progress');
+      expect(markdown).toContain('No transcript lines were available.');
     });
   });
 
