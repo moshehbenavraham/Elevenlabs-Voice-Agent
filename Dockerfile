@@ -11,6 +11,7 @@ FROM build-deps AS frontend-builder
 
 # Copy only files needed by the Vite build so dependency layers stay cached.
 COPY components.json index.html postcss.config.js tsconfig*.json vite.config.ts ./
+COPY scripts/ensure-config-stub.mjs ./scripts/
 COPY public ./public
 COPY src ./src
 
