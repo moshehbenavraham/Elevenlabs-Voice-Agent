@@ -15,6 +15,9 @@ Options:
   --metrics-path <path>    Metrics endpoint path. Default: ${DEFAULT_METRICS_PATH}.
   --skip-root              Skip the root page HTML check.
   --skip-metrics           Skip the metrics endpoint check.
+  --skip-security          Skip security header and posture checks.
+  --skip-cors              Skip CORS allowed/rejected origin checks.
+  --denied-origin <origin> Origin to use for rejection checks. Default: https://unauthorized.example.
   --help                   Show this help text.
 
 Environment fallback:
@@ -38,6 +41,9 @@ function parseArgs(argv) {
     metricsPath: DEFAULT_METRICS_PATH,
     skipRoot: false,
     skipMetrics: false,
+    skipSecurity: false,
+    skipCors: false,
+    deniedOrigin: 'https://unauthorized.example',
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -88,6 +94,22 @@ function parseArgs(argv) {
       continue;
     }
 
+    if (arg === '--skip-security') {
+      options.skipSecurity = true;
+      continue;
+    }
+
+    if (arg === '--skip-cors') {
+      options.skipCors = true;
+      continue;
+    }
+
+    if (arg === '--denied-origin') {
+      options.deniedOrigin = readValue(argv, index, '--denied-origin');
+      index += 1;
+      continue;
+    }
+
     throw new Error(`Unknown option: ${arg}`);
   }
 
@@ -124,27 +146,35 @@ function createBodyPreview(body) {
   return body.replace(/\s+/g, ' ').trim().slice(0, 500);
 }
 
-async function fetchText(url, timeoutMs) {
+function responseHeadersToObject(headers) {
+  return Object.fromEntries(headers.entries());
+}
+
+async function fetchText(url, timeoutMs, requestOptions = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(url, {
       signal: controller.signal,
-      redirect: 'follow',
+      redirect: requestOptions.redirect || 'follow',
+      method: requestOptions.method || 'GET',
       headers: {
         Accept: 'application/json,text/html;q=0.9,*/*;q=0.8',
         'User-Agent': USER_AGENT,
+        ...(requestOptions.headers || {}),
       },
     });
     const body = await response.text();
+    const headers = responseHeadersToObject(response.headers);
 
     return {
       ok: response.ok,
       status: response.status,
       statusText: response.statusText,
-      contentType: response.headers.get('content-type') || '',
-      requestId: response.headers.get('x-request-id') || '',
+      headers,
+      contentType: headers['content-type'] || '',
+      requestId: headers['x-request-id'] || '',
       body,
     };
   } catch (error) {
@@ -208,6 +238,100 @@ function validateApiRequestId(result, json, label) {
 
   if (json.requestId && json.requestId !== result.requestId) {
     throw new Error(`${label} requestId body/header mismatch.`);
+  }
+}
+
+function requireHeader(result, name) {
+  const value = result.headers[name.toLowerCase()];
+  if (!value) {
+    throw new Error(`Missing required security header: ${name}`);
+  }
+  return value;
+}
+
+function validateSecurityHeaders(result, url) {
+  const csp = requireHeader(result, 'content-security-policy');
+  if (!csp.includes("default-src 'self'") || !csp.includes('frame-ancestors')) {
+    throw new Error('Content-Security-Policy is present but missing required directives.');
+  }
+
+  if (requireHeader(result, 'x-frame-options').toUpperCase() !== 'DENY') {
+    throw new Error('X-Frame-Options must be DENY.');
+  }
+
+  if (requireHeader(result, 'x-content-type-options').toLowerCase() !== 'nosniff') {
+    throw new Error('X-Content-Type-Options must be nosniff.');
+  }
+
+  requireHeader(result, 'referrer-policy');
+  requireHeader(result, 'permissions-policy');
+
+  if (url.protocol === 'https:') {
+    requireHeader(result, 'strict-transport-security');
+  }
+}
+
+function getHealthSecurity(health) {
+  return health && typeof health.security === 'object' ? health.security : null;
+}
+
+function validateSecurityPosture(health) {
+  const security = getHealthSecurity(health);
+  if (!security) {
+    throw new Error('Health response did not include security posture.');
+  }
+
+  const tokenRoutes = security.rateLimiting?.tokens?.routes;
+  if (!Array.isArray(tokenRoutes) || tokenRoutes.length === 0) {
+    throw new Error('Health security posture did not include token limiter routes.');
+  }
+
+  const expectedRoutes = [
+    '/api/openai/session',
+    '/api/xai/session',
+    '/api/elevenlabs/signed-url',
+    '/api/ultravox/call',
+    '/api/retell/create-web-call',
+    '/api/gemini/session',
+  ];
+  const missingRoute = expectedRoutes.find(route => !tokenRoutes.includes(route));
+  if (missingRoute) {
+    throw new Error(`Health security posture is missing token limiter route ${missingRoute}.`);
+  }
+
+  if (!security.headers?.enabled || !security.headers?.csp || !security.headers?.frameProtection) {
+    throw new Error('Health security posture did not report enabled security headers.');
+  }
+
+  if (!security.bodyParsing?.jsonLimit) {
+    throw new Error('Health security posture did not report the JSON body limit.');
+  }
+
+  return { security, tokenRoutes };
+}
+
+async function fetchCorsPreflight(url, timeoutMs, origin) {
+  return fetchText(url, timeoutMs, {
+    method: 'OPTIONS',
+    redirect: 'manual',
+    headers: {
+      Origin: origin,
+      'Access-Control-Request-Method': 'POST',
+    },
+  });
+}
+
+function validateDeniedCors(result, deniedOrigin) {
+  const allowOrigin = result.headers['access-control-allow-origin'] || '';
+  if (allowOrigin === '*' || allowOrigin === deniedOrigin) {
+    throw new Error(`Denied CORS origin was allowed: ${allowOrigin}`);
+  }
+}
+
+function validateAllowedCors(result, allowedOrigin) {
+  const allowOrigin = result.headers['access-control-allow-origin'] || '';
+  if (allowOrigin !== allowedOrigin) {
+    throw new Error(`Allowed CORS origin ${allowedOrigin} was not reflected.`);
   }
 }
 
@@ -290,6 +414,37 @@ async function main() {
   }
 
   console.log(`[PASS] Health response included X-Request-Id: ${healthResult.requestId}`);
+
+  if (options.skipSecurity) {
+    console.log('[SKIP] Security posture checks skipped.');
+  } else {
+    validateSecurityHeaders(healthResult, healthUrl);
+    const { security, tokenRoutes } = validateSecurityPosture(health);
+    console.log('[PASS] Security headers are present on /api/health.');
+    console.log(`[PASS] Security posture lists ${tokenRoutes.length} token/session limiter routes.`);
+    if (security.cors?.unsafeProductionConfig) {
+      throw new Error(`Unsafe production CORS configuration: ${security.cors.issues.join('; ')}`);
+    }
+  }
+
+  if (options.skipCors) {
+    console.log('[SKIP] CORS checks skipped.');
+  } else {
+    const corsUrl = new URL('/api/xai/session', healthUrl.origin);
+    const denied = await fetchCorsPreflight(corsUrl, options.timeoutMs, options.deniedOrigin);
+    validateDeniedCors(denied, options.deniedOrigin);
+    console.log(`[PASS] CORS rejected unauthorized origin ${options.deniedOrigin}.`);
+
+    const allowedOrigins = health.security?.cors?.configuredOrigins || [];
+    if (allowedOrigins.length > 0) {
+      const allowedOrigin = allowedOrigins[0];
+      const allowed = await fetchCorsPreflight(corsUrl, options.timeoutMs, allowedOrigin);
+      validateAllowedCors(allowed, allowedOrigin);
+      console.log(`[PASS] CORS allowed configured origin ${allowedOrigin}.`);
+    } else {
+      console.log('[WARN] No configured CORS origins were reported; allowed-origin check skipped.');
+    }
+  }
 
   if (options.skipMetrics) {
     console.log('[SKIP] Metrics endpoint check skipped.');

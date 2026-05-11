@@ -19,13 +19,21 @@ import {
   isRequestLoggingEnabled,
   requestMetrics,
 } from './utils/observability.js';
+import {
+  TOKEN_ENDPOINT_PATHS,
+  createCorsOriginDelegate,
+  createInFlightRequestGuard,
+  createJsonErrorHandler,
+  createSecurityHeadersMiddleware,
+  getJsonBodyLimit,
+  getSecurityPosture,
+  mapProviderError,
+  validateProductionSecurityConfig,
+} from './utils/security.js';
 
 // ES module __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// Production mode detection
-const isProduction = process.env.NODE_ENV === 'production';
 
 // Load base environment variables first
 config();
@@ -40,6 +48,17 @@ if (existsSync(envDemoPath)) {
 
 // Demo mode flag from environment
 const isDemoMode = process.env.DEMO_MODE === 'true';
+const isProduction = process.env.NODE_ENV === 'production';
+const jsonBodyLimit = getJsonBodyLimit();
+const securityConfig = validateProductionSecurityConfig({
+  nodeEnv: process.env.NODE_ENV,
+  corsOrigin: process.env.CORS_ORIGIN,
+  isDemoMode,
+});
+
+if (isProduction && !securityConfig.ok) {
+  console.error('[Server] Unsafe production security configuration:', securityConfig.issues.join('; '));
+}
 
 // Rate limiting configuration
 const apiLimiter = rateLimit({
@@ -81,10 +100,13 @@ const staticLimiter = rateLimit({
 });
 
 const app = express();
+app.disable('x-powered-by');
+
 const PORT = process.env.SERVER_PORT || 3001;
 const startTime = Date.now();
 const distPath = join(__dirname, '..', 'dist');
 const indexPath = join(distPath, 'index.html');
+const tokenInFlightGuard = createInFlightRequestGuard();
 
 function isEnvConfigured(name) {
   const value = process.env[name];
@@ -135,8 +157,12 @@ function getHealthStatus({ isAppReady, providerSummary }) {
   return 'degraded';
 }
 
-function getHealthMessage({ status, providerSummary, isStaticReady }) {
+function getHealthMessage({ status, providerSummary, isStaticReady, isSecurityReady }) {
   if (status === 'unhealthy') {
+    if (!isSecurityReady) {
+      return 'Production security configuration is unsafe.';
+    }
+
     return isStaticReady
       ? 'Application readiness failed.'
       : 'Production static assets are missing or unavailable.';
@@ -215,17 +241,20 @@ function parseMetricsQuery(query) {
 }
 
 // Middleware
+app.use(createSecurityHeadersMiddleware({ isProduction }));
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:8082',
+  origin: createCorsOriginDelegate(securityConfig),
   credentials: true,
+  optionsSuccessStatus: 204,
 }));
-app.use(express.json());
+// Attach request IDs, request completion logs, and in-memory API metrics before
+// JSON parsing so malformed body failures are also traceable.
+app.use('/api', createRequestLoggingMiddleware());
+app.use(express.json({ limit: jsonBodyLimit, strict: true }));
+app.use(createJsonErrorHandler());
 
 // Compression for all responses (improves static file delivery)
 app.use(compression());
-
-// Attach request IDs, request completion logs, and in-memory API metrics.
-app.use('/api', createRequestLoggingMiddleware());
 
 // Serve static files in production mode (BEFORE API routes)
 if (isProduction) {
@@ -237,12 +266,9 @@ if (isProduction) {
 app.use('/api', apiLimiter);
 
 // Apply stricter rate limiting to token endpoints
-app.use('/api/xai/token', tokenLimiter);
-app.use('/api/openai/token', tokenLimiter);
-app.use('/api/elevenlabs/signed-url', tokenLimiter);
-app.use('/api/ultravox/call', tokenLimiter);
-app.use('/api/retell/create-web-call', tokenLimiter);
-app.use('/api/gemini/session', tokenLimiter);
+for (const tokenEndpointPath of TOKEN_ENDPOINT_PATHS) {
+  app.use(tokenEndpointPath, tokenLimiter, tokenInFlightGuard);
+}
 
 // API Routes
 app.use('/api/xai', xaiRoutes);
@@ -259,24 +285,22 @@ app.get('/api/health', (req, res) => {
   const services = getProviderServices();
   const providerSummary = getProviderSummary(services);
   const isStaticReady = !isProduction || existsSync(indexPath);
-  const isAppReady = isStaticReady;
+  const isSecurityReady = securityConfig.ok;
+  const isAppReady = isStaticReady && isSecurityReady;
   const status = getHealthStatus({ isAppReady, providerSummary });
   const httpStatus = status === 'unhealthy' ? 503 : 200;
-  const message = getHealthMessage({ status, providerSummary, isStaticReady });
-
-  // Security features status
-  const security = {
-    cors: {
-      enabled: true,
-      origin: process.env.CORS_ORIGIN || 'http://localhost:8082',
-    },
-    rateLimiting: {
-      enabled: true,
-      api: { windowMs: 900000, max: 100 }, // 15 min, 100 requests
-      tokens: { windowMs: 60000, max: 10 }, // 1 min, 10 requests
-    },
-    demoMode: isDemoMode,
-  };
+  const message = getHealthMessage({
+    status,
+    providerSummary,
+    isStaticReady,
+    isSecurityReady,
+  });
+  const security = getSecurityPosture({
+    securityConfig,
+    isProduction,
+    isDemoMode,
+    jsonBodyLimit,
+  });
 
   const healthResponse = {
     requestId: req.requestId,
@@ -310,6 +334,7 @@ app.get('/api/health', (req, res) => {
       readiness: {
         app: isAppReady,
         staticAssets: isStaticReady,
+        security: isSecurityReady,
         providersConfigured: providerSummary.configured,
         providersTotal: providerSummary.total,
       },
@@ -385,11 +410,9 @@ app.get('/api/elevenlabs/signed-url', async (req, res) => {
     );
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Server] ElevenLabs API error: ${response.status} - ${errorText}`);
+      console.error(`[Server] ElevenLabs API error: ${response.status}`);
       return res.status(response.status).json({
-        error: 'Failed to get signed URL',
-        message: errorText
+        ...mapProviderError('ElevenLabs', response.status),
       });
     }
 
@@ -398,10 +421,10 @@ app.get('/api/elevenlabs/signed-url', async (req, res) => {
 
     res.json({ signedUrl: data.signed_url });
   } catch (error) {
-    console.error('[Server] Error getting signed URL:', error);
+    console.error('[Server] Error getting signed URL:', error.message);
     res.status(500).json({
       error: 'Internal server error',
-      message: error.message
+      message: 'Failed to get ElevenLabs signed URL'
     });
   }
 });
@@ -421,7 +444,7 @@ if (isProduction) {
 app.listen(PORT, () => {
   console.log(`[Server] Running on http://localhost:${PORT}`);
   console.log(`[Server] Mode: ${isProduction ? 'production' : 'development'}${isDemoMode ? ' (demo)' : ''}`);
-  console.log(`[Server] CORS origin: ${process.env.CORS_ORIGIN || 'http://localhost:8082'}`);
+  console.log(`[Server] CORS origins: ${securityConfig.origins.join(', ') || 'none'}`);
   if (isDemoMode) {
     console.log('[Server] Demo mode: CORS configured for ngrok tunnel');
   }

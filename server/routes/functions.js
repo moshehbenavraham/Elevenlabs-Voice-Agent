@@ -1,5 +1,11 @@
 import { Router } from 'express';
 import { sanitizeLogInput } from '../utils/sanitize.js';
+import {
+  isPlainObject,
+  validateAllowedKeys,
+  validateOptionalObject,
+  validateString,
+} from '../utils/security.js';
 
 const router = Router();
 
@@ -8,6 +14,11 @@ const FUNCTION_TIMEOUT_MS = 2000;
 
 // Allowlist of valid function names for security
 const ALLOWED_FUNCTIONS = ['get_weather', 'calculate', 'get_current_time'];
+const CALL_ID_PATTERN = /^[A-Za-z0-9._:-]+$/;
+const FUNCTION_NAME_PATTERN = /^[a-z_]+$/;
+const LOCATION_PATTERN = /^[A-Za-z0-9 .,'-]+$/;
+const TIMEZONE_PATTERN = /^[A-Za-z0-9_+\-/.]+$/;
+const EXPRESSION_PATTERN = /^[0-9+\-*/().\s]+$/;
 
 /**
  * Validates that a function name is in the allowlist
@@ -16,6 +27,206 @@ const ALLOWED_FUNCTIONS = ['get_weather', 'calculate', 'get_current_time'];
  */
 function isAllowedFunction(name) {
   return ALLOWED_FUNCTIONS.includes(name);
+}
+
+function validateArgumentsForFunction(name, args) {
+  if (!isPlainObject(args)) {
+    return {
+      valid: false,
+      error: {
+        error: 'Validation error',
+        message: 'arguments: must be an object',
+      },
+    };
+  }
+
+  if (name === 'get_weather') {
+    const keys = validateAllowedKeys(args, ['location', 'unit'], 'arguments');
+    if (!keys.valid) {
+      return keys;
+    }
+
+    const location = validateString(args.location, {
+      field: 'arguments.location',
+      required: true,
+      maxLength: 120,
+      pattern: LOCATION_PATTERN,
+    });
+    if (!location.valid) {
+      return location;
+    }
+
+    const unit = validateString(args.unit, {
+      field: 'arguments.unit',
+      maxLength: 16,
+      pattern: /^(celsius|fahrenheit)$/,
+      defaultValue: 'celsius',
+    });
+    if (!unit.valid) {
+      return unit;
+    }
+
+    return {
+      valid: true,
+      args: {
+        location: location.value,
+        unit: unit.value || 'celsius',
+      },
+    };
+  }
+
+  if (name === 'calculate') {
+    const keys = validateAllowedKeys(args, ['expression'], 'arguments');
+    if (!keys.valid) {
+      return keys;
+    }
+
+    const expression = validateString(args.expression, {
+      field: 'arguments.expression',
+      required: true,
+      maxLength: 128,
+      pattern: EXPRESSION_PATTERN,
+    });
+    if (!expression.valid) {
+      return expression;
+    }
+
+    return {
+      valid: true,
+      args: {
+        expression: expression.value,
+      },
+    };
+  }
+
+  if (name === 'get_current_time') {
+    const keys = validateAllowedKeys(args, ['timezone'], 'arguments');
+    if (!keys.valid) {
+      return keys;
+    }
+
+    const timezone = validateString(args.timezone, {
+      field: 'arguments.timezone',
+      maxLength: 64,
+      pattern: TIMEZONE_PATTERN,
+      defaultValue: 'UTC',
+    });
+    if (!timezone.valid) {
+      return timezone;
+    }
+
+    return {
+      valid: true,
+      args: {
+        timezone: timezone.value || 'UTC',
+      },
+    };
+  }
+
+  return {
+    valid: false,
+    error: {
+      error: 'Validation error',
+      message: 'name: function is not allowed',
+    },
+  };
+}
+
+function validateExecuteRequest(body) {
+  const keys = validateAllowedKeys(body || {}, ['name', 'arguments', 'callId'], 'body');
+  if (!keys.valid) {
+    return keys;
+  }
+
+  const name = validateString(body?.name, {
+    field: 'name',
+    required: true,
+    maxLength: 64,
+    pattern: FUNCTION_NAME_PATTERN,
+  });
+  if (!name.valid) {
+    return name;
+  }
+
+  const callId = validateString(body?.callId, {
+    field: 'callId',
+    maxLength: 128,
+    pattern: CALL_ID_PATTERN,
+  });
+  if (!callId.valid) {
+    return callId;
+  }
+
+  const objectBounds = validateOptionalObject(body?.arguments, {
+    field: 'arguments',
+    maxDepth: 3,
+    maxKeys: 8,
+    maxStringLength: 256,
+  });
+  if (!objectBounds.valid) {
+    return objectBounds;
+  }
+
+  if (objectBounds.value === undefined) {
+    return {
+      valid: false,
+      error: {
+        error: 'Validation error',
+        message: 'arguments: is required',
+      },
+    };
+  }
+
+  if (!isAllowedFunction(name.value)) {
+    return {
+      valid: false,
+      status: 403,
+      error: {
+        error: 'Validation error',
+        message: `Function "${name.value}" is not allowed`,
+      },
+    };
+  }
+
+  const args = validateArgumentsForFunction(name.value, objectBounds.value);
+  if (!args.valid) {
+    return args;
+  }
+
+  return {
+    valid: true,
+    name: name.value,
+    callId: callId.value,
+    args: args.args,
+  };
+}
+
+function createResultSummary(result) {
+  if (isPlainObject(result)) {
+    return {
+      type: 'object',
+      keys: Object.keys(result).sort().slice(0, 8),
+    };
+  }
+
+  return { type: typeof result };
+}
+
+async function executeWithTimeout(handler, args) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      const timeoutError = new Error('Function execution timed out');
+      timeoutError.code = 'FUNCTION_TIMEOUT';
+      reject(timeoutError);
+    }, FUNCTION_TIMEOUT_MS);
+  });
+
+  try {
+    return await Promise.race([Promise.resolve(handler(args)), timeoutPromise]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
@@ -177,37 +388,21 @@ const FUNCTION_HANDLERS = {
  */
 router.post('/execute', async (req, res) => {
   const startTime = Date.now();
-  const { name, arguments: args, callId } = req.body;
+  const requestValidation = validateExecuteRequest(req.body);
+  const callId = requestValidation.callId;
 
-  console.log(`[Functions] Executing function: %s`, sanitizeLogInput(name), { callId: sanitizeLogInput(callId), args: sanitizeLogInput(args) });
-
-  // Validate function name
-  if (!name || typeof name !== 'string') {
-    return res.status(400).json({
+  if (!requestValidation.valid) {
+    return res.status(requestValidation.status || 400).json({
       success: false,
-      error: 'Function name is required',
-      callId
+      error: requestValidation.error.message,
+      callId,
     });
   }
 
-  // Security check: validate against allowlist
-  if (!isAllowedFunction(name)) {
-    console.warn(`[Functions] Blocked attempt to call non-allowed function: %s`, sanitizeLogInput(name));
-    return res.status(403).json({
-      success: false,
-      error: `Function "${name}" is not allowed`,
-      callId
-    });
-  }
-
-  // Validate arguments
-  if (!args || typeof args !== 'object') {
-    return res.status(400).json({
-      success: false,
-      error: 'Function arguments must be an object',
-      callId
-    });
-  }
+  const { name, args } = requestValidation;
+  console.log(`[Functions] Executing function: %s`, sanitizeLogInput(name), {
+    callId: sanitizeLogInput(callId),
+  });
 
   // Get function handler
   const handler = FUNCTION_HANDLERS[name];
@@ -221,16 +416,13 @@ router.post('/execute', async (req, res) => {
 
   // Execute function with timeout
   try {
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Function execution timed out')), FUNCTION_TIMEOUT_MS);
-    });
-
-    const executionPromise = Promise.resolve(handler(args));
-
-    const result = await Promise.race([executionPromise, timeoutPromise]);
+    const result = await executeWithTimeout(handler, args);
 
     const duration = Date.now() - startTime;
-    console.log(`[Functions] Function ${name} completed in ${duration}ms`, { callId, result });
+    console.log(`[Functions] Function %s completed in ${duration}ms`, sanitizeLogInput(name), {
+      callId: sanitizeLogInput(callId),
+      result: createResultSummary(result),
+    });
 
     return res.json({
       success: true,
@@ -241,9 +433,12 @@ router.post('/execute', async (req, res) => {
 
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error(`[Functions] Function ${name} failed in ${duration}ms:`, error.message);
+    const status = error.code === 'FUNCTION_TIMEOUT' ? 504 : 400;
+    console.error(`[Functions] Function %s failed in ${duration}ms: %s`, sanitizeLogInput(name), sanitizeLogInput(error.message), {
+      callId: sanitizeLogInput(callId),
+    });
 
-    return res.status(500).json({
+    return res.status(status).json({
       success: false,
       error: error.message,
       callId,

@@ -185,6 +185,7 @@ This project includes comprehensive documentation:
 
 - **[Architecture Overview](docs/ARCHITECTURE.md)** - System design, components, and data flow
 - **[API Integration Guide](docs/API_INTEGRATION.md)** - Voice SDK integration and best practices
+- **[OpenAI Realtime Provider](docs/OPENAI_REALTIME.md)** - OpenAI token flow, session events, and PCM audio pipeline
 - **[Voice Features Documentation](docs/VOICE_FEATURES.md)** - Voice orb, audio visualization, and voice interactions
 - **[Mobile Optimization Guide](docs/MOBILE_OPTIMIZATION.md)** - Touch interactions, PWA features, and mobile performance
 
@@ -216,6 +217,7 @@ This project includes comprehensive documentation:
 | [VOICE]   | **[Voice Features](docs/VOICE_FEATURES.md)**    | Voice AI functionality          |
 | [MOBILE]  | **[Mobile Guide](docs/MOBILE_OPTIMIZATION.md)** | Mobile optimization             |
 | [API]     | **[API Integration](docs/API_INTEGRATION.md)**  | Voice SDK integration guide     |
+| [OPENAI]  | **[OpenAI Realtime](docs/OPENAI_REALTIME.md)**  | OpenAI provider internals       |
 | [HELP]    | **[Troubleshooting](docs/TROUBLESHOOTING.md)**  | Problem resolution              |
 | [AI]      | **[Claude Integration](CLAUDE.md)**             | AI assistant development guide  |
 | [CONTRIB] | **[Contributing](CONTRIBUTING.md)**             | Development guidelines          |

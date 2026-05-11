@@ -1,11 +1,18 @@
 import { Router } from 'express';
 import { sanitizeLogInput } from '../utils/sanitize.js';
+import {
+  mapProviderError,
+  validateAllowedKeys,
+  validateOptionalObject,
+  validateString,
+} from '../utils/security.js';
 
 const router = Router();
 
 // Retell API configuration constants
 const RETELL_API_URL = 'https://api.retellai.com/v2/create-web-call';
 const REQUEST_TIMEOUT_MS = 30000;
+const AGENT_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 /**
  * Validates that RETELL_API_KEY environment variable is configured.
@@ -33,17 +40,52 @@ function validateApiKey() {
  * @returns {{ valid: boolean, agentId?: string, error?: { error: string, message: string } }}
  */
 function validateRequestBody(body) {
-  const agentId = body?.agent_id;
-  if (!agentId || typeof agentId !== 'string') {
-    return {
-      valid: false,
-      error: {
-        error: 'Validation error',
-        message: 'agent_id is required and must be a string'
-      }
-    };
+  const requestBody = body || {};
+  const keys = validateAllowedKeys(
+    requestBody,
+    ['agent_id', 'metadata', 'retell_llm_dynamic_variables'],
+    'body'
+  );
+  if (!keys.valid) {
+    return keys;
   }
-  return { valid: true, agentId };
+
+  const agentId = validateString(requestBody.agent_id, {
+    field: 'agent_id',
+    required: true,
+    maxLength: 128,
+    pattern: AGENT_ID_PATTERN,
+  });
+  if (!agentId.valid) {
+    return agentId;
+  }
+
+  const metadata = validateOptionalObject(requestBody.metadata, {
+    field: 'metadata',
+    maxDepth: 3,
+    maxKeys: 24,
+    maxStringLength: 512,
+  });
+  if (!metadata.valid) {
+    return metadata;
+  }
+
+  const dynamicVariables = validateOptionalObject(requestBody.retell_llm_dynamic_variables, {
+    field: 'retell_llm_dynamic_variables',
+    maxDepth: 3,
+    maxKeys: 24,
+    maxStringLength: 512,
+  });
+  if (!dynamicVariables.valid) {
+    return dynamicVariables;
+  }
+
+  return {
+    valid: true,
+    agentId: agentId.value,
+    metadata: metadata.value,
+    retellLlmDynamicVariables: dynamicVariables.value,
+  };
 }
 
 /**
@@ -88,23 +130,12 @@ async function createRetellWebCall(apiKey, options) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Server] Retell API error: ${response.status} - ${errorText}`);
-
-      // Map Retell error codes to user-friendly messages
-      let message = 'Failed to create Retell web call';
-      if (response.status === 401 || response.status === 403) {
-        message = 'Invalid Retell API key';
-      } else if (response.status === 429) {
-        message = 'Retell rate limit exceeded';
-      } else if (response.status >= 500) {
-        message = 'Retell service temporarily unavailable';
-      }
+      console.error(`[Server] Retell API error: ${response.status}`);
 
       return {
         success: false,
         status: response.status,
-        error: { error: 'Retell API error', message }
+        error: mapProviderError('Retell', response.status)
       };
     }
 
@@ -150,7 +181,7 @@ async function createRetellWebCall(apiKey, options) {
       status: 500,
       error: {
         error: 'Internal server error',
-        message: error.message
+        message: 'Failed to create Retell web call'
       }
     };
   }
@@ -201,14 +232,11 @@ router.post('/create-web-call', async (req, res) => {
     return res.status(400).json(bodyValidation.error);
   }
 
-  // Parse optional fields from request body
-  const { metadata, retell_llm_dynamic_variables } = req.body || {};
-
   // Create Retell web call
   const result = await createRetellWebCall(apiValidation.apiKey, {
     agentId: bodyValidation.agentId,
-    metadata,
-    retellLlmDynamicVariables: retell_llm_dynamic_variables
+    metadata: bodyValidation.metadata,
+    retellLlmDynamicVariables: bodyValidation.retellLlmDynamicVariables
   });
 
   if (!result.success) {

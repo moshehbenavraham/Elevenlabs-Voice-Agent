@@ -1,10 +1,18 @@
 import { Router } from 'express';
+import {
+  MAX_PROVIDER_STRING_LENGTH,
+  mapProviderError,
+  validateAllowedKeys,
+  validateString,
+} from '../utils/security.js';
 
 const router = Router();
 
 // Ultravox API configuration constants
 const ULTRAVOX_API_URL = 'https://api.ultravox.ai/api/calls';
 const REQUEST_TIMEOUT_MS = 30000;
+const VOICE_PATTERN = /^[A-Za-z0-9 ._:-]+$/;
+const MODEL_PATTERN = /^[A-Za-z0-9._:-]+$/;
 
 // Default system prompt for Ultravox voice agent
 const DEFAULT_SYSTEM_PROMPT = 'You are a helpful voice assistant. Keep responses conversational and concise.';
@@ -71,23 +79,12 @@ async function createUltravoxCall(apiKey, options) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Server] Ultravox API error: ${response.status} - ${errorText}`);
-
-      // Map Ultravox error codes to user-friendly messages
-      let message = 'Failed to create Ultravox call';
-      if (response.status === 401 || response.status === 403) {
-        message = 'Invalid Ultravox API key';
-      } else if (response.status === 429) {
-        message = 'Ultravox rate limit exceeded';
-      } else if (response.status >= 500) {
-        message = 'Ultravox service temporarily unavailable';
-      }
+      console.error(`[Server] Ultravox API error: ${response.status}`);
 
       return {
         success: false,
         status: response.status,
-        error: { error: 'Ultravox API error', message }
+        error: mapProviderError('Ultravox', response.status)
       };
     }
 
@@ -133,10 +130,53 @@ async function createUltravoxCall(apiKey, options) {
       status: 500,
       error: {
         error: 'Internal server error',
-        message: error.message
+        message: 'Failed to create Ultravox call'
       }
     };
   }
+}
+
+function validateCallRequest(body) {
+  const requestBody = body || {};
+  const keys = validateAllowedKeys(requestBody, ['systemPrompt', 'voice', 'model'], 'body');
+  if (!keys.valid) {
+    return keys;
+  }
+
+  const systemPrompt = validateString(requestBody.systemPrompt, {
+    field: 'systemPrompt',
+    maxLength: MAX_PROVIDER_STRING_LENGTH,
+  });
+  if (!systemPrompt.valid) {
+    return systemPrompt;
+  }
+
+  const voice = validateString(requestBody.voice, {
+    field: 'voice',
+    maxLength: 128,
+    pattern: VOICE_PATTERN,
+  });
+  if (!voice.valid) {
+    return voice;
+  }
+
+  const model = validateString(requestBody.model, {
+    field: 'model',
+    maxLength: 128,
+    pattern: MODEL_PATTERN,
+  });
+  if (!model.valid) {
+    return model;
+  }
+
+  return {
+    valid: true,
+    options: {
+      systemPrompt: systemPrompt.value,
+      voice: voice.value,
+      model: model.value,
+    },
+  };
 }
 
 /**
@@ -178,15 +218,13 @@ router.post('/call', async (req, res) => {
     return res.status(500).json(validation.error);
   }
 
-  // Parse request body with defaults
-  const { systemPrompt, voice, model } = req.body || {};
+  const requestValidation = validateCallRequest(req.body);
+  if (!requestValidation.valid) {
+    return res.status(400).json(requestValidation.error);
+  }
 
   // Create Ultravox call
-  const result = await createUltravoxCall(validation.apiKey, {
-    systemPrompt,
-    voice,
-    model
-  });
+  const result = await createUltravoxCall(validation.apiKey, requestValidation.options);
 
   if (!result.success) {
     return res.status(result.status || 500).json(result.error);

@@ -1,11 +1,16 @@
 import { Router } from 'express';
-import { GoogleGenAI } from '@google/genai';
+import {
+  getGeminiBrowserTokenPolicy,
+  validateAllowedKeys,
+  validateString,
+} from '../utils/security.js';
 
 const router = Router();
 
 // Gemini Live API configuration constants
 const DEFAULT_MODEL = 'gemini-2.5-flash-native-audio-preview-12-2025';
 const REQUEST_TIMEOUT_MS = 30000;
+const MODEL_PATTERN = /^[A-Za-z0-9._:-]+$/;
 // Token expiry: 30 minutes (Gemini sessions can be long-lived)
 const TOKEN_EXPIRY_SECONDS = 30 * 60;
 
@@ -43,13 +48,6 @@ async function createEphemeralToken(apiKey, model) {
   try {
     console.log(`[Server] Creating Gemini Live session for model: ${model}`);
 
-    // Initialize the Google GenAI client
-    const genai = new GoogleGenAI({ apiKey });
-
-    // For Gemini Live API, the API key itself serves as the authentication token
-    // The WebSocket URL is constructed with the key as a query parameter
-    // We return the API key wrapped in a token format for the frontend to use
-
     // Calculate expiration time
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_SECONDS * 1000).toISOString();
 
@@ -57,11 +55,8 @@ async function createEphemeralToken(apiKey, model) {
 
     console.log('[Server] Gemini ephemeral token generated successfully');
 
-    // Return the API key as the token - in production, you might want to
-    // implement a more sophisticated token exchange mechanism
-    // For now, we use the API key directly (this is secure because
-    // it's transmitted over HTTPS and the frontend only uses it for
-    // the WebSocket connection)
+    // Development compatibility only. Production route handling blocks raw key
+    // return unless a browser-safe Gemini token exchange is added.
     return {
       success: true,
       token: apiKey,
@@ -86,27 +81,36 @@ async function createEphemeralToken(apiKey, model) {
 
     console.error('[Server] Error creating Gemini session:', error.message);
 
-    // Map error codes to user-friendly messages
-    let status = 500;
-    let message = 'Failed to create Gemini session';
-
-    if (error.status === 401 || error.status === 403) {
-      status = error.status;
-      message = 'Invalid Gemini API key';
-    } else if (error.status === 429) {
-      status = 429;
-      message = 'Gemini rate limit exceeded';
-    } else if (error.status >= 500) {
-      status = 502;
-      message = 'Gemini service temporarily unavailable';
-    }
-
     return {
       success: false,
-      status,
-      error: { error: 'Gemini API error', message }
+      status: 500,
+      error: {
+        error: 'Gemini API error',
+        message: 'Failed to create Gemini session'
+      }
     };
   }
+}
+
+function validateSessionRequest(body) {
+  const requestBody = body || {};
+  const keys = validateAllowedKeys(requestBody, ['model'], 'body');
+  if (!keys.valid) {
+    return keys;
+  }
+
+  const model = validateString(requestBody.model, {
+    field: 'model',
+    maxLength: 128,
+    pattern: MODEL_PATTERN,
+    defaultValue: DEFAULT_MODEL,
+  });
+
+  if (!model.valid) {
+    return model;
+  }
+
+  return { valid: true, model: model.value || DEFAULT_MODEL };
 }
 
 /**
@@ -146,11 +150,21 @@ router.post('/session', async (req, res) => {
     return res.status(500).json(validation.error);
   }
 
-  // Get model from request body or use default
-  const model = req.body?.model || DEFAULT_MODEL;
+  const requestValidation = validateSessionRequest(req.body);
+  if (!requestValidation.valid) {
+    return res.status(400).json(requestValidation.error);
+  }
+
+  const tokenPolicy = getGeminiBrowserTokenPolicy({ nodeEnv: process.env.NODE_ENV });
+  if (!tokenPolicy.canReturnRawApiKey) {
+    return res.status(501).json({
+      error: 'Gemini browser token unavailable',
+      message: tokenPolicy.message,
+    });
+  }
 
   // Create ephemeral token
-  const result = await createEphemeralToken(validation.apiKey, model);
+  const result = await createEphemeralToken(validation.apiKey, requestValidation.model);
 
   if (!result.success) {
     return res.status(result.status || 500).json(result.error);

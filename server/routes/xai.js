@@ -1,11 +1,18 @@
 import { Router } from 'express';
 import { sanitizeLogInput } from '../utils/sanitize.js';
+import {
+  mapProviderError,
+  validateAllowedKeys,
+  validateInteger,
+} from '../utils/security.js';
 
 const router = Router();
 
 // Default configuration constants
 const XAI_API_URL = 'https://api.x.ai/v1/realtime/client_secrets';
 const DEFAULT_EXPIRY_SECONDS = 300;
+const MIN_EXPIRY_SECONDS = 60;
+const MAX_EXPIRY_SECONDS = 3600;
 const REQUEST_TIMEOUT_MS = 30000;
 
 /**
@@ -57,23 +64,12 @@ async function createEphemeralToken(apiKey, expirySeconds = DEFAULT_EXPIRY_SECON
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[Server] xAI API error: ${response.status} - ${errorText}`);
-
-      // Map xAI error codes to user-friendly messages
-      let message = 'Failed to create xAI session';
-      if (response.status === 401 || response.status === 403) {
-        message = 'Invalid xAI API key';
-      } else if (response.status === 429) {
-        message = 'xAI rate limit exceeded';
-      } else if (response.status >= 500) {
-        message = 'xAI service temporarily unavailable';
-      }
+      console.error(`[Server] xAI API error: ${response.status}`);
 
       return {
         success: false,
         status: response.status,
-        error: { error: 'xAI API error', message }
+        error: mapProviderError('xAI', response.status)
       };
     }
 
@@ -119,10 +115,31 @@ async function createEphemeralToken(apiKey, expirySeconds = DEFAULT_EXPIRY_SECON
       status: 500,
       error: {
         error: 'Internal server error',
-        message: error.message
+        message: 'Failed to create xAI session'
       }
     };
   }
+}
+
+function validateSessionRequest(body) {
+  const requestBody = body || {};
+  const keys = validateAllowedKeys(requestBody, ['expirySeconds'], 'body');
+  if (!keys.valid) {
+    return keys;
+  }
+
+  const expiry = validateInteger(requestBody.expirySeconds, {
+    field: 'expirySeconds',
+    min: MIN_EXPIRY_SECONDS,
+    max: MAX_EXPIRY_SECONDS,
+    defaultValue: DEFAULT_EXPIRY_SECONDS,
+  });
+
+  if (!expiry.valid) {
+    return expiry;
+  }
+
+  return { valid: true, expirySeconds: expiry.value };
 }
 
 /**
@@ -162,18 +179,20 @@ router.post('/session', async (req, res) => {
     return res.status(500).json(validation.error);
   }
 
-  // Parse request body with defaults
-  const { expirySeconds = DEFAULT_EXPIRY_SECONDS } = req.body || {};
+  const requestValidation = validateSessionRequest(req.body);
+  if (!requestValidation.valid) {
+    return res.status(400).json(requestValidation.error);
+  }
 
   // Create ephemeral token
-  const result = await createEphemeralToken(validation.apiKey, expirySeconds);
+  const result = await createEphemeralToken(validation.apiKey, requestValidation.expirySeconds);
 
   if (!result.success) {
     return res.status(result.status || 500).json(result.error);
   }
 
   // Calculate expiration time for client reference
-  const expiresAt = new Date(Date.now() + expirySeconds * 1000).toISOString();
+  const expiresAt = new Date(Date.now() + requestValidation.expirySeconds * 1000).toISOString();
 
   res.json({ token: result.token, expiresAt });
 });

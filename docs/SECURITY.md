@@ -1,241 +1,149 @@
 # Security Policy
 
+Voice-Agent-PuPuPlatter is a multi-provider voice AI demo platform. The Express
+server is the security boundary for provider credentials and browser-safe
+session material.
+
 ## Supported Versions
 
-We actively support the following versions of ElevenLabs Voice Agent:
+| Version | Supported |
+| ------- | --------- |
+| 1.0.x   | Yes       |
+| < 1.0   | No        |
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+Security updates are provided for the latest stable release. Operators should
+upgrade promptly when security fixes are released.
 
-Security updates will be provided for the latest stable release. Users are encouraged to upgrade to the latest version to ensure they receive security patches.
+## Reporting A Vulnerability
 
-## Reporting a Vulnerability
+Do not create public GitHub issues for security vulnerabilities and do not
+disclose issues publicly until maintainers have completed triage and response.
 
-We take security vulnerabilities seriously. If you discover a security issue, please follow these steps:
+Send reports to:
 
-### 🔒 **Private Disclosure**
+- Email: security@voice-agent-pupuplatter.dev
+- Subject: `[SECURITY] Voice-Agent-PuPuPlatter - <brief description>`
+- Expected acknowledgment: within 48 hours
 
-- **DO NOT** create a public GitHub issue for security vulnerabilities
-- **DO NOT** disclose the vulnerability publicly until we have addressed it
+Include:
 
-### 📧 **Contact Methods**
+- A clear vulnerability description
+- Reproduction steps
+- Affected version, commit, or deployment context
+- Potential impact
+- Suggested mitigation, if known
+- Contact information for follow-up
 
-- **Email**: Send details to security@voice-agent-pupuplatter.dev
-- **Subject Line**: `[SECURITY] Voice-Agent-PuPuPlatter - [Brief Description]`
-- **Response Time**: We aim to respond within 48 hours
+## Response Timeline
 
-### 📋 **Information to Include**
+| Step               | Target                                           |
+| ------------------ | ------------------------------------------------ |
+| Acknowledgment     | Within 48 hours                                  |
+| Initial assessment | Within 1 week                                    |
+| Fix development    | 2-4 weeks depending on severity and complexity   |
+| Release            | As soon as a safe fix is ready                   |
+| Advisory           | After affected operators have had time to update |
 
-- Description of the vulnerability
-- Steps to reproduce the issue
-- Potential impact assessment
-- Suggested mitigation (if any)
-- Your contact information for follow-up
+Critical vulnerabilities may be handled faster when exploitation risk is high.
 
-### 🔄 **Process Timeline**
+## Production Hardening
 
-1. **Acknowledgment**: Within 48 hours
-2. **Initial Assessment**: Within 1 week
-3. **Fix Development**: 2-4 weeks (depending on complexity)
-4. **Release**: Coordinated disclosure after fix is deployed
-5. **Public Advisory**: Published after users have had time to update
+See [Production Security Hardening](SECURITY_HARDENING.md) for the operational
+control guide covering:
 
-## Security Best Practices
+- Exact-origin production CORS
+- Security headers and CSP posture
+- Token/session route rate limiting
+- Provider payload validation
+- Gemini production key-exposure guard
+- API key rotation
+- Scanner verification
+- Known deferrals
 
-### 🔐 **General Application Security**
+## Credential Handling
 
-- Always use HTTPS in production environments
-- Keep dependencies updated regularly
-- Use environment variables for sensitive configuration
-- Implement proper error handling to avoid information leakage
-- Follow the principle of least privilege for API access
+- Never commit `.env` files or provider API keys.
+- Keep provider API keys as runtime server secrets only.
+- Never expose provider API keys through `VITE_*` variables.
+- Do not put secrets in logs, issue text, screenshots, or support messages.
+- Rotate provider keys regularly and immediately after suspected exposure.
+- Use different keys for development, staging, and production.
 
-### 🎤 **Microphone Permission Handling**
+## Browser And Audio Privacy
 
-- Always request microphone permissions explicitly
-- Provide clear explanations for why microphone access is needed
-- Implement graceful degradation when permissions are denied
-- Use secure contexts (HTTPS) for accessing microphone APIs
-- Monitor for permission changes and handle them appropriately
+- Use HTTPS in production so microphone access and secure WebSockets work.
+- Request microphone permission explicitly in the browser.
+- Process audio in memory when possible.
+- Avoid storing audio or transcripts unless a future feature explicitly
+  documents retention, consent, and deletion behavior.
+- Do not log raw audio, transcripts, authorization headers, cookies, request
+  bodies, or provider response bodies.
 
-### 🌐 **Browser Security Considerations**
+## Server-Side Controls
 
-- Implement Content Security Policy (CSP) headers
-- Use HTTPS-only cookies when applicable
-- Validate all user inputs on both client and server sides
-- Implement proper CORS policies
-- Use secure WebSocket connections (WSS) for real-time features
+Production deployments should enforce:
 
-## ElevenLabs API Security
+- Strict exact-origin CORS through `CORS_ORIGIN`
+- CSP, HSTS, frame prevention, no-sniff, referrer policy, and permissions policy
+- Explicit JSON body limits
+- Broad API rate limiting and stricter token/session rate limiting
+- Server-side validation for provider and function routes
+- Safe error responses that do not expose stack traces, internal paths, provider
+  response bodies, or secrets
 
-### 🔑 **API Key Management**
+## Dependency And CI Security
 
-- **Never** commit API keys to version control
-- Store API keys in environment variables or secure configuration
-- Use different API keys for development, staging, and production
-- Rotate API keys regularly
-- Implement API key validation and error handling
+The repository includes GitHub Actions workflows for quality, tests, builds, E2E
+checks, security scanning, and deployment. Security checks include secret
+scanning, CodeQL, dependency review, and npm audit according to the CI/CD guide.
 
-### 🔒 **Authentication & Authorization**
+Operators should:
 
-- Implement proper authentication flow for ElevenLabs integration
-- Use secure token storage mechanisms
-- Implement session management best practices
-- Monitor for unauthorized API usage
-- Set up rate limiting to prevent abuse
-
-### 🚨 **API Security Best Practices**
-
-- Validate all API responses before processing
-- Implement proper error handling for API failures
-- Use secure HTTP methods (avoid GET for sensitive operations)
-- Implement request/response logging for audit trails
-- Monitor API usage patterns for anomalies
-
-## Audio Data Privacy
-
-### 🎵 **Audio Data Handling**
-
-- **Minimize Data Collection**: Only collect necessary audio data
-- **Temporary Storage**: Process audio in memory when possible
-- **Data Retention**: Implement clear data retention policies
-- **User Consent**: Obtain explicit consent for audio processing
-- **Data Deletion**: Provide mechanisms for users to delete their data
-
-### 🔐 **Audio Data Protection**
-
-- Encrypt audio data in transit and at rest
-- Use secure audio processing libraries
-- Implement proper access controls for audio data
-- Monitor for unauthorized access to audio streams
-- Ensure compliance with privacy regulations (GDPR, CCPA, etc.)
-
-### 🚫 **Data Minimization**
-
-- Process audio client-side when possible
-- Avoid storing unnecessary audio metadata
-- Implement automatic data purging policies
-- Use privacy-preserving techniques when applicable
-- Provide transparency about data usage
-
-## Browser Security Considerations
-
-### 🌍 **Cross-Origin Security**
-
-- Implement proper CORS policies
-- Use secure cross-origin communication patterns
-- Validate all external resource loading
-- Implement CSP to prevent XSS attacks
-- Use SRI (Subresource Integrity) for external scripts
-
-### 🔒 **Client-Side Security**
-
-- Implement proper input validation
-- Use secure coding practices to prevent XSS
-- Protect against CSRF attacks
-- Implement secure session management
-- Use secure storage mechanisms for sensitive data
-
-### 📱 **Mobile Browser Security**
-
-- Implement mobile-specific security measures
-- Handle touch events securely
-- Use secure communication over mobile networks
-- Implement proper offline data security
-- Consider mobile-specific privacy concerns
-
-## Third-Party Dependencies
-
-### 📦 **Dependency Management**
-
-- Regularly audit dependencies for known vulnerabilities
-- Use tools like `npm audit` or `yarn audit`
-- Keep dependencies updated to latest secure versions
-- Monitor security advisories for used packages
-- Consider using dependency scanning tools in CI/CD
-
-### 🔍 **Security Scanning**
-
-- Implement automated vulnerability scanning
-- Use tools like Snyk, WhiteSource, or GitHub security features
-- Perform regular security assessments
-- Monitor for new vulnerabilities in dependencies
-- Implement security testing in development workflow
-
-## Compliance & Regulations
-
-### 📜 **Privacy Regulations**
-
-- **GDPR**: Ensure compliance with European privacy laws
-- **CCPA**: Follow California privacy requirements
-- **COPPA**: Consider child privacy protection if applicable
-- **HIPAA**: Implement healthcare privacy measures if needed
-- **SOC 2**: Consider compliance for enterprise usage
-
-### 🏛️ **Industry Standards**
-
-- Follow OWASP security guidelines
-- Implement ISO 27001 practices where applicable
-- Consider NIST Cybersecurity Framework
-- Follow platform-specific security guidelines
-- Implement secure development lifecycle practices
+- Review dependency updates before production deployment.
+- Treat high-severity dependency issues as blocking unless a documented
+  exception exists.
+- Keep GitHub branch protection aligned with the CI/CD guide.
 
 ## Incident Response
 
-### 🚨 **Security Incident Handling**
+Follow [Incident Response](runbooks/incident-response.md) for triage and
+containment.
 
-1. **Detection**: Monitor for security incidents
-2. **Assessment**: Evaluate impact and scope
-3. **Containment**: Isolate affected systems
-4. **Investigation**: Determine root cause
-5. **Recovery**: Restore services securely
-6. **Lessons Learned**: Update security measures
+Open an incident when:
 
-### 📞 **Emergency Contacts**
+- A raw provider API key appears in a browser response, browser console, network
+  capture, log, issue, screenshot, or support artifact.
+- Production CORS allows `*` or an unauthorized origin.
+- Security headers disappear from production responses.
+- Token/session routes lose the stricter limiter.
+- Provider routes accept malformed or oversized payloads and call upstream APIs.
+- `/api/health` reports `unhealthy` because of unsafe production security
+  configuration.
 
-- **Security Team**: security@voice-agent-pupuplatter.dev
-- **Development Team**: dev@voice-agent-pupuplatter.dev
-- **Operations Team**: ops@voice-agent-pupuplatter.dev
+## Compliance Notes
 
-## Security Updates
+This project does not currently provide user accounts, tenant isolation,
+persistent storage, or a formal data processing agreement. Deployments that
+serve real users are responsible for assessing privacy, consent, retention,
+regional compliance, and provider terms.
 
-### 🔄 **Update Process**
+Potentially relevant frameworks include GDPR, CCPA, OWASP guidance, and the
+hosting platform security model. Enterprise or regulated deployments should add
+a formal privacy and compliance review before launch.
 
-- Security patches will be released as soon as possible
-- Critical vulnerabilities will be addressed within 72 hours
-- Users will be notified through GitHub releases and security advisories
-- Changelog will include security-related changes
-- Migration guides will be provided for breaking security changes
+## Security Contacts
 
-### 📢 **Communication Channels**
-
-- GitHub Security Advisories
-- Release notes and changelog
-- Project documentation updates
-- Community notifications (Discord, forums, etc.)
-
----
+- Security: security@voice-agent-pupuplatter.dev
+- Development: dev@voice-agent-pupuplatter.dev
+- Operations: ops@voice-agent-pupuplatter.dev
 
 ## Resources
 
-### 🔗 **Security Resources**
-
 - [OWASP Top 10](https://owasp.org/www-project-top-ten/)
 - [Mozilla Web Security Guidelines](https://infosec.mozilla.org/guidelines/web_security)
-- [ElevenLabs Security Documentation](https://elevenlabs.io/docs/security)
 - [Web Audio API Security Considerations](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Security)
-
-### 📚 **Privacy Resources**
-
-- [GDPR Compliance Guide](https://gdpr.eu/)
-- [CCPA Compliance Guide](https://oag.ca.gov/privacy/ccpa)
-- [Privacy by Design Principles](https://www.ipc.on.ca/privacy-by-design/)
 
 ---
 
-**Last Updated**: January 8, 2025  
-**Next Review**: April 8, 2025
-
-For questions about this security policy, please contact security@voice-agent-pupuplatter.dev.
+**Last Updated**: May 11, 2026
+**Next Review**: August 11, 2026

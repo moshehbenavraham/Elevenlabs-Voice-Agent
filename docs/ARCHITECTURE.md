@@ -422,6 +422,9 @@ server/
 | GET    | `/api/gemini/health`          | Gemini service health check     |
 | GET    | `/api/gemini/voices`          | List available Gemini voices    |
 
+For the detailed OpenAI Realtime voice-agent flow, including session events and
+audio format assumptions, see [OpenAI Realtime Voice Provider](./OPENAI_REALTIME.md).
+
 ### xAI Token Flow
 
 ```
@@ -443,16 +446,19 @@ Frontend                    Backend                     xAI API
    │─────────────────────────────────────────────────────>│
 ```
 
-### Audio Processing (xAI)
+### Realtime Audio Processing (xAI and OpenAI)
 
 ```typescript
 // src/lib/audio/audioUtils.ts
-// PCM 16-bit, 24kHz mono format for xAI Realtime API
+// PCM 16-bit, 24kHz mono format shared by xAI and OpenAI Realtime voice
 
 encodeAudioForXAI(float32Array) -> base64String
 decodeAudioFromXAI(base64String) -> Float32Array
 resampleAudio(audioData, fromRate, toRate) -> Float32Array
 ```
+
+The helper names still reference xAI, but OpenAI reuses the same 24 kHz PCM16
+mono/base64 pipeline in `OpenAIVoiceContext`.
 
 ## Performance Considerations
 

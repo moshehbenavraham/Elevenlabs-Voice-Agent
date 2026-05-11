@@ -11,6 +11,7 @@ This troubleshooting guide covers common issues, error messages, and solutions f
 - [Quick Diagnostics](#quick-diagnostics)
 - [Voice and Audio Issues](#voice-and-audio-issues)
 - [API Integration Issues](#api-integration-issues)
+- [OpenAI Realtime Issues](#openai-realtime-issues)
 - [Vapi WebRTC Issues](#vapi-webrtc-issues)
 - [Browser Compatibility Issues](#browser-compatibility-issues)
 - [Mobile-Specific Issues](#mobile-specific-issues)
@@ -369,6 +370,24 @@ Before diving into specific issues, try these quick fixes:
      }
    };
    ```
+
+### OpenAI Realtime Issues
+
+OpenAI uses a backend-created ephemeral client token and a browser WebSocket to
+the Realtime API. For implementation details, session events, and audio format
+assumptions, see [OpenAI Realtime Voice Provider](./OPENAI_REALTIME.md).
+
+Quick checks:
+
+- Confirm `OPENAI_API_KEY` is set in the backend environment, not in frontend
+  `VITE_*` variables.
+- Confirm `GET /api/openai/health` returns `configured: true`.
+- Confirm `VITE_OPENAI_ENABLED=true` was present when the frontend bundle was
+  built.
+- Confirm the browser is on HTTPS or localhost and has microphone permission.
+- Check development console logs for `[OpenAIVoiceContext:*]` messages.
+- If token creation returns `401`, `403`, or `429`, inspect backend logs from
+  `server/routes/openai.js` before changing frontend WebSocket code.
 
 ### Vapi WebRTC Issues
 

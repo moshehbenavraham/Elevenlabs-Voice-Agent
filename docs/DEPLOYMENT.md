@@ -100,6 +100,7 @@ Set these in Coolify for both deployment options:
 NODE_ENV=production
 SERVER_PORT=3001
 CORS_ORIGIN=https://voice.example.com
+JSON_BODY_LIMIT=128kb
 LOG_LEVEL=info
 REQUEST_LOGGING_ENABLED=true
 METRICS_ENABLED=true
@@ -127,7 +128,8 @@ VITE_VAPI_WEB_TOKEN=CHANGE_ME_VAPI_PUBLIC_WEB_TOKEN
 2. Monitor build logs in Coolify dashboard
 3. Verify health endpoint: `https://your-domain.com/api/health`
 4. Run `npm run deploy:verify -- --url https://your-domain.com`
-5. Test voice connection in browser
+5. Confirm security headers and CORS checks pass in the verifier output
+6. Test voice connection in browser
 
 ### Dockerfile Reference
 
@@ -350,12 +352,13 @@ NODE_ENV=production node server/index.js
 
 ### Required Variables
 
-| Variable      | Description           | Example                     |
-| ------------- | --------------------- | --------------------------- |
-| `NODE_ENV`    | Environment mode      | `production`                |
-| `CORS_ORIGIN` | Frontend URL for CORS | `https://voice.example.com` |
-| `SERVER_PORT` | Container server port | `3001`                      |
-| `HOST_PORT`   | Local Compose port    | `3001`                      |
+| Variable          | Description             | Example                     |
+| ----------------- | ----------------------- | --------------------------- |
+| `NODE_ENV`        | Environment mode        | `production`                |
+| `CORS_ORIGIN`     | Exact browser origin    | `https://voice.example.com` |
+| `JSON_BODY_LIMIT` | Explicit API body limit | `128kb`                     |
+| `SERVER_PORT`     | Container server port   | `3001`                      |
+| `HOST_PORT`       | Local Compose port      | `3001`                      |
 
 ### Observability Variables
 
@@ -420,6 +423,9 @@ The script checks:
 3. The health status is `healthy` or intentionally `degraded`.
 4. API responses include `X-Request-Id`.
 5. `/api/metrics` returns valid JSON unless skipped or disabled.
+6. Security headers are present on `/api/health`.
+7. `/api/health` reports token/session limiter route coverage.
+8. CORS rejects an unauthorized origin and allows a configured origin.
 
 `/api/health` returns:
 
@@ -437,7 +443,7 @@ The script checks:
 
 `degraded` is not acceptable when the production launch expectation is that every enabled provider can connect. In that case, inspect the `providerSummary` and `services` fields in the health response and configure the missing variables.
 
-Docker and Compose health checks use `/api/health`. A container with no provider keys should start and report `degraded`; provider tabs should show their unconfigured states instead of making the container unhealthy. `unhealthy` means the app is not ready, commonly because production static assets are missing or the server cannot serve the app.
+Docker and Compose health checks use `/api/health`. A container with no provider keys should start and report `degraded`; provider tabs should show their unconfigured states instead of making the container unhealthy. `unhealthy` means the app is not ready, commonly because production static assets are missing, the server cannot serve the app, or production security configuration is unsafe.
 
 ### Metrics And Request IDs
 
@@ -471,14 +477,14 @@ Proxy requirements:
 
 Provider checks:
 
-| Provider | Verification path                                                                               | Expected result                                                                                                                          |
-| -------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| OpenAI   | Open the OpenAI tab, grant microphone permission, start a conversation, then stop it.           | `/api/openai/token` returns an ephemeral token and the browser WebSocket reaches connected state.                                        |
-| xAI      | Open the xAI tab, start a conversation, speak one short sentence, then stop it.                 | `/api/xai/token` returns an ephemeral token and the WebSocket remains connected long enough for a response.                              |
-| Gemini   | Enable Gemini at build time, open the Gemini tab, start a session, and watch the session timer. | `/api/gemini/token` returns an ephemeral token and the Gemini Live WebSocket connects; session expiration around 15 minutes is expected. |
-| Ultravox | Open the Ultravox tab and start a call.                                                         | `/api/ultravox/call` returns a join URL and the Ultravox client connects to the provider WebSocket.                                      |
-| Vapi     | Open the Vapi tab with `VITE_VAPI_WEB_TOKEN` built into the frontend and start a call.          | The Vapi SDK starts a WebRTC session; no backend token endpoint is required.                                                             |
-| Retell   | Open the Retell tab with `VITE_RETELL_AGENT_ID` built into the frontend and start a call.       | `/api/retell/create-web-call` returns an access token and the Retell client connects through LiveKit.                                    |
+| Provider | Verification path                                                                         | Expected result                                                                                                 |
+| -------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| OpenAI   | Open the OpenAI tab, grant microphone permission, start a conversation, then stop it.     | `/api/openai/session` returns an ephemeral token and the browser WebSocket reaches connected state.             |
+| xAI      | Open the xAI tab, start a conversation, speak one short sentence, then stop it.           | `/api/xai/session` returns an ephemeral token and the WebSocket remains connected long enough for a response.   |
+| Gemini   | Keep Gemini disabled in production unless a browser-safe token exchange exists.           | `/api/gemini/session` blocks raw server key return in production; development compatibility remains local-only. |
+| Ultravox | Open the Ultravox tab and start a call.                                                   | `/api/ultravox/call` returns a join URL and the Ultravox client connects to the provider WebSocket.             |
+| Vapi     | Open the Vapi tab with `VITE_VAPI_WEB_TOKEN` built into the frontend and start a call.    | The Vapi SDK starts a WebRTC session; no backend token endpoint is required.                                    |
+| Retell   | Open the Retell tab with `VITE_RETELL_AGENT_ID` built into the frontend and start a call. | `/api/retell/create-web-call` returns an access token and the Retell client connects through LiveKit.           |
 
 If token endpoints fail, check runtime provider secrets and `CORS_ORIGIN`. If token endpoints pass but media does not connect, check HTTPS, microphone permission, provider dashboard configuration, proxy timeouts, and WebSocket/WebRTC support on the host.
 
@@ -486,8 +492,45 @@ If token endpoints fail, check runtime provider secrets and `CORS_ORIGIN`. If to
 
 - Never commit `.env` files to version control
 - Use Coolify's built-in secrets management
-- Rotate API keys periodically
-- Restrict CORS to your domain only
+- Rotate API keys on a regular cadence and immediately after suspected exposure
+- Restrict CORS to exact production domains only
+- Do not use `CORS_ORIGIN=*` in production
+- Keep provider API keys server-side and out of `VITE_*` variables
+- Review [Production Security Hardening](SECURITY_HARDENING.md) before launch
+
+### Security Header And Scanner Checks
+
+The server applies CSP, HSTS on HTTPS production requests, frame prevention,
+content sniffing protection, referrer policy, permissions policy, and
+cross-origin opener policy. Verify locally:
+
+```bash
+curl -sS -D - -o /dev/null https://voice.example.com/api/health
+```
+
+Verify CORS rejection:
+
+```bash
+curl -sS -D - -o /dev/null \
+  -X OPTIONS https://voice.example.com/api/xai/session \
+  -H 'Origin: https://unauthorized.example' \
+  -H 'Access-Control-Request-Method: POST'
+```
+
+After a real HTTPS production URL exists, run Mozilla Observatory,
+securityheaders.com, or an approved OWASP ZAP baseline scan. External scanner
+checks are blocked for local-only deployments.
+
+### API Key Rotation Deployment Steps
+
+1. Create the replacement key in the provider dashboard.
+2. Update the runtime secret on the deployment platform.
+3. Restart or redeploy the container.
+4. Run `npm run deploy:verify -- --url https://voice.example.com`.
+5. Test the affected provider tab.
+6. Revoke the old key after the new key is verified.
+7. Roll back by restoring the previous runtime secret and restarting the
+   container if verification fails.
 
 ## Observability
 
