@@ -9,7 +9,7 @@
 
 ## Objective
 
-Build the main demo startup script that orchestrates frontend, backend, and ngrok processes with proper signal handling and graceful shutdown.
+Build the main demo startup script that orchestrates the production frontend build, Express server, and ngrok process with proper signal handling and graceful shutdown.
 
 ---
 
@@ -19,11 +19,11 @@ Build the main demo startup script that orchestrates frontend, backend, and ngro
 
 - Create main `scripts/demo.sh` orchestration script
 - Implement ngrok tunnel startup and URL extraction
-- Start frontend dev server (Vite on port 8082)
-- Start backend server (Express on port 3001)
+- Build the frontend with Vite into `dist/`
+- Start Express in production mode on port 3001 to serve both `dist/` and `/api/*`
 - Implement trap-based signal handling for Ctrl+C (SIGINT, SIGTERM)
 - Track PIDs for all child processes
-- Implement graceful shutdown sequence (ngrok → frontend → backend)
+- Implement graceful shutdown sequence for Express and ngrok
 - Add npm script `npm run demo` to package.json
 - Wait for services to be healthy before proceeding
 - Handle startup failures gracefully with error messages
@@ -54,10 +54,10 @@ Build the main demo startup script that orchestrates frontend, backend, and ngro
 
 ## Success Criteria
 
-- [ ] `npm run demo` starts all three processes (ngrok, frontend, backend)
+- [ ] `npm run demo` builds frontend and starts both ngrok and Express
 - [ ] Script extracts tunnel URLs from ngrok API (localhost:4041/api/tunnels)
 - [ ] Ctrl+C terminates all processes cleanly (no orphaned processes)
 - [ ] Script fails gracefully if ngrok is not installed (shows instructions)
 - [ ] Script fails gracefully if ports are already in use
 - [ ] All PIDs are tracked and killed on shutdown
-- [ ] Backend starts only after ngrok URLs are available
+- [ ] Express starts after ngrok URL and runtime config are available

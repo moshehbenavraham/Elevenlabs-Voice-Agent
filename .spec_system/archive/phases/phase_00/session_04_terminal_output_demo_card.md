@@ -9,7 +9,7 @@
 
 ## Objective
 
-Create polished terminal output with clear status messages, a shareable demo card containing all URLs and credentials, and comprehensive documentation.
+Create polished terminal output with clear status messages, a shareable demo card containing the demo URL, local URL, optional credentials, and comprehensive documentation.
 
 ---
 
@@ -18,7 +18,7 @@ Create polished terminal output with clear status messages, a shareable demo car
 ### In Scope (MVP)
 
 - Format terminal output with clear sections (startup, URLs, status)
-- Generate shareable demo card with all connection details
+- Generate shareable demo card with demo URL, local URL, and optional credentials
 - Include basic auth credentials in demo card (if configured)
 - Display ngrok installation instructions (always shown for open-source users)
 - Add quick-start instructions for demo recipients
@@ -53,7 +53,7 @@ Create polished terminal output with clear status messages, a shareable demo car
 
 ## Success Criteria
 
-- [ ] Terminal shows all URLs clearly on startup
+- [ ] Terminal shows demo and local URLs clearly on startup
 - [ ] Demo card is copy-paste ready with URLs and credentials
 - [ ] ngrok installation instructions always displayed
 - [ ] Status messages use color coding (green/yellow/red)

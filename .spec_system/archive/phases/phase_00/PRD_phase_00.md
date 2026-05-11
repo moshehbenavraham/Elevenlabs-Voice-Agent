@@ -10,7 +10,7 @@
 
 ## Overview
 
-This phase adds ngrok tunnel support to enable quick external access for demos and presentations. A single `npm run demo` command will start the frontend, backend, and ngrok tunnels with HTTPS access for microphone permissions, dynamic CORS configuration, password protection, and a shareable demo card with all connection details.
+This phase adds ngrok tunnel support to enable quick external access for demos and presentations. A single `npm run demo` command builds the frontend, starts Express in production mode, exposes Express through one ngrok HTTPS tunnel, supports optional password protection, and prints a shareable demo card with connection details.
 
 ---
 
@@ -33,7 +33,8 @@ This phase adds ngrok tunnel support to enable quick external access for demos a
 
 Created ngrok configuration file and detection scripts:
 
-- `scripts/ngrok/ngrok.yml` - Multi-tunnel configuration with environment variable support
+- `scripts/ngrok/ngrok.yml.template` - Single-tunnel configuration template with environment variable support
+- `scripts/ngrok/generate-ngrok-config.sh` - Generates gitignored `scripts/ngrok/ngrok.yml`
 - `scripts/ngrok/detect-ngrok.sh` - Detection script with version extraction
 - `scripts/ngrok/install-instructions.sh` - Platform-specific installation guide
 - Updated `.env.example` with ngrok environment variables
@@ -54,9 +55,10 @@ Created demo orchestration scripts for single-command startup:
 
 **Completed**: 2026-01-18
 
-Implemented dynamic URL configuration for ngrok demo mode:
+Implemented runtime URL configuration for ngrok demo mode:
 
-- `scripts/ngrok/configure-urls.sh` - Extracts ngrok URLs and generates runtime config
+- `scripts/ngrok/configure-urls.sh` - Legacy split-tunnel helper retained for compatibility
+- `scripts/demo.sh` - Generates `dist/config.js` for same-origin runtime API calls
 - `scripts/ngrok/validate-cors.sh` - CORS validation script for testing
 - `public/config.template.js` - Template for runtime frontend config
 - `src/lib/apiConfig.ts` - Shared getApiBaseUrl utility function
@@ -85,8 +87,8 @@ Added user-facing polish layer for terminal output and documentation:
 All 4 sessions completed successfully. The ngrok demo mode integration is now fully functional with:
 
 - Single-command startup (`npm run demo`)
-- Automatic ngrok tunnel configuration
-- Dynamic URL and CORS configuration
+- Automatic single-tunnel ngrok configuration
+- Runtime config for same-origin API calls
 - Color-coded terminal output with shareable demo card
 - Comprehensive documentation
 
@@ -94,9 +96,9 @@ All 4 sessions completed successfully. The ngrok demo mode integration is now fu
 
 ## Objectives
 
-1. Create ngrok configuration file with multi-tunnel setup and password protection
-2. Build demo startup script that orchestrates all services with auto-detection
-3. Implement dynamic URL configuration for CORS and API base URL
+1. Create ngrok configuration template with single-tunnel setup and optional password protection
+2. Build demo startup script that orchestrates production build, Express, and ngrok with auto-detection
+3. Implement runtime URL configuration for same-origin API calls
 4. Add environment variable support for ngrok customization (domain, auth, ports)
 5. Provide comprehensive terminal output with shareable demo card
 
@@ -114,7 +116,7 @@ All 4 sessions completed successfully. The ngrok demo mode integration is now fu
 
 ### Architecture
 
-- Single ngrok process managing multiple tunnels (frontend:8082, backend:3001)
+- Single ngrok tunnel to Express on port 3001, where Express serves both `dist/` and `/api/*`
 - Bash scripts with signal handling for process orchestration
 - Environment variable-driven configuration for flexibility
 
@@ -147,7 +149,7 @@ Phase complete when:
 - [x] `npm run demo` starts all services and ngrok tunnels successfully
 - [x] Frontend accessible via ngrok HTTPS URL with working microphone permissions
 - [x] All voice providers connect and function through the tunnel
-- [x] Backend API accessible via separate ngrok tunnel with proper CORS
+- [x] Backend API accessible through the same ngrok origin as the frontend
 - [x] Terminal displays all URLs clearly with copy-paste friendly format
 - [x] Ctrl+C gracefully shuts down all processes (no orphaned ngrok tunnels)
 - [x] Custom domain works when NGROK_DOMAIN is configured

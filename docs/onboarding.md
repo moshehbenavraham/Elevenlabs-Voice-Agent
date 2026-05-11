@@ -56,7 +56,7 @@ cp .env.example .env
 | `RETELL_API_KEY`           | [Retell Dashboard](https://dashboard.retellai.com/)                 | Server-side API key for Retell   |
 | `VITE_RETELL_AGENT_ID`     | [Retell Dashboard](https://dashboard.retellai.com/)                 | Retell Agent ID                  |
 | `GEMINI_API_KEY`           | [Google AI Studio](https://aistudio.google.com/apikey)              | Server-side API key for Gemini   |
-| `VITE_GEMINI_VOICE`        | Default: Puck                                                       | Gemini voice selection (30 opts) |
+| `VITE_GEMINI_VOICE`        | Default: Zephyr                                                     | Gemini voice selection (30 opts) |
 
 ### 5. Start Development
 

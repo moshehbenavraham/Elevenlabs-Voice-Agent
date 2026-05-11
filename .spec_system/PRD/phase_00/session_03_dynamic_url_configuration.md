@@ -9,7 +9,7 @@
 
 ## Objective
 
-Implement dynamic configuration injection so the backend CORS origin and frontend API base URL are automatically updated based on ngrok tunnel URLs at startup.
+Implement runtime configuration injection so demo-mode API calls use the same ngrok origin as the frontend.
 
 ---
 
@@ -18,11 +18,10 @@ Implement dynamic configuration injection so the backend CORS origin and fronten
 ### In Scope (MVP)
 
 - Parse ngrok tunnel URLs from ngrok API response
-- Inject frontend tunnel URL into backend CORS_ORIGIN dynamically
-- Inject backend tunnel URL into frontend VITE_API_BASE_URL
+- Generate runtime config for same-origin API calls
 - Create environment override mechanism for demo mode
-- Ensure WebSocket connections work through ngrok tunnels
-- Validate CORS configuration with test request
+- Ensure WebSocket connections work through the ngrok HTTPS origin
+- Retain CORS validation helpers for split-service compatibility checks
 - Handle URL parsing edge cases (trailing slashes, protocol normalization)
 
 ### Out of Scope
@@ -42,17 +41,16 @@ Implement dynamic configuration injection so the backend CORS origin and fronten
 
 ## Deliverables
 
-1. `scripts/ngrok/configure-urls.sh` - URL extraction and configuration script
+1. `scripts/ngrok/configure-urls.sh` - Legacy URL extraction and configuration helper
 2. Updated `server/index.js` to accept dynamic CORS origin
-3. Frontend configuration mechanism for dynamic API base URL
+3. Frontend configuration mechanism for runtime API base URL
 4. Validation script to test CORS and connectivity
 
 ---
 
 ## Success Criteria
 
-- [ ] Backend CORS allows requests from ngrok frontend URL
-- [ ] Frontend makes API calls to ngrok backend URL (not localhost)
+- [ ] Frontend makes API calls to the same ngrok origin in demo mode
 - [ ] Voice provider WebSocket connections work through ngrok
 - [ ] Configuration is ephemeral (resets on restart)
 - [ ] No hardcoded URLs remain in demo mode

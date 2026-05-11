@@ -1,15 +1,18 @@
 # Deployment Guide
 
-This guide covers deploying the ElevenLabs Voice Agent to production. The recommended platform is **Coolify** (self-hosted), with alternative options for other deployment scenarios.
+This guide covers deploying Voice-Agent-PuPuPlatter to production. The recommended platform is **Coolify** (self-hosted), with alternative options for other deployment scenarios.
 
 ## Quick Deploy (Coolify)
 
 ```bash
-# Build Docker image
-docker build -t voice-agent .
+# Copy and configure environment
+cp .env.example .env
+
+# For combined same-origin Docker production
+# set VITE_API_BASE_URL=/ before building.
 
 # Test locally
-docker-compose up
+npm run docker:prod
 
 # Push to Coolify via Git integration
 git push origin main
@@ -88,12 +91,15 @@ ELEVENLABS_API_KEY=sk_your_key_here
 # Optional - Additional providers
 XAI_API_KEY=xai-your_key_here
 OPENAI_API_KEY=sk-your_key_here
+ULTRAVOX_API_KEY=your_ultravox_key_here
+RETELL_API_KEY=key_your_retell_key_here
+GEMINI_API_KEY=your_gemini_key_here
 
 # Required - CORS configuration
 CORS_ORIGIN=https://your-domain.com
 
 # Optional - Server port (default: 3001)
-PORT=3001
+SERVER_PORT=3001
 ```
 
 ### Step 4: Configure Domain & SSL
@@ -112,39 +118,19 @@ PORT=3001
 
 ### Dockerfile Reference
 
-```dockerfile
-# Stage 1: Build frontend
-FROM node:20-alpine AS frontend-builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
+The root `Dockerfile` is the source of truth. It builds the Vite frontend, installs production dependencies, copies `dist/` and `server/`, runs as a non-root user through `dumb-init`, exposes port 3001, and checks `/api/health`.
 
-# Stage 2: Production image
-FROM node:20-alpine AS production
-WORKDIR /app
+### Docker Strategy
 
-# Copy server
-COPY server/package*.json ./server/
-RUN cd server && npm ci --production
-COPY server/*.js ./server/
+The production default is one combined full-stack container:
 
-# Copy frontend build
-COPY --from=frontend-builder /app/dist ./dist
+- Express serves the Vite `dist/` output and all `/api/*` routes.
+- Provider API keys are injected at container runtime only.
+- Public `VITE_*` frontend values are passed as build args.
+- Same-origin production builds should set `VITE_API_BASE_URL=/`.
+- Split frontend/backend hosting is supported only when a platform requires it; then set `VITE_API_BASE_URL` to the backend URL and configure `CORS_ORIGIN` for the frontend URL.
 
-# Security: non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
-USER nodejs
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s \
-  CMD wget -q -O /dev/null http://localhost:3001/api/health || exit 1
-
-EXPOSE 3001
-CMD ["node", "server/index.js"]
-```
+Image size target: keep the production image under 325 MB decimal. The pre-optimization baseline was 302.4 MB decimal; a larger final image should be justified by runtime dependencies or platform requirements.
 
 ## Local Production Testing
 
@@ -152,27 +138,21 @@ Test production builds locally before deploying:
 
 ### Using Docker Compose
 
-```yaml
-# docker-compose.yml
-version: '3.8'
-
-services:
-  voice-agent:
-    build: .
-    ports:
-      - '3001:3001'
-    env_file:
-      - .env
-    environment:
-      - NODE_ENV=production
-      - CORS_ORIGIN=http://localhost:3001
-```
-
 ```bash
-# Build and run
-docker-compose up --build
+# Build, start, and health check
+npm run docker:prod
 
-# Access at http://localhost:3001
+# Access the app
+open http://localhost:3001
+
+# Check health directly
+npm run docker:health
+
+# Follow logs
+npm run docker:logs
+
+# Stop the stack
+npm run docker:down
 ```
 
 ### Manual Production Build
@@ -195,6 +175,8 @@ NODE_ENV=production node server/index.js
 | ------------- | --------------------- | --------------------------- |
 | `NODE_ENV`    | Environment mode      | `production`                |
 | `CORS_ORIGIN` | Frontend URL for CORS | `https://voice.example.com` |
+| `SERVER_PORT` | Container server port | `3001`                      |
+| `HOST_PORT`   | Local Compose port    | `3001`                      |
 
 ### Provider API Keys (at least one required)
 
@@ -205,20 +187,48 @@ NODE_ENV=production node server/index.js
 | `OPENAI_API_KEY`     | OpenAI     | For OpenAI Realtime API     |
 | `ULTRAVOX_API_KEY`   | Ultravox   | For Ultravox call creation  |
 | `RETELL_API_KEY`     | Retell     | For Retell web call tokens  |
+| `GEMINI_API_KEY`     | Gemini     | For Gemini Live API tokens  |
 
 ### Frontend Variables (build-time)
 
-| Variable                   | Description         | Example                   |
-| -------------------------- | ------------------- | ------------------------- |
-| `VITE_ELEVENLABS_AGENT_ID` | ElevenLabs Agent ID | `agent_xxx`               |
-| `VITE_API_BASE_URL`        | Backend API URL     | `https://api.example.com` |
-| `VITE_ELEVENLABS_ENABLED`  | Enable ElevenLabs   | `true`                    |
-| `VITE_XAI_ENABLED`         | Enable xAI          | `true`                    |
-| `VITE_OPENAI_ENABLED`      | Enable OpenAI       | `true`                    |
-| `VITE_ULTRAVOX_ENABLED`    | Enable Ultravox     | `true`                    |
-| `VITE_VAPI_ENABLED`        | Enable Vapi         | `true`                    |
-| `VITE_RETELL_ENABLED`      | Enable Retell       | `true`                    |
-| `VITE_RETELL_AGENT_ID`     | Retell Agent ID     | `agent_xxx`               |
+| Variable                   | Description         | Example             |
+| -------------------------- | ------------------- | ------------------- |
+| `VITE_ELEVENLABS_AGENT_ID` | ElevenLabs Agent ID | `agent_xxx`         |
+| `VITE_API_BASE_URL`        | Backend API URL     | `/` for same-origin |
+| `VITE_ELEVENLABS_ENABLED`  | Enable ElevenLabs   | `true`              |
+| `VITE_XAI_ENABLED`         | Enable xAI          | `true`              |
+| `VITE_OPENAI_ENABLED`      | Enable OpenAI       | `true`              |
+| `VITE_ULTRAVOX_ENABLED`    | Enable Ultravox     | `true`              |
+| `VITE_VAPI_ENABLED`        | Enable Vapi         | `true`              |
+| `VITE_VAPI_WEB_TOKEN`      | Vapi web token      | `your-token`        |
+| `VITE_RETELL_ENABLED`      | Enable Retell       | `true`              |
+| `VITE_RETELL_AGENT_ID`     | Retell Agent ID     | `agent_xxx`         |
+| `VITE_GEMINI_ENABLED`      | Enable Gemini       | `false`             |
+| `VITE_GEMINI_VOICE`        | Gemini voice        | `Zephyr`            |
+
+### Docker Environment Rules
+
+- Server-side provider keys are runtime variables only. Do not add `ELEVENLABS_API_KEY`, `XAI_API_KEY`, `OPENAI_API_KEY`, `ULTRAVOX_API_KEY`, `RETELL_API_KEY`, or `GEMINI_API_KEY` as Docker build args.
+- Public `VITE_*` values are compiled into the frontend bundle at image build time.
+- For combined Docker production, set `VITE_API_BASE_URL=/` before building.
+- For local Vite development on port 8082, use `VITE_API_BASE_URL=http://localhost:3001`.
+- For split hosting, set `VITE_API_BASE_URL` to the backend URL and `CORS_ORIGIN` to the frontend origin.
+
+### Health Checks
+
+`/api/health` returns:
+
+| Status      | HTTP | Meaning                                                       |
+| ----------- | ---- | ------------------------------------------------------------- |
+| `healthy`   | 200  | App is serving and all provider runtime variables are present |
+| `degraded`  | 200  | App is serving but one or more providers are not configured   |
+| `unhealthy` | 503  | App is not ready to serve production traffic                  |
+
+Docker and Compose health checks use `/api/health`. A container with no provider keys should start and report `degraded`; provider tabs should show their unconfigured states instead of making the container unhealthy.
+
+### Gemini Live Session Limit
+
+Gemini Live sessions are limited to 15 minutes by the provider/API behavior used by this app. This is not a Docker or reverse-proxy failure. Users should expect the Gemini tab to require a new session after that limit.
 
 ### Security Notes
 
@@ -326,6 +336,8 @@ curl -f https://your-domain.com/api/health
 docker logs voice-agent
 ```
 
+If `/api/health` returns `degraded`, the app is serving but one or more provider variables are missing. Check the `providerSummary` and `services` fields in the response.
+
 ### Environment Variable Issues
 
 ```bash
@@ -340,6 +352,7 @@ docker exec voice-agent printenv | grep -E 'API|CORS|NODE'
 - [ ] All tests passing (`npm run test:run`)
 - [ ] Production build works locally (`npm run build && npm run preview`)
 - [ ] Docker build completes successfully
+- [ ] Docker image is under 325 MB decimal or variance is justified
 - [ ] Environment variables documented
 
 ### Deployment
@@ -348,6 +361,7 @@ docker exec voice-agent printenv | grep -E 'API|CORS|NODE'
 - [ ] Domain/DNS configured
 - [ ] SSL certificate generated
 - [ ] Health check passing
+- [ ] `/api/health` is `healthy` or intentionally `degraded`
 
 ### Post-Deployment
 

@@ -45,20 +45,20 @@ Docker Production Optimization is the logical first session of Phase 01 because:
 
 ### Objective
 
-Create optimized, production-ready Docker configurations with multi-stage builds, minimal image sizes, and proper separation of frontend and backend services.
+Audit and optimize the existing production Docker path with multi-stage builds, minimal image size, non-root runtime, health checks, and a clear decision on whether the app remains a combined full-stack container or needs split frontend/backend images.
 
 ### Key Deliverables
 
-1. `Dockerfile.frontend` - Multi-stage build for React frontend (~50MB image)
-2. `Dockerfile.backend` - Multi-stage build for Express backend (~200MB image)
-3. `docker-compose.prod.yml` - Production compose configuration
-4. Health check endpoints for container orchestration
-5. Documentation for Docker deployment
+1. Optimized Dockerfile strategy (`Dockerfile` or split Dockerfiles if justified)
+2. Production compose configuration (`docker-compose.yml` update or `docker-compose.prod.yml`)
+3. Verified health checks for container orchestration
+4. Updated `.dockerignore`
+5. Reconciled Docker deployment documentation
 
 ### Scope Summary
 
-- **In Scope (MVP)**: Multi-stage Dockerfiles, Docker Compose, health checks, environment variable injection, .dockerignore optimization
-- **Out of Scope**: Kubernetes manifests, container registry setup, SSL/TLS termination
+- **In Scope (MVP)**: Existing Dockerfile audit, Docker Compose, health checks, runtime environment variables, .dockerignore optimization, deployment documentation reconciliation
+- **Out of Scope**: Kubernetes manifests, container registry setup, nginx split frontend unless justified, SSL/TLS termination
 
 ---
 
@@ -67,22 +67,22 @@ Create optimized, production-ready Docker configurations with multi-stage builds
 ### Technologies/Patterns
 
 - Multi-stage Docker builds (build stage + runtime stage)
-- nginx for static file serving (frontend)
+- Express static serving for the combined production container
 - Alpine-based Node.js images for minimal size
 - Docker Compose for local production testing
 - Health check endpoints (`/health`, `/api/health`)
 
 ### Potential Challenges
 
-- **WebSocket Compatibility**: Ensure nginx configuration properly proxies WebSocket connections for voice providers
+- **Architecture Decision**: Confirm whether the combined container remains the production default or split images are justified
 - **Environment Variables**: Runtime injection of API keys without baking into images
 - **Image Size Optimization**: Balancing dependencies with minimal image footprint
 - **Multi-architecture**: Consider ARM64 support for Apple Silicon development
 
 ### Relevant Considerations
 
-- [P00] **Demo mode CORS configuration**: Ensure production Dockerfiles use strict CORS settings, not dynamic demo mode configuration
-- [P00] **Runtime config injection pattern**: Extend `window.VOICE_AGENT_CONFIG` pattern for Docker environment variables
+- [P00] **Demo mode CORS configuration**: Demo mode uses a single same-origin ngrok tunnel; production split deployments must use strict CORS settings
+- [P00] **Runtime config injection pattern**: The current demo uses `window.__DEMO_CONFIG__`; Docker docs should explain when same-origin works and when `VITE_API_BASE_URL` is needed
 - [P00] **15-minute Gemini session limit**: Document this constraint in Docker deployment guide
 
 ---

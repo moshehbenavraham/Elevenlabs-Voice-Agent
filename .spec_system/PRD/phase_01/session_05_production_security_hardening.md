@@ -9,7 +9,7 @@
 
 ## Objective
 
-Harden the application for production deployment with proper security controls, API key protection, rate limiting, and security headers.
+Harden the application for production deployment by auditing the current CORS, rate limiting, CSP, API key handling, and input sanitization baseline, then adding missing server-side security controls.
 
 ---
 
@@ -18,8 +18,8 @@ Harden the application for production deployment with proper security controls, 
 ### In Scope (MVP)
 
 - Strict CORS configuration for production origins
-- Rate limiting for API endpoints
-- Security headers (CSP, HSTS, X-Frame-Options)
+- Rate limiting for API endpoints and token endpoints
+- Server-side security headers (CSP, HSTS, X-Frame-Options) where the deployment platform does not provide them
 - API key validation and rotation support
 - Input validation hardening
 - Production environment detection
@@ -37,16 +37,16 @@ Harden the application for production deployment with proper security controls, 
 
 - [ ] Session 03 completed (cloud deployment working)
 - [ ] Production domain finalized
-- [ ] Rate limiting library selected (express-rate-limit)
+- [x] Rate limiting library selected (express-rate-limit)
 
 ---
 
 ## Deliverables
 
-1. Rate limiting middleware configuration
-2. Security headers middleware (helmet)
+1. Audited rate limiting middleware configuration
+2. Security headers middleware or documented platform/header strategy
 3. Production CORS configuration
-4. Environment-based security settings
+4. Environment-based security settings and API key rotation guidance
 5. Security documentation and best practices guide
 
 ---

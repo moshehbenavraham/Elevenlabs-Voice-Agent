@@ -1,7 +1,7 @@
 {
   "name": "voice-agent-pupuplatter",
   "private": true,
-  "version": "1.0.54",
+  "version": "1.0.55",
   "type": "module",
   "scripts": {
     "predev": "node scripts/ensure-config-stub.mjs",
@@ -26,9 +26,12 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "prepare": "husky",
-    "docker:build": "docker build -t voice-agent .",
-    "docker:up": "docker compose up -d",
-    "docker:down": "docker compose down",
+    "docker:build": "DOCKER_BUILDKIT=1 docker build -t voice-agent:local .",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down --remove-orphans",
+    "docker:logs": "docker compose logs -f voice-agent",
+    "docker:health": "curl -fsS http://localhost:3001/api/health",
+    "docker:prod": "npm run docker:up && npm run docker:health",
     "demo": "bash scripts/demo.sh"
   },
   "lint-staged": {

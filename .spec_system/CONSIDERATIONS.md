@@ -26,14 +26,14 @@ Items requiring attention in upcoming phases. Review before each session.
 
 <!-- Max 5 items -->
 
-- [P00] **Demo mode CORS configuration**: CORS_ORIGIN is dynamically set for demos. Ensure production deployments don't accidentally use wide-open CORS settings.
+- [P00] **Demo mode CORS configuration**: Demo mode now uses a single same-origin ngrok tunnel. Ensure production split deployments still use strict CORS settings and never inherit demo-only permissiveness.
 - [P00] **15-minute Gemini session limit**: Gemini Live API enforces 15-minute session limits with warnings at 12min/14min.
 
 ### Architecture
 
 <!-- Max 5 items -->
 
-- [P00] **Runtime config injection pattern**: Frontend uses `window.VOICE_AGENT_CONFIG` for demo mode URLs. This pattern could be extended for other runtime-configurable settings.
+- [P00] **Runtime config injection pattern**: Frontend uses `window.__DEMO_CONFIG__` for demo mode runtime API configuration. This pattern could be extended for other runtime-configurable settings.
 
 ---
 

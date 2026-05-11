@@ -177,7 +177,7 @@ This project includes comprehensive documentation:
 
 - **[Quick Start Guide](#-quick-start)** - Get up and running in minutes
 - **[Installation & Configuration](#configuration)** - Detailed setup instructions
-- **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment for Vercel, Netlify, AWS, Firebase
+- **[Deployment Guide](docs/DEPLOYMENT.md)** - Docker/Coolify production deployment and split-hosting notes
 
 ### Technical Documentation
 
@@ -272,14 +272,14 @@ Demo mode exposes your local development environment via secure HTTPS tunnels fo
 npm run demo
 ```
 
-This starts ngrok tunnels, the frontend, and backend with automatic CORS configuration. A shareable demo card is displayed:
+This builds the frontend, starts Express in production mode on port 3001, and exposes it through a single ngrok HTTPS tunnel. A shareable demo card is displayed:
 
 ```
 +--------------------------------------------------------------+
 |  Voice-Agent-PuPuPlatter - Demo Mode Active                  |
 |                                                              |
-|  Frontend: https://abc123.ngrok-free.app                     |
-|  Backend:  https://def456.ngrok-free.app                     |
+|  Demo URL: https://abc123.ngrok-free.app                     |
+|  Local:    http://localhost:3001                             |
 |                                                              |
 |  Press Ctrl+C to stop                                        |
 +--------------------------------------------------------------+
@@ -406,31 +406,48 @@ npm run preview
 # Build Docker image
 npm run docker:build
 
-# Start with docker-compose
+# Build and start the full-stack container
 npm run docker:up
+
+# Local production smoke test (start + health probe)
+npm run docker:prod
+
+# Check health
+npm run docker:health
+
+# Follow service logs
+npm run docker:logs
 
 # Stop containers
 npm run docker:down
 ```
 
+The combined Docker container serves the React app and Express API from `http://localhost:3001` by default.
+
 ### Deployment Options
 
-#### Vercel (Recommended)
+#### Coolify / Docker (Recommended)
 
 ```bash
-# Install Vercel CLI
-npm i -g vercel
+# Build Docker image
+npm run docker:build
 
-# Deploy
-vercel --prod
+# Start the full-stack container locally
+npm run docker:up
 ```
 
-#### Netlify
+Coolify, a VPS, or another Docker-capable host can run the same full-stack container. Express serves both the frontend and API on port 3001.
+
+For same-origin Docker production, set `VITE_API_BASE_URL=/` before building so browser API calls stay on the current host. Use an absolute `VITE_API_BASE_URL` only when the frontend and backend are deployed separately.
+
+#### Split Frontend Hosting
 
 ```bash
 # Build command: npm run build
 # Publish directory: dist
 ```
+
+Use Vercel, Netlify, or static hosting only when the Express backend is deployed separately and `VITE_API_BASE_URL` points to that backend.
 
 #### Traditional Web Hosting
 
@@ -447,8 +464,8 @@ vercel --prod
    - Set appropriate CORS origins in backend
 
 2. **Backend Server**
-   - Deploy the Express backend (`server/` directory) separately or as serverless functions
-   - Configure `CORS_ORIGIN` to match your frontend URL
+   - Prefer the combined Docker app unless you explicitly split frontend/backend hosting
+   - Configure `CORS_ORIGIN` to match your production origin when split hosting is used
    - Ensure API keys are set in server environment variables
 
 3. **Environment Variables**
@@ -467,7 +484,10 @@ vercel --prod
    VITE_RETELL_AGENT_ID=your_retell_agent_id
    VITE_GEMINI_ENABLED=true
    VITE_GEMINI_VOICE=Puck
-   VITE_API_BASE_URL=https://your-backend-api.com
+   # Combined Docker same-origin
+   VITE_API_BASE_URL=/
+   # Split hosting example:
+   # VITE_API_BASE_URL=https://your-backend-api.com
 
    # Backend (runtime)
    ELEVENLABS_API_KEY=sk_xxx
@@ -476,7 +496,9 @@ vercel --prod
    ULTRAVOX_API_KEY=your_ultravox_key
    RETELL_API_KEY=key_xxx
    GEMINI_API_KEY=your_gemini_key
-   CORS_ORIGIN=https://your-frontend.com
+   SERVER_PORT=3001
+   HOST_PORT=3001
+   CORS_ORIGIN=https://your-production-origin.com
    ```
 
 4. **Browser Compatibility**
@@ -708,9 +730,12 @@ npm run test:ui       # Visual UI
 npm run test:e2e      # Playwright E2E
 
 # Docker
-npm run docker:build  # Build image
-npm run docker:up     # Start containers
-npm run docker:down   # Stop containers
+npm run docker:build   # Build local image
+npm run docker:up      # Build and start Compose stack
+npm run docker:prod    # Start stack and run health probe
+npm run docker:health  # Check /api/health
+npm run docker:logs    # Follow Compose service logs
+npm run docker:down    # Stop containers
 ```
 
 ### Environment Setup

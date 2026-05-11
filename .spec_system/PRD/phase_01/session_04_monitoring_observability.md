@@ -9,7 +9,7 @@
 
 ## Objective
 
-Implement monitoring, logging, and observability infrastructure to track application health, performance, and usage in production.
+Complete monitoring, logging, and observability infrastructure by auditing the current health endpoint, pino logger, frontend error tracking utility, and incident runbook, then filling production gaps.
 
 ---
 
@@ -19,8 +19,8 @@ Implement monitoring, logging, and observability infrastructure to track applica
 
 - Structured logging for backend (JSON format)
 - Health check endpoints with detailed status
-- Error tracking integration (Sentry or similar)
-- Basic performance metrics collection
+- Error tracking integration decision and implementation or documented deferral
+- Basic performance and request metrics collection
 - Uptime monitoring setup
 - Request/response logging middleware
 
@@ -28,33 +28,33 @@ Implement monitoring, logging, and observability infrastructure to track applica
 
 - Custom dashboards (use cloud provider defaults)
 - Distributed tracing
-- Real-time alerting automation
+- Advanced real-time alerting automation
 - Log aggregation infrastructure
 
 ---
 
 ## Prerequisites
 
-- [ ] Session 03 completed (cloud deployment)
-- [ ] Error tracking service account (Sentry, Bugsnag, etc.)
+- [ ] Session 03 completed or deployment target selected
+- [ ] Error tracking service account selected if external tracking is in scope
 - [ ] Uptime monitoring service selected
 
 ---
 
 ## Deliverables
 
-1. `src/lib/logger.ts` - Structured logging utility
-2. Enhanced health check endpoints with provider status
-3. Error tracking integration (frontend and backend)
+1. Audited `src/lib/logger.ts` and `src/lib/errorTracking.ts`
+2. Enhanced or verified health check endpoints with provider status
+3. Error tracking integration or documented production deferral
 4. Request logging middleware
-5. Monitoring documentation and runbook
+5. Monitoring documentation and runbook updates
 
 ---
 
 ## Success Criteria
 
 - [ ] All backend requests logged with request ID
-- [ ] Errors automatically reported to tracking service
+- [ ] Errors automatically reported to tracking service or deferral documented with rationale
 - [ ] Health endpoint shows status of all voice providers
 - [ ] Uptime monitoring configured with alerts
 - [ ] Performance metrics visible (response times, error rates)

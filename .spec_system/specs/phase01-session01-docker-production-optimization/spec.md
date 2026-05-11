@@ -2,27 +2,28 @@
 
 **Session ID**: `phase01-session01-docker-production-optimization`
 **Phase**: 01 - Production Deployment & DevOps
-**Status**: Not Started
+**Status**: Completed
 **Created**: 2026-01-18
+**Reconciled**: 2026-05-11
 
 ---
 
 ## 1. Session Overview
 
-This session creates optimized, production-ready Docker configurations with multi-stage builds, minimal image sizes, and proper separation of frontend and backend services. The existing monolithic Dockerfile will be refactored into separate frontend and backend images to enable independent scaling, deployment, and caching.
+This session audits and optimizes the existing production Docker path. The repository already contains a combined multi-stage `Dockerfile` and `docker-compose.yml` that build the Vite frontend, run Express in production mode, and serve both `dist/` and `/api/*` from port 3001.
 
-The optimizations target significant image size reductions: frontend from the current combined image to a lean ~50MB nginx-served static bundle, and backend to a minimal ~200MB Alpine-based Node.js runtime. This separation also enables proper environment variable injection at runtime (critical for keeping API keys out of image layers) and health checks suitable for container orchestration.
+The session should not assume that split frontend/backend images are required. The first implementation decision is whether the combined full-stack container remains the production default or whether a split image architecture is justified. The likely MVP path is to harden the current combined container, document the image-size target, verify non-root execution and health checks, and reconcile Docker documentation with the actual commands.
 
-This session is the foundation for Phase 01's DevOps infrastructure. The CI/CD pipeline (Session 02) requires optimized Docker images to build, test, and push to container registries. Cloud deployment (Session 03) needs these containerized applications. Completing this session validates that all 7 voice providers function correctly in containers.
+This session is the foundation for Phase 01's DevOps infrastructure. The existing GitHub Actions deployment workflow builds and pushes a Docker image, so Session 02 and Session 03 depend on this session producing an accurate, validated Docker strategy.
 
 ---
 
 ## 2. Objectives
 
-1. Create separate multi-stage Dockerfiles for frontend (nginx) and backend (Node.js) with optimal layer caching
-2. Configure nginx to properly proxy WebSocket connections for all voice providers
-3. Implement runtime environment variable injection for frontend (no secrets baked into images)
-4. Create production Docker Compose configuration for local stack testing
+1. Audit the existing `Dockerfile`, `docker-compose.yml`, `.dockerignore`, and Docker npm scripts for production correctness
+2. Optimize the accepted Docker strategy for cache efficiency, non-root runtime, image size, and health checks
+3. Verify environment variable handling so server-side provider keys are runtime-only and not baked into image layers
+4. Reconcile Docker deployment documentation with the actual compose/build commands
 
 ---
 
@@ -36,8 +37,8 @@ This session is the foundation for Phase 01's DevOps infrastructure. The CI/CD p
 
 - Docker 20.10+ with BuildKit support
 - Understanding of multi-stage Docker builds
-- nginx configuration for static serving and WebSocket proxying
 - Node.js Alpine images and production optimization
+- Express static serving and health check behavior
 
 ### Environment Requirements
 
@@ -51,18 +52,19 @@ This session is the foundation for Phase 01's DevOps infrastructure. The CI/CD p
 
 ### In Scope (MVP)
 
-- Multi-stage Dockerfile for frontend (Vite build + nginx serve)
-- Multi-stage Dockerfile for backend (Express production build)
-- docker-compose.prod.yml with frontend, backend, and networking
-- nginx.conf with static serving and WebSocket proxy configuration
-- Runtime environment variable injection via entrypoint script
-- Health check endpoints verified in containerized environment
-- .dockerignore optimization for minimal build context
+- Audit and harden the existing combined multi-stage `Dockerfile`
+- Audit and harden `docker-compose.yml` or introduce `docker-compose.prod.yml` if preserving the current compose file is necessary
+- Verify production Express serves `dist/` and `/api/*` correctly in a container
+- Verify runtime environment variables for provider keys, CORS, and runtime API config
+- Verify health check behavior in containerized environment
+- Optimize `.dockerignore` for minimal build context
+- Reconcile README and deployment documentation with the final Docker path
 
 ### Out of Scope (Deferred)
 
 - Kubernetes manifests - _Reason: Future phase; Docker Compose sufficient for MVP_
 - Container registry setup - _Reason: Covered in Session 02 CI/CD Pipeline_
+- nginx-based split frontend container - _Reason: Only implement if the Docker audit proves split images are required_
 - SSL/TLS termination - _Reason: Handled by cloud platform/reverse proxy in Session 03_
 - ARM64 multi-architecture builds - _Reason: Nice-to-have; x86_64 sufficient for MVP_
 - Docker secrets management - _Reason: Environment variables sufficient for MVP_
@@ -74,42 +76,32 @@ This session is the foundation for Phase 01's DevOps infrastructure. The CI/CD p
 ### Architecture
 
 ```
-                    [Docker Compose Network]
-                            |
-         +------------------+------------------+
-         |                                     |
-    [frontend:80]                       [backend:3001]
-         |                                     |
-    nginx:alpine                         node:20-alpine
-    (static files)                       (Express server)
-         |                                     |
-    /usr/share/nginx/html              /app/server + node_modules
-    (~15MB static)                     (~150MB runtime)
+                    [Docker Host]
+                         |
+                 [voice-agent:3001]
+                         |
+                  node:20-alpine
+                         |
+          Express serves dist/ and /api/*
 ```
 
-**Frontend Container**:
+**Combined Container**:
 
-- Stage 1: node:20-alpine builds Vite app
-- Stage 2: nginx:alpine serves static files
-- Entrypoint script injects VITE\_\* variables into window.VOICE_AGENT_CONFIG at runtime
-
-**Backend Container**:
-
-- Stage 1: node:20-alpine installs production dependencies
-- Stage 2: node:20-alpine runs Express server with minimal footprint
+- Stage 1: node:20-alpine installs dependencies and builds the Vite app
+- Stage 2: node:20-alpine installs production dependencies
+- Stage 3: node:20-alpine runs Express with built `dist/`, `server/`, and production `node_modules`
 
 ### Design Patterns
 
 - **Multi-stage builds**: Separate build and runtime stages for minimal image size
-- **Non-root user**: Both containers run as non-root for security
-- **Build argument injection**: VITE\_\* variables passed at build time for static embedding
-- **Runtime config injection**: API base URL injected at container startup via entrypoint
+- **Non-root user**: Runtime container runs as non-root for security
+- **Build argument injection**: Only non-secret VITE\_\* variables may be passed at build time
+- **Runtime config discipline**: Server-side provider keys must be provided at runtime
 - **Health check pattern**: Lightweight endpoints for orchestrator probes
 
 ### Technology Stack
 
 - Docker 20.10+ with BuildKit
-- nginx:alpine (latest stable)
 - node:20-alpine (LTS)
 - Docker Compose v2 specification
 
@@ -119,22 +111,20 @@ This session is the foundation for Phase 01's DevOps infrastructure. The CI/CD p
 
 ### Files to Create
 
-| File                            | Purpose                                    | Est. Lines |
-| ------------------------------- | ------------------------------------------ | ---------- |
-| `Dockerfile.frontend`           | Multi-stage frontend build with nginx      | ~60        |
-| `Dockerfile.backend`            | Multi-stage backend build                  | ~45        |
-| `docker-compose.prod.yml`       | Production compose with both services      | ~50        |
-| `docker/nginx.conf`             | nginx config for static serving + WS proxy | ~80        |
-| `docker/frontend-entrypoint.sh` | Runtime env var injection script           | ~30        |
-| `docs/docker-deployment.md`     | Docker deployment documentation            | ~100       |
+| File                      | Purpose                                                        | Est. Lines |
+| ------------------------- | -------------------------------------------------------------- | ---------- |
+| `docker-compose.prod.yml` | Optional production compose file if audit keeps dev/prod split | ~50        |
 
 ### Files to Modify
 
-| File            | Changes                                       | Est. Lines |
-| --------------- | --------------------------------------------- | ---------- |
-| `.dockerignore` | Add playwright, e2e tests, scripts exclusions | ~10        |
-| `package.json`  | Add docker:prod script for compose            | ~3         |
-| `Dockerfile`    | Add deprecation notice pointing to new files  | ~5         |
+| File                 | Changes                                                     | Est. Lines |
+| -------------------- | ----------------------------------------------------------- | ---------- |
+| `Dockerfile`         | Optimize and document accepted production image strategy    | ~20        |
+| `docker-compose.yml` | Harden local production compose behavior or document scope  | ~20        |
+| `.dockerignore`      | Reconcile ignored files with actual build context needs     | ~10        |
+| `package.json`       | Add or adjust Docker scripts if command names are unclear   | ~3         |
+| `docs/DEPLOYMENT.md` | Align Docker deployment docs with actual files and commands | ~60        |
+| `README.md`          | Align Docker command summary if stale                       | ~20        |
 
 ---
 
@@ -142,25 +132,24 @@ This session is the foundation for Phase 01's DevOps infrastructure. The CI/CD p
 
 ### Functional Requirements
 
-- [ ] Frontend image builds successfully with multi-stage Dockerfile
-- [ ] Backend image builds successfully with multi-stage Dockerfile
-- [ ] `docker compose -f docker-compose.prod.yml up` starts full stack
-- [ ] Frontend serves at http://localhost:80 via nginx
-- [ ] Backend API accessible at http://localhost:3001
-- [ ] All 7 voice providers function correctly through nginx proxy
+- [ ] Accepted Docker strategy is documented as combined container or justified split images
+- [ ] Docker image builds successfully with the documented command
+- [ ] Documented compose command starts the full stack
+- [ ] Frontend serves from Express at http://localhost:3001 in production container mode
+- [ ] Backend API accessible at http://localhost:3001/api/health
+- [ ] All 7 voice providers can load and reach expected backend endpoints in the container
 - [ ] WebSocket connections work for OpenAI, xAI, and Gemini Live
-- [ ] Environment variables properly injected at runtime
+- [ ] Server-side provider keys are runtime environment variables, not image-layer secrets
 
 ### Testing Requirements
 
-- [ ] Manual testing of all voice providers in containerized environment
+- [ ] Manual or mocked verification of all voice providers in containerized environment
 - [ ] Health check endpoints respond correctly (`/api/health`)
 - [ ] Container startup completes within 30 seconds
 
 ### Quality Gates
 
-- [ ] Frontend image size under 50MB
-- [ ] Backend image size under 200MB
+- [ ] Image size target documented and met or justified
 - [ ] All files ASCII-encoded
 - [ ] Unix LF line endings
 - [ ] Code follows project conventions
@@ -172,23 +161,23 @@ This session is the foundation for Phase 01's DevOps infrastructure. The CI/CD p
 
 ### Key Considerations
 
-- nginx must handle WebSocket upgrade for `/api/openai/*`, `/api/xai/*`, `/api/gemini/*` endpoints
-- Frontend env vars injected at runtime via entrypoint script modifying index.html
+- The current production path uses Express, not nginx, to serve both static frontend and API routes
+- Client-side VITE values can be build-time values, but provider API keys must stay runtime-only on the server
 - Alpine images require explicit timezone configuration if needed
 - Non-root user requires proper file ownership in COPY commands
 
 ### Potential Challenges
 
-- **WebSocket proxy configuration**: nginx requires specific headers (Upgrade, Connection) for WebSocket passthrough; test all providers
-- **Runtime env injection**: Must replace placeholder in built index.html without breaking SPA; use sed or envsubst carefully
+- **Architecture drift**: PRD previously assumed split images, but repo uses a combined container; document the final decision clearly
+- **Runtime env handling**: Avoid baking server-side API keys into image layers
 - **Build cache invalidation**: Order Dockerfile instructions to maximize layer cache hits (COPY package\*.json before source)
 - **Signal handling**: Node.js in Docker needs proper SIGTERM handling; Express should have graceful shutdown
 
 ### Relevant Considerations
 
-- [P00] **Demo mode CORS configuration**: Production Dockerfiles MUST use strict CORS settings via CORS_ORIGIN env var, not the dynamic demo mode configuration. Validate CORS_ORIGIN is required and documented.
-- [P00] **Runtime config injection pattern**: Extend `window.VOICE_AGENT_CONFIG` pattern used in demo mode for Docker environment variables. Frontend already supports this; entrypoint script should inject values.
-- [P00] **15-minute Gemini session limit**: Document this API constraint in docker-deployment.md so users understand the limitation is not Docker-related.
+- [P00] **Demo mode CORS configuration**: Demo mode uses a single same-origin ngrok tunnel; production split deployments must use strict CORS settings via CORS_ORIGIN.
+- [P00] **Runtime config injection pattern**: The current demo uses `window.__DEMO_CONFIG__`; production Docker docs should explain when `VITE_API_BASE_URL` is needed and when same-origin is used.
+- [P00] **15-minute Gemini session limit**: Document this API constraint in deployment docs so users understand the limitation is not Docker-related.
 
 ### ASCII Reminder
 
@@ -204,14 +193,13 @@ All output files must use ASCII-only characters (0-127).
 
 ### Integration Tests
 
-- Build frontend image and verify size < 50MB
-- Build backend image and verify size < 200MB
+- Build accepted Docker image and inspect final size
 - Start compose stack and verify connectivity
 
 ### Manual Testing
 
-- [ ] Start stack with `docker compose -f docker-compose.prod.yml up`
-- [ ] Access frontend at http://localhost (port 80)
+- [ ] Start stack with the documented compose command
+- [ ] Access frontend at http://localhost:3001
 - [ ] Verify each voice provider tab loads
 - [ ] Test ElevenLabs Widget connection
 - [ ] Test ElevenLabs SDK connection
@@ -236,7 +224,6 @@ All output files must use ASCII-only characters (0-127).
 
 ### External Libraries
 
-- nginx:alpine (Docker image)
 - node:20-alpine (Docker image)
 - Docker Compose v2
 
@@ -249,4 +236,4 @@ All output files must use ASCII-only characters (0-127).
 
 ## Next Steps
 
-Run `/tasks` to generate the implementation task checklist.
+Run the implement workflow step to begin AI-led implementation.

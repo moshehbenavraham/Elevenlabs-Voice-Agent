@@ -9,7 +9,7 @@
 
 ## Objective
 
-Implement a comprehensive CI/CD pipeline using GitHub Actions that automates testing, building, and deployment workflows with proper caching and parallelization.
+Audit, reconcile, and complete the existing GitHub Actions CI/CD baseline so testing, building, security scanning, image publication, release, and deployment workflows are reliable and documented.
 
 ---
 
@@ -17,17 +17,18 @@ Implement a comprehensive CI/CD pipeline using GitHub Actions that automates tes
 
 ### In Scope (MVP)
 
-- Pull request workflow (lint, test, type-check, build)
-- Main branch workflow (deploy on merge)
-- Docker image build and push to registry
-- Test result reporting and coverage badges
+- Pull request workflows for lint, format, type-check, unit tests, E2E tests, build, and security scans
+- Main branch deployment workflow using the selected Docker/deployment path
+- Docker image build and push to GitHub Container Registry
+- Test result reporting and artifact retention
 - Dependency caching for faster builds
-- Matrix testing across Node versions
+- Node version consistency across workflows
 - E2E test integration
+- README and deployment docs reconciliation for workflow names and required secrets/vars
 
 ### Out of Scope
 
-- Release automation (semver, changelogs)
+- Additional release automation beyond the existing tag release workflow
 - Multiple environment deployments (staging/prod)
 - Manual approval gates
 
@@ -35,7 +36,7 @@ Implement a comprehensive CI/CD pipeline using GitHub Actions that automates tes
 
 ## Prerequisites
 
-- [ ] Session 01 completed (Docker configurations)
+- [ ] Session 01 completed or existing Docker baseline explicitly accepted
 - [ ] GitHub repository with Actions enabled
 - [ ] Container registry selected (GitHub Container Registry or Docker Hub)
 
@@ -43,11 +44,11 @@ Implement a comprehensive CI/CD pipeline using GitHub Actions that automates tes
 
 ## Deliverables
 
-1. `.github/workflows/ci.yml` - PR validation workflow
-2. `.github/workflows/cd.yml` - Deployment workflow
-3. `.github/workflows/docker.yml` - Container build workflow
-4. Updated README with CI badges
-5. GitHub Secrets documentation
+1. Audited `.github/workflows/quality.yml`, `test.yml`, `e2e.yml`, `security.yml`, `deploy.yml`, and `release.yml`
+2. Updated workflows or new workflow files where gaps remain
+3. Updated README with CI badges if appropriate
+4. GitHub Secrets and repository variables documentation
+5. Verified Dependabot configuration
 
 ---
 
@@ -57,5 +58,5 @@ Implement a comprehensive CI/CD pipeline using GitHub Actions that automates tes
 - [ ] Failed checks block PR merge
 - [ ] Merge to main triggers deployment
 - [ ] Docker images pushed to registry on release
-- [ ] CI completes in under 10 minutes (with caching)
-- [ ] Test coverage reports generated and visible
+- [ ] CI completes in under 10 minutes where practical with caching
+- [ ] Test artifacts and failure diagnostics are visible

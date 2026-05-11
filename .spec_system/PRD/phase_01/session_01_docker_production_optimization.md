@@ -9,7 +9,7 @@
 
 ## Objective
 
-Create optimized, production-ready Docker configurations with multi-stage builds, minimal image sizes, and proper separation of frontend and backend services.
+Audit and optimize the existing production Docker path with multi-stage builds, minimal image size, non-root runtime, health checks, and a clear decision on whether the app remains a combined full-stack container or needs split frontend/backend images.
 
 ---
 
@@ -17,18 +17,19 @@ Create optimized, production-ready Docker configurations with multi-stage builds
 
 ### In Scope (MVP)
 
-- Multi-stage Dockerfile for frontend (Vite build + nginx serve)
-- Multi-stage Dockerfile for backend (Express production build)
-- Docker Compose configuration for local production testing
-- Health check endpoints for container orchestration
-- Environment variable injection at runtime
+- Audit and harden the existing combined multi-stage `Dockerfile`
+- Audit and harden `docker-compose.yml` or introduce `docker-compose.prod.yml` if separation is needed
+- Health check configuration for container orchestration
+- Environment variable handling for provider keys, CORS, and runtime config
 - .dockerignore optimization
+- Docker deployment documentation reconciliation
 
 ### Out of Scope
 
 - Kubernetes manifests (future phase)
 - Container registry setup (covered in CI/CD session)
-- SSL/TLS termination (handled by cloud platform)
+- nginx-based split frontend container unless the audit proves it is needed
+- SSL/TLS termination (handled by deployment platform or reverse proxy)
 
 ---
 
@@ -41,19 +42,18 @@ Create optimized, production-ready Docker configurations with multi-stage builds
 
 ## Deliverables
 
-1. `Dockerfile.frontend` - Multi-stage build for React frontend
-2. `Dockerfile.backend` - Multi-stage build for Express backend
-3. `docker-compose.prod.yml` - Production compose configuration
-4. Updated health check endpoints in backend
-5. Documentation for Docker deployment
+1. Optimized Dockerfile strategy (`Dockerfile` or split Dockerfiles if justified)
+2. Production compose configuration (`docker-compose.yml` update or `docker-compose.prod.yml`)
+3. Verified container health checks
+4. Updated `.dockerignore`
+5. Reconciled Docker deployment documentation
 
 ---
 
 ## Success Criteria
 
-- [ ] Frontend image size under 50MB (nginx + static files)
-- [ ] Backend image size under 200MB
-- [ ] Both containers start and pass health checks
+- [ ] Docker image size target documented and met or justified
+- [ ] Container starts and passes health checks
 - [ ] All 7 voice providers function correctly in containers
 - [ ] Environment variables properly injected at runtime
-- [ ] `docker compose -f docker-compose.prod.yml up` starts full stack
+- [ ] Documented Docker compose command starts the full stack

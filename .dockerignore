@@ -1,17 +1,26 @@
-# Dependencies
+# Dependency directories
 node_modules
 
-# Build output (we build inside Docker)
+# Build output and generated reports
 dist
+build
+coverage
+.nyc_output
+playwright-report
+test-results
+logs
 
 # Environment files with secrets
 .env
 .env.*
-!.env.example
 
-# Git
+# Version control and repo automation
 .git
 .gitignore
+.github
+.husky
+.spec_system
+.claude
 
 # IDE and editor files
 .idea
@@ -20,26 +29,21 @@ dist
 *.swo
 *~
 
-# Test files
+# Test files are not needed for production image builds
 tests
 *.test.ts
 *.test.tsx
 *.spec.ts
 *.spec.tsx
-coverage
-.nyc_output
 
-# Documentation
+# Documentation and local examples are not needed by Vite or Express runtime
+docs
+EXAMPLE
 *.md
-!README.md
 
 # Development tools
-.husky
 .eslintcache
 .prettier*
-
-# Spec system
-.spec_system
 
 # Logs
 *.log

@@ -9,7 +9,7 @@
 
 ## Objective
 
-Configure cloud deployment targets with proper environment configuration, enabling one-click deployments for the Voice-Agent-PuPuPlatter platform.
+Configure and document the production deployment path with proper environment configuration, using the current Docker/GitHub Actions baseline and a WebSocket-compatible hosting target.
 
 ---
 
@@ -17,8 +17,8 @@ Configure cloud deployment targets with proper environment configuration, enabli
 
 ### In Scope (MVP)
 
-- Vercel configuration for frontend (or alternative like Netlify)
-- Railway/Fly.io configuration for backend (or alternative)
+- Coolify, webhook, or SSH deployment path for the combined Docker app
+- Alternative managed-platform notes for Railway, Fly.io, Render, or split Vercel/frontend deployments
 - Environment variable setup for each platform
 - Custom domain configuration
 - WebSocket support verification
@@ -35,26 +35,25 @@ Configure cloud deployment targets with proper environment configuration, enabli
 
 ## Prerequisites
 
-- [ ] Session 01 completed (Docker configurations)
-- [ ] Session 02 completed (CI/CD pipeline)
-- [ ] Cloud platform accounts created
+- [ ] Session 01 completed or Docker baseline accepted
+- [ ] Session 02 completed or deployment workflow baseline accepted
+- [ ] Deployment target selected
 
 ---
 
 ## Deliverables
 
-1. `vercel.json` - Frontend deployment configuration
-2. `fly.toml` or `railway.toml` - Backend deployment configuration
-3. Environment variable templates for each platform
-4. Deployment scripts in `scripts/deploy/`
-5. Comprehensive deployment documentation
+1. Deployment target configuration or documented webhook/SSH variables
+2. Environment variable template for the selected target
+3. Deployment script or workflow updates if needed
+4. Reconciled deployment documentation
+5. WebSocket and health-check verification notes
 
 ---
 
 ## Success Criteria
 
-- [ ] Frontend deploys to production URL via CI/CD
-- [ ] Backend deploys to production URL via CI/CD
+- [ ] Full-stack app deploys to production URL via CI/CD or documented manual trigger
 - [ ] All voice providers connect through deployed services
 - [ ] WebSocket connections work in production
 - [ ] Environment variables properly configured

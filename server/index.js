@@ -76,6 +76,57 @@ const staticLimiter = rateLimit({
 const app = express();
 const PORT = process.env.SERVER_PORT || 3001;
 const startTime = Date.now();
+const distPath = join(__dirname, '..', 'dist');
+const indexPath = join(distPath, 'index.html');
+
+function isEnvConfigured(name) {
+  const value = process.env[name];
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function createProviderStatus(requiredEnv) {
+  const missing = requiredEnv.filter(name => !isEnvConfigured(name));
+
+  return {
+    configured: missing.length === 0,
+    missing,
+  };
+}
+
+function getProviderServices() {
+  return {
+    elevenlabs: createProviderStatus(['ELEVENLABS_API_KEY', 'VITE_ELEVENLABS_AGENT_ID']),
+    openai: createProviderStatus(['OPENAI_API_KEY']),
+    xai: createProviderStatus(['XAI_API_KEY']),
+    ultravox: createProviderStatus(['ULTRAVOX_API_KEY']),
+    vapi: createProviderStatus(['VITE_VAPI_WEB_TOKEN']),
+    retell: createProviderStatus(['RETELL_API_KEY']),
+    gemini: createProviderStatus(['GEMINI_API_KEY']),
+  };
+}
+
+function getProviderSummary(services) {
+  const total = Object.keys(services).length;
+  const configured = Object.values(services).filter(service => service.configured).length;
+
+  return {
+    total,
+    configured,
+    unconfigured: total - configured,
+  };
+}
+
+function getHealthStatus({ isAppReady, providerSummary }) {
+  if (!isAppReady) {
+    return 'unhealthy';
+  }
+
+  if (providerSummary.configured === providerSummary.total) {
+    return 'healthy';
+  }
+
+  return 'degraded';
+}
 
 // Middleware
 app.use(cors({
@@ -89,7 +140,6 @@ app.use(compression());
 
 // Serve static files in production mode (BEFORE API routes)
 if (isProduction) {
-  const distPath = join(__dirname, '..', 'dist');
   app.use(express.static(distPath));
   console.log(`[Server] Serving static files from: ${distPath}`);
 }
@@ -117,28 +167,12 @@ app.use('/api/functions', functionsRoutes);
 app.get('/api/health', (req, res) => {
   const memUsage = process.memoryUsage();
   const uptimeMs = Date.now() - startTime;
-
-  // Check required environment variables
-  const services = {
-    elevenlabs: {
-      configured: !!(process.env.ELEVENLABS_API_KEY && process.env.VITE_ELEVENLABS_AGENT_ID),
-    },
-    openai: {
-      configured: !!process.env.OPENAI_API_KEY,
-    },
-    xai: {
-      configured: !!process.env.XAI_API_KEY,
-    },
-    ultravox: {
-      configured: !!process.env.ULTRAVOX_API_KEY,
-    },
-    retell: {
-      configured: !!process.env.RETELL_API_KEY,
-    },
-    gemini: {
-      configured: !!process.env.GEMINI_API_KEY,
-    },
-  };
+  const services = getProviderServices();
+  const providerSummary = getProviderSummary(services);
+  const isStaticReady = !isProduction || existsSync(indexPath);
+  const isAppReady = isStaticReady;
+  const status = getHealthStatus({ isAppReady, providerSummary });
+  const httpStatus = status === 'unhealthy' ? 503 : 200;
 
   // Security features status
   const security = {
@@ -154,12 +188,14 @@ app.get('/api/health', (req, res) => {
     demoMode: isDemoMode,
   };
 
-  // Determine overall status
-  const anyServiceConfigured = Object.values(services).some(s => s.configured);
-  const status = anyServiceConfigured ? 'healthy' : 'degraded';
-
   const healthResponse = {
     status,
+    ready: isAppReady,
+    statusMapping: {
+      healthy: 'Application is serving and all provider runtime variables are configured.',
+      degraded: 'Application is serving, but one or more providers are not configured.',
+      unhealthy: 'Application is not ready to serve production traffic.',
+    },
     timestamp: new Date().toISOString(),
     uptime: {
       ms: uptimeMs,
@@ -170,12 +206,20 @@ app.get('/api/health', (req, res) => {
       heapTotal: `${Math.round(memUsage.heapTotal / 1024 / 1024)} MB`,
       rss: `${Math.round(memUsage.rss / 1024 / 1024)} MB`,
     },
+    runtime: {
+      nodeEnv: process.env.NODE_ENV || 'development',
+      staticAssets: {
+        required: isProduction,
+        ready: isStaticReady,
+      },
+    },
+    providerSummary,
     services,
     security,
     version: process.env.npm_package_version || '1.0.0',
   };
 
-  res.status(status === 'healthy' ? 200 : 503).json(healthResponse);
+  res.status(httpStatus).json(healthResponse);
 });
 
 // Get signed URL for ElevenLabs conversation
@@ -241,7 +285,6 @@ if (isProduction) {
   app.get('{*path}', staticLimiter, (req, res) => {
     // Only serve index.html for non-API routes
     if (!req.path.startsWith('/api')) {
-      const indexPath = join(__dirname, '..', 'dist', 'index.html');
       res.sendFile(indexPath);
     }
   });

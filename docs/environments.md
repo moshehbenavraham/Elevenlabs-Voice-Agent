@@ -37,12 +37,11 @@ These are embedded in the build and visible to users.
 | `VITE_VAPI_VOICE`             | `paula`                 | Vapi voice selection     |
 | `VITE_RETELL_ENABLED`         | `true`                  | Show Retell tab          |
 | `VITE_RETELL_AGENT_ID`        | -                       | Retell Agent ID          |
-| `VITE_GEMINI_ENABLED`         | `true`                  | Show Gemini tab          |
-| `VITE_GEMINI_VOICE`           | `Puck`                  | Gemini voice selection   |
+| `VITE_GEMINI_ENABLED`         | `false`                 | Show Gemini tab          |
+| `VITE_GEMINI_VOICE`           | `Zephyr`                | Gemini voice selection   |
 | `VITE_DEFAULT_PROVIDER`       | `elevenlabs`            | Default active tab       |
 | `VITE_ELEVENLABS_AGENT_ID`    | -                       | ElevenLabs agent ID      |
-| `VITE_VOICE_CONNECTION_MODE`  | `agent-sdk`             | SDK or widget mode       |
-| `VITE_XAI_VOICE`              | `verse`                 | xAI voice selection      |
+| `VITE_XAI_VOICE`              | `Ara`                   | xAI voice selection      |
 | `VITE_OPENAI_VOICE`           | `alloy`                 | OpenAI voice selection   |
 | `VITE_ULTRAVOX_VOICE`         | `Mark`                  | Ultravox voice selection |
 | `VITE_API_BASE_URL`           | `http://localhost:3001` | Backend API URL          |
