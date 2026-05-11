@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { motion } from 'framer-motion';
 import { Languages, Play, Square } from 'lucide-react';
+import { TranslationTranscriptPanel } from '@/components/conversation/TranslationTranscriptPanel';
 import { OpenAITranslationAudioPlayer } from '@/components/providers/OpenAITranslationAudioPlayer';
 import { OpenAITranslationLanguageSelect } from '@/components/providers/OpenAITranslationLanguageSelect';
+import { OpenAITranslationLatestCaption } from '@/components/providers/OpenAITranslationLatestCaption';
 import { OpenAITranslationSourceSelector } from '@/components/providers/OpenAITranslationSourceSelector';
 import {
   OpenAITranslationStatusPanel,
@@ -15,8 +17,10 @@ import {
   getOpenAITranslationSourceCapability,
   getOpenAITranslationSourceModes,
   getOpenAITranslationSourceModeMetadata,
+  getLatestOpenAITranslationCaption,
   getTranslationTargetLanguage,
   isOpenAITranslationBusyStatus,
+  summarizeOpenAITranslationTranscripts,
 } from '@/lib/openaiTranslation';
 import { cn } from '@/lib/utils';
 import type {
@@ -27,6 +31,7 @@ import type {
   OpenAITranslationSourceMode,
   OpenAITranslationSourceStatus,
   OpenAITranslationTargetLanguageCode,
+  OpenAITranslationTranscriptSummary,
 } from '@/types/openai-translation';
 
 interface OpenAITranslationProviderProps {
@@ -74,6 +79,7 @@ export function OpenAITranslationProvider({
   } = sourceController;
   const {
     error: runtimeError,
+    clearTranscripts,
     isConnected: isRuntimeConnected,
     isStarting: isRuntimeStarting,
     reset: resetRuntime,
@@ -81,6 +87,7 @@ export function OpenAITranslationProvider({
     status: runtimeStatus,
     stop: stopRuntime,
     translatedAudioStream,
+    transcripts,
   } = runtime;
   const [selectedSourceMode, setSelectedSourceMode] = useState<OpenAITranslationSourceMode>(() =>
     resolveInitialSourceMode(sourceCapabilities)
@@ -136,6 +143,16 @@ export function OpenAITranslationProvider({
     isRuntimeConnected ||
     runtimeStatus === 'stopping';
   const isStopDisabled = !canStop || isStopPending;
+  const latestCaption = useMemo(
+    () => getLatestOpenAITranslationCaption(transcripts),
+    [transcripts]
+  );
+  const transcriptSummary = useMemo(
+    () => summarizeOpenAITranslationTranscripts(transcripts),
+    [transcripts]
+  );
+  const isTranscriptActive =
+    isRuntimeConnected || isRuntimeStarting || isStartPending || sourceStatus === 'ready';
   const uiStatus = useMemo(
     () =>
       deriveOpenAITranslationUiStatus({
@@ -150,6 +167,7 @@ export function OpenAITranslationProvider({
         sourceError,
         sourceStatus,
         targetLanguageLabel,
+        transcriptSummary,
       }),
     [
       errorMessage,
@@ -163,6 +181,7 @@ export function OpenAITranslationProvider({
       sourceError,
       sourceStatus,
       targetLanguageLabel,
+      transcriptSummary,
     ]
   );
 
@@ -373,30 +392,42 @@ export function OpenAITranslationProvider({
           </div>
         </header>
 
-        <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
-          <OpenAITranslationSourceSelector
-            selectedMode={activeSourceMode}
-            capabilities={sourceCapabilities}
-            disabled={areConfigurationControlsDisabled}
-            onModeChange={setSelectedSourceMode}
-          />
-          <OpenAITranslationLanguageSelect
-            value={targetLanguage}
-            disabled={areConfigurationControlsDisabled}
-            onChange={setTargetLanguage}
+        <OpenAITranslationLatestCaption caption={latestCaption} isActive={isTranscriptActive} />
+
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)]">
+          <div className="flex min-w-0 flex-col gap-4">
+            <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+              <OpenAITranslationSourceSelector
+                selectedMode={activeSourceMode}
+                capabilities={sourceCapabilities}
+                disabled={areConfigurationControlsDisabled}
+                onModeChange={setSelectedSourceMode}
+              />
+              <OpenAITranslationLanguageSelect
+                value={targetLanguage}
+                disabled={areConfigurationControlsDisabled}
+                onChange={setTargetLanguage}
+              />
+            </div>
+
+            <OpenAITranslationStatusPanel
+              status={uiStatus}
+              sourceStatus={sourceStatus}
+              runtimeStatus={runtimeStatus}
+            />
+
+            <OpenAITranslationAudioPlayer
+              stream={translatedAudioStream}
+              disabled={!translatedAudioStream}
+            />
+          </div>
+
+          <TranslationTranscriptPanel
+            entries={transcripts}
+            isActive={isTranscriptActive}
+            onClearTranscripts={clearTranscripts}
           />
         </div>
-
-        <OpenAITranslationStatusPanel
-          status={uiStatus}
-          sourceStatus={sourceStatus}
-          runtimeStatus={runtimeStatus}
-        />
-
-        <OpenAITranslationAudioPlayer
-          stream={translatedAudioStream}
-          disabled={!translatedAudioStream}
-        />
       </div>
     </motion.section>
   );
@@ -413,6 +444,7 @@ interface OpenAITranslationUiStatusInput {
   readonly sourceError: OpenAITranslationSourceError | null;
   readonly sourceStatus: OpenAITranslationSourceStatus;
   readonly targetLanguageLabel: string;
+  readonly transcriptSummary: OpenAITranslationTranscriptSummary;
   readonly translatedAudioStream: MediaStream | null;
 }
 
@@ -427,12 +459,14 @@ function deriveOpenAITranslationUiStatus({
   sourceError,
   sourceStatus,
   targetLanguageLabel,
+  transcriptSummary,
   translatedAudioStream,
 }: OpenAITranslationUiStatusInput): OpenAITranslationUiStatus {
   const details = [
     `Source: ${describeSourceStatus(sourceStatus)}`,
     `Runtime: ${describeRuntimeStatus(runtimeStatus)}`,
     `Selected: ${selectedSourceLabel} to ${targetLanguageLabel}`,
+    `Transcript: ${describeTranscriptSummary(transcriptSummary)}`,
   ];
 
   if (errorMessage) {
@@ -599,6 +633,15 @@ function describeRuntimeStatus(status: OpenAITranslationHookStatus): string {
     default:
       return assertNeverRuntimeStatus(status);
   }
+}
+
+function describeTranscriptSummary(summary: OpenAITranslationTranscriptSummary): string {
+  if (!summary.hasEntries) {
+    return 'waiting for lines';
+  }
+
+  const lineLabel = summary.totalCount === 1 ? 'line' : 'lines';
+  return `${summary.totalCount} ${lineLabel}, ${summary.sourceCount} source, ${summary.translatedCount} translated`;
 }
 
 function formatErrorTitle(

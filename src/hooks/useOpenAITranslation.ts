@@ -431,6 +431,14 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
     }
   }, [cleanupRuntimeResources, setHookStatus]);
 
+  const clearTranscripts = useCallback((): void => {
+    if (!mountedRef.current) {
+      return;
+    }
+
+    setHookTranscripts([]);
+  }, [setHookTranscripts]);
+
   const reset = useCallback((): void => {
     if (!mountedRef.current) {
       return;
@@ -456,9 +464,21 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
       isConnected,
       start,
       stop,
+      clearTranscripts,
       reset,
     }),
-    [error, isConnected, isStarting, reset, start, status, stop, transcripts, translatedAudioStream]
+    [
+      clearTranscripts,
+      error,
+      isConnected,
+      isStarting,
+      reset,
+      start,
+      status,
+      stop,
+      transcripts,
+      translatedAudioStream,
+    ]
   );
 }
 

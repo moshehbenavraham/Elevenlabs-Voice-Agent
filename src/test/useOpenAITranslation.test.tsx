@@ -177,6 +177,7 @@ describe('useOpenAITranslation', () => {
     expect(result.current.isConnected).toBe(false);
     expect(typeof result.current.start).toBe('function');
     expect(typeof result.current.stop).toBe('function');
+    expect(typeof result.current.clearTranscripts).toBe('function');
     expect(typeof result.current.reset).toBe('function');
 
     await act(async () => {
@@ -374,6 +375,70 @@ describe('useOpenAITranslation', () => {
       code: 'malformed-json',
     });
     expect(result.current.transcripts).toHaveLength(2);
+  });
+
+  it('clears transcript state without stopping active runtime resources', async () => {
+    mockSuccessfulFetches();
+    const { stream, track } = createSourceStream();
+    const remoteTrack = new FakeMediaStreamTrack('audio', 'remote-track');
+    const remoteStream = new FakeMediaStream([remoteTrack]);
+    const { result } = renderHook(() => useOpenAITranslation());
+
+    await act(async () => {
+      await result.current.start({
+        sourceStream: stream,
+        targetLanguage: 'es',
+        ownsSourceStream: true,
+      });
+    });
+
+    const peerConnection = FakeRTCPeerConnection.instances[0];
+    const dataChannel = peerConnection.dataChannel;
+    await act(async () => {
+      peerConnection.dispatchTrack(remoteTrack, [remoteStream]);
+      dataChannel?.emitMessage(
+        JSON.stringify({
+          type: 'translation.translated_transcript.final',
+          response_id: 'translated-1',
+          transcript: 'hola',
+        })
+      );
+    });
+
+    expect(result.current.transcripts).toHaveLength(1);
+    expect(result.current.translatedAudioStream).toBe(remoteStream);
+
+    await act(async () => {
+      result.current.clearTranscripts();
+    });
+
+    expect(result.current.transcripts).toEqual([]);
+    expect(result.current.status).toBe('connected');
+    expect(result.current.isConnected).toBe(true);
+    expect(result.current.translatedAudioStream).toBe(remoteStream);
+    expect(peerConnection.close).not.toHaveBeenCalled();
+    expect(dataChannel?.close).not.toHaveBeenCalled();
+    expect(track.stop).not.toHaveBeenCalled();
+    expect(remoteTrack.stop).not.toHaveBeenCalled();
+
+    await act(async () => {
+      dataChannel?.emitMessage(
+        JSON.stringify({
+          type: 'translation.translated_transcript.final',
+          response_id: 'translated-2',
+          transcript: 'adios',
+        })
+      );
+    });
+
+    expect(result.current.transcripts).toMatchObject([
+      {
+        id: 'translated-2',
+        stream: 'translated',
+        text: 'adios',
+        isFinal: true,
+      },
+    ]);
   });
 
   it('prevents duplicate starts while a start is in flight', async () => {

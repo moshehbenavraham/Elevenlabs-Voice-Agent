@@ -59,6 +59,7 @@ describe('OpenAITranslationProvider', () => {
   const sourceResetMock = vi.fn();
   const runtimeStartMock = vi.fn<UseOpenAITranslationResult['start']>();
   const runtimeStopMock = vi.fn<UseOpenAITranslationResult['stop']>();
+  const runtimeClearTranscriptsMock = vi.fn();
   const runtimeResetMock = vi.fn();
   const audioPauseMock = vi.fn();
   const audioLoadMock = vi.fn();
@@ -119,8 +120,11 @@ describe('OpenAITranslationProvider', () => {
     ).toBeInTheDocument();
     expect(screen.getByRole('radiogroup', { name: /audio source/i })).toBeInTheDocument();
     expect(screen.getByRole('combobox', { name: /target language/i })).toHaveValue('en');
-    expect(screen.getByRole('status')).toHaveTextContent(/ready to translate/i);
+    expect(screen.getByText(/ready to translate/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/translated audio playback/i)).toBeInTheDocument();
+    expect(screen.getByRole('log', { name: /translation transcript/i })).toBeInTheDocument();
+    expect(screen.getByText(/translated captions will appear here/i)).toBeInTheDocument();
+    expect(screen.getByText(/no transcript lines in the current session/i)).toBeInTheDocument();
     expect(fetchMock).not.toHaveBeenCalled();
     expect(getUserMediaMock).not.toHaveBeenCalled();
     expect(getDisplayMediaMock).not.toHaveBeenCalled();
@@ -202,7 +206,9 @@ describe('OpenAITranslationProvider', () => {
 
     expect(screen.getByRole('button', { name: /start translation/i })).toBeDisabled();
     expect(screen.getByRole('radio', { name: /microphone source available/i })).toBeDisabled();
-    expect(screen.getByRole('status')).toHaveTextContent(/requesting client secret/i);
+    expect(
+      screen.getByRole('heading', { name: /requesting client secret/i, level: 2 })
+    ).toBeInTheDocument();
   });
 
   it('stops runtime and source resources from the Stop control', async () => {
@@ -246,6 +252,103 @@ describe('OpenAITranslationProvider', () => {
     expect(audio.srcObject).toBeNull();
     expect(audioPauseMock).toHaveBeenCalled();
     expect(audioLoadMock).toHaveBeenCalled();
+  });
+
+  it('renders active no-transcript states while connected', () => {
+    runtimeResult = createRuntimeHookResult({ status: 'connected', isConnected: true });
+
+    render(<OpenAITranslationProvider />);
+
+    expect(screen.getByText(/listening for translated speech/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/listening for source and translated transcript lines/i)
+    ).toBeInTheDocument();
+    expect(screen.getByText(/transcript: waiting for lines/i)).toBeInTheDocument();
+  });
+
+  it('renders latest caption and mixed transcript rows without translated audio', () => {
+    runtimeResult = createRuntimeHookResult({
+      status: 'connected',
+      isConnected: true,
+      transcripts: [
+        {
+          id: 'source-1',
+          stream: 'source',
+          text: 'hello',
+          isFinal: true,
+          updatedAt: 10,
+        },
+        {
+          id: 'translated-1',
+          stream: 'translated',
+          text: 'hola',
+          isFinal: false,
+          updatedAt: 20,
+        },
+        {
+          id: 'translated-2',
+          stream: 'translated',
+          text: 'buenos dias',
+          isFinal: true,
+          updatedAt: 30,
+        },
+      ],
+    });
+
+    render(<OpenAITranslationProvider />);
+
+    expect(screen.getByLabelText(/latest translated caption/i)).toHaveTextContent('buenos dias');
+    expect(screen.getByLabelText(/source transcript final: hello/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/translated transcript partial: hola/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/translated transcript final: buenos dias/i)).toBeInTheDocument();
+    expect(screen.getByText(/transcript: 3 lines, 1 source, 2 translated/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/translation is connected and waiting for remote audio/i)
+    ).toBeInTheDocument();
+  });
+
+  it('confirms transcript clearing without stopping an active translation session', async () => {
+    const user = userEvent.setup();
+    runtimeResult = createRuntimeHookResult({
+      status: 'connected',
+      isConnected: true,
+      transcripts: [
+        {
+          id: 'translated-1',
+          stream: 'translated',
+          text: 'hola',
+          isFinal: true,
+          updatedAt: 10,
+        },
+      ],
+    });
+
+    const view = render(<OpenAITranslationProvider />);
+    runtimeClearTranscriptsMock.mockImplementation(() => {
+      runtimeResult = createRuntimeHookResult({
+        status: 'connected',
+        isConnected: true,
+        transcripts: [],
+      });
+      view.rerender(<OpenAITranslationProvider />);
+    });
+
+    await user.click(screen.getByRole('button', { name: /clear transcript/i }));
+    expect(runtimeClearTranscriptsMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /confirm clear/i })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /confirm clear/i }));
+
+    await waitFor(() => {
+      expect(runtimeClearTranscriptsMock).toHaveBeenCalledTimes(1);
+      expect(
+        screen.getByText(/listening for source and translated transcript lines/i)
+      ).toBeInTheDocument();
+    });
+    expect(runtimeStopMock).not.toHaveBeenCalled();
+    expect(sourceStopMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /start translation/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /stop translation/i })).toBeEnabled();
   });
 
   it('registers a provider-switch stop handler and clears it on unmount', async () => {
@@ -303,6 +406,7 @@ describe('OpenAITranslationProvider', () => {
       isConnected: false,
       start: runtimeStartMock,
       stop: runtimeStopMock,
+      clearTranscripts: runtimeClearTranscriptsMock,
       reset: runtimeResetMock,
       ...overrides,
     };

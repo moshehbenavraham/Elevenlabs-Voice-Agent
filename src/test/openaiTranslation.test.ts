@@ -22,9 +22,12 @@ import {
   createOpenAITranslationRuntimeError,
   detectOpenAITranslationSourceCapabilities,
   exchangeOpenAITranslationSdp,
+  getLatestOpenAITranslationCaption,
   getOpenAITranslationSourceCapability,
   getOpenAITranslationSourceModeMetadata,
   getOpenAITranslationSourceModes,
+  getOpenAITranslationTranscriptDisplayEntries,
+  getOpenAITranslationTranscriptEntriesByStream,
   getOriginalAudioVolume,
   getTranslationTargetLanguages,
   getTranslatedAudioVolume,
@@ -42,12 +45,14 @@ import {
   parseOpenAITranslationDataChannelMessage,
   requestOpenAITranslationClientSecret,
   shouldRetryOpenAITranslationStatus,
+  summarizeOpenAITranslationTranscripts,
   validateTranslationTargetLanguage,
 } from '@/lib/openaiTranslation';
 import type {
   OpenAITranslationFetch,
   OpenAITranslationSessionRequestDescriptor,
   OpenAITranslationTargetLanguage,
+  OpenAITranslationTranscriptEntry,
 } from '@/types/openai-translation';
 
 const EXPECTED_PRD_TARGET_LANGUAGES = [
@@ -543,6 +548,38 @@ describe('openaiTranslation', () => {
         });
       }
     });
+
+    it('parses translated transcript aliases and rejects blank transcript text', () => {
+      const translatedDelta = parseOpenAITranslationDataChannelMessage({
+        type: 'translation.translation_transcript.delta',
+        response_id: 'translated-2',
+        delta: 'bon',
+      });
+      const blankText = parseOpenAITranslationDataChannelMessage({
+        type: 'translation.translated_transcript.final',
+        response_id: 'translated-3',
+        transcript: '   ',
+      });
+
+      expect(translatedDelta).toEqual({
+        ok: true,
+        kind: 'transcript',
+        event: {
+          id: 'translated-2',
+          stream: 'translated',
+          phase: 'delta',
+          text: 'bon',
+          rawType: 'translation.translation_transcript.delta',
+        },
+      });
+      expect(blankText.ok).toBe(false);
+      if (!blankText.ok) {
+        expect(blankText.error).toMatchObject({
+          kind: 'parser',
+          code: 'missing-transcript-text',
+        });
+      }
+    });
   });
 
   describe('transcript normalization', () => {
@@ -629,6 +666,135 @@ describe('openaiTranslation', () => {
         stream: 'translated',
         text: 'hola',
         isFinal: true,
+      });
+    });
+
+    it('keeps same-id final replacements stable and ignores stale deltas after final', () => {
+      const partial = applyOpenAITranslationTranscriptEvent(
+        [],
+        {
+          id: 'source-2',
+          stream: 'source',
+          phase: 'delta',
+          text: 'hel',
+          rawType: 'translation.source_transcript.delta',
+        },
+        10
+      );
+      const final = applyOpenAITranslationTranscriptEvent(
+        partial,
+        {
+          id: 'source-2',
+          stream: 'source',
+          phase: 'final',
+          text: 'hello',
+          rawType: 'translation.source_transcript.final',
+        },
+        20
+      );
+      const staleDelta = applyOpenAITranslationTranscriptEvent(
+        final,
+        {
+          id: 'source-2',
+          stream: 'source',
+          phase: 'delta',
+          text: ' again',
+          rawType: 'translation.source_transcript.delta',
+        },
+        30
+      );
+
+      expect(final).toHaveLength(1);
+      expect(final[0]).toMatchObject({
+        text: 'hello',
+        isFinal: true,
+        updatedAt: 20,
+      });
+      expect(staleDelta).toEqual(final);
+    });
+
+    it('builds display selectors for stream filtering, summaries, and latest captions', () => {
+      const entries: readonly OpenAITranslationTranscriptEntry[] = [
+        {
+          id: 'source-1',
+          stream: 'source',
+          text: 'hel',
+          isFinal: false,
+          updatedAt: 10,
+        },
+        {
+          id: 'translated-1',
+          stream: 'translated',
+          text: 'hola',
+          isFinal: false,
+          updatedAt: 20,
+        },
+        {
+          id: 'source-1',
+          stream: 'source',
+          text: 'hello',
+          isFinal: true,
+          updatedAt: 30,
+        },
+        {
+          id: 'translated-2',
+          stream: 'translated',
+          text: 'adios',
+          isFinal: true,
+          updatedAt: 40,
+        },
+        {
+          id: 'blank',
+          stream: 'source',
+          text: '   ',
+          isFinal: false,
+          updatedAt: 50,
+        },
+      ];
+
+      expect(getOpenAITranslationTranscriptEntriesByStream(entries, 'source')).toEqual([
+        {
+          id: 'source-1',
+          stream: 'source',
+          text: 'hello',
+          isFinal: true,
+          updatedAt: 30,
+        },
+      ]);
+      expect(getOpenAITranslationTranscriptDisplayEntries(entries)).toMatchObject([
+        {
+          id: 'source-1',
+          sequence: 1,
+          streamLabel: 'Source',
+          statusLabel: 'Final',
+        },
+        {
+          id: 'translated-1',
+          sequence: 2,
+          streamLabel: 'Translated',
+          statusLabel: 'Partial',
+        },
+        {
+          id: 'translated-2',
+          sequence: 3,
+          streamLabel: 'Translated',
+          statusLabel: 'Final',
+        },
+      ]);
+      expect(getLatestOpenAITranslationCaption(entries)).toMatchObject({
+        id: 'translated-2',
+        text: 'adios',
+        stream: 'translated',
+        statusLabel: 'Final',
+      });
+      expect(summarizeOpenAITranslationTranscripts(entries)).toEqual({
+        totalCount: 3,
+        sourceCount: 1,
+        translatedCount: 2,
+        finalCount: 2,
+        partialCount: 1,
+        hasEntries: true,
+        hasTranslatedCaption: true,
       });
     });
   });

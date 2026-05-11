@@ -237,6 +237,7 @@ export interface OpenAITranslationRuntimeError {
 
 export type OpenAITranslationTranscriptStream = 'source' | 'translated';
 export type OpenAITranslationTranscriptEventPhase = 'delta' | 'final';
+export type OpenAITranslationTranscriptDisplayStatus = 'partial' | 'final';
 
 export interface OpenAITranslationTranscriptEntry {
   readonly id: string;
@@ -244,6 +245,24 @@ export interface OpenAITranslationTranscriptEntry {
   readonly text: string;
   readonly isFinal: boolean;
   readonly updatedAt: number;
+}
+
+export interface OpenAITranslationTranscriptDisplayEntry extends OpenAITranslationTranscriptEntry {
+  readonly sequence: number;
+  readonly status: OpenAITranslationTranscriptDisplayStatus;
+  readonly streamLabel: string;
+  readonly statusLabel: string;
+  readonly ariaLabel: string;
+}
+
+export interface OpenAITranslationTranscriptSummary {
+  readonly totalCount: number;
+  readonly sourceCount: number;
+  readonly translatedCount: number;
+  readonly finalCount: number;
+  readonly partialCount: number;
+  readonly hasEntries: boolean;
+  readonly hasTranslatedCaption: boolean;
 }
 
 export interface OpenAITranslationTranscriptEvent {
@@ -323,5 +342,6 @@ export interface UseOpenAITranslationResult {
   readonly isConnected: boolean;
   readonly start: (options: OpenAITranslationStartOptions) => Promise<boolean>;
   readonly stop: () => Promise<void>;
+  readonly clearTranscripts: () => void;
   readonly reset: () => void;
 }

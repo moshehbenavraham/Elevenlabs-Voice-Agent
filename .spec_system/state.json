@@ -187,6 +187,16 @@
       "date": "2026-05-11",
       "session": "phase03-session03-translation-tab-ui-mvp",
       "status": "completed"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase03-session04-transcript-and-caption-experience",
+      "status": "planned"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase03-session04-transcript-and-caption-experience",
+      "status": "completed"
     }
   ]
 }

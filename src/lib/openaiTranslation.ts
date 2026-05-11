@@ -28,9 +28,12 @@ import type {
   OpenAITranslationTargetLanguage,
   OpenAITranslationTargetLanguageCode,
   OpenAITranslationTargetLanguageValidationResult,
+  OpenAITranslationTranscriptDisplayEntry,
+  OpenAITranslationTranscriptDisplayStatus,
   OpenAITranslationTranscriptEntry,
   OpenAITranslationTranscriptEvent,
   OpenAITranslationTranscriptEventPhase,
+  OpenAITranslationTranscriptSummary,
   OpenAITranslationTranscriptStream,
 } from '@/types/openai-translation';
 
@@ -134,6 +137,14 @@ const OPENAI_TRANSLATION_TERMINAL_STATUSES = new Set<OpenAITranslationHookStatus
   'stopped',
   'error',
 ]);
+const OPENAI_TRANSLATION_TRANSCRIPT_STREAM_LABELS = {
+  source: 'Source',
+  translated: 'Translated',
+} as const satisfies Record<OpenAITranslationTranscriptStream, string>;
+const OPENAI_TRANSLATION_TRANSCRIPT_STATUS_LABELS = {
+  partial: 'Partial',
+  final: 'Final',
+} as const satisfies Record<OpenAITranslationTranscriptDisplayStatus, string>;
 
 interface OpenAITranslationDisplayMediaOptions extends DisplayMediaStreamOptions {
   readonly preferCurrentTab?: boolean;
@@ -555,6 +566,63 @@ export function applyOpenAITranslationTranscriptEvent(
   return entries.map((entry, index) => (index === existingIndex ? nextEntry : entry));
 }
 
+export function getOpenAITranslationTranscriptEntriesByStream(
+  entries: readonly OpenAITranslationTranscriptEntry[],
+  stream: OpenAITranslationTranscriptStream
+): readonly OpenAITranslationTranscriptEntry[] {
+  return normalizeOpenAITranslationTranscriptEntries(entries).filter(
+    (entry) => entry.stream === stream
+  );
+}
+
+export function getOpenAITranslationTranscriptDisplayEntries(
+  entries: readonly OpenAITranslationTranscriptEntry[],
+  stream?: OpenAITranslationTranscriptStream
+): readonly OpenAITranslationTranscriptDisplayEntry[] {
+  return normalizeOpenAITranslationTranscriptEntries(entries)
+    .filter((entry) => (stream ? entry.stream === stream : true))
+    .map((entry, index) => buildOpenAITranslationTranscriptDisplayEntry(entry, index));
+}
+
+export function getLatestOpenAITranslationCaption(
+  entries: readonly OpenAITranslationTranscriptEntry[]
+): OpenAITranslationTranscriptDisplayEntry | null {
+  const translatedEntries = getOpenAITranslationTranscriptDisplayEntries(entries, 'translated');
+  if (translatedEntries.length === 0) {
+    return null;
+  }
+
+  return translatedEntries.reduce((latest, entry) => {
+    if (entry.updatedAt > latest.updatedAt) {
+      return entry;
+    }
+
+    return entry.updatedAt === latest.updatedAt && entry.sequence > latest.sequence
+      ? entry
+      : latest;
+  }, translatedEntries[0]);
+}
+
+export function summarizeOpenAITranslationTranscripts(
+  entries: readonly OpenAITranslationTranscriptEntry[]
+): OpenAITranslationTranscriptSummary {
+  const displayEntries = getOpenAITranslationTranscriptDisplayEntries(entries);
+  const sourceCount = displayEntries.filter((entry) => entry.stream === 'source').length;
+  const translatedCount = displayEntries.filter((entry) => entry.stream === 'translated').length;
+  const finalCount = displayEntries.filter((entry) => entry.isFinal).length;
+  const partialCount = displayEntries.length - finalCount;
+
+  return {
+    totalCount: displayEntries.length,
+    sourceCount,
+    translatedCount,
+    finalCount,
+    partialCount,
+    hasEntries: displayEntries.length > 0,
+    hasTranslatedCaption: translatedCount > 0,
+  };
+}
+
 export function isTranslationTargetLanguage(
   value: unknown
 ): value is OpenAITranslationTargetLanguageCode {
@@ -854,7 +922,7 @@ function parseTranscriptDataChannelEvent(
   phase: OpenAITranslationTranscriptEventPhase,
   textFields: readonly string[]
 ): OpenAITranslationDataChannelParseResult {
-  const text = readFirstStringField(record, textFields);
+  const text = readFirstNonBlankStringField(record, textFields);
   if (text === null) {
     return {
       ok: false,
@@ -869,7 +937,7 @@ function parseTranscriptDataChannelEvent(
 
   const event: OpenAITranslationTranscriptEvent = {
     id:
-      readFirstStringField(record, [
+      readFirstNonBlankStringField(record, [
         'item_id',
         'itemId',
         'response_id',
@@ -903,6 +971,14 @@ function readFirstStringField(
   }
 
   return null;
+}
+
+function readFirstNonBlankStringField(
+  record: Readonly<Record<string, unknown>>,
+  fieldNames: readonly string[]
+): string | null {
+  const value = readFirstStringField(record, fieldNames);
+  return value !== null && value.trim().length > 0 ? value : null;
 }
 
 async function fetchOpenAITranslationWithRetry(
@@ -1315,8 +1391,21 @@ function buildOpenAITranslationTranscriptEntry(
   event: OpenAITranslationTranscriptEvent,
   updatedAt: number
 ): OpenAITranslationTranscriptEntry {
+  const text = readNonEmptyString(event.text);
+  if (!text) {
+    throw createOpenAITranslationRuntimeError(
+      'parser',
+      'OpenAI translation transcript event text was empty',
+      { code: 'missing-transcript-text' }
+    );
+  }
+
   switch (event.phase) {
     case 'delta':
+      if (existing?.isFinal) {
+        return existing;
+      }
+
       return {
         id: event.id,
         stream: event.stream,
@@ -1329,7 +1418,7 @@ function buildOpenAITranslationTranscriptEntry(
       return {
         id: event.id,
         stream: event.stream,
-        text: event.text,
+        text,
         isFinal: true,
         updatedAt,
       };
@@ -1337,6 +1426,49 @@ function buildOpenAITranslationTranscriptEntry(
     default:
       return assertNeverTranscriptPhase(event.phase);
   }
+}
+
+function normalizeOpenAITranslationTranscriptEntries(
+  entries: readonly OpenAITranslationTranscriptEntry[]
+): readonly OpenAITranslationTranscriptEntry[] {
+  const normalized: OpenAITranslationTranscriptEntry[] = [];
+
+  for (const entry of entries) {
+    if (entry.text.trim().length === 0) {
+      continue;
+    }
+
+    const existingIndex = normalized.findIndex(
+      (candidate) => candidate.id === entry.id && candidate.stream === entry.stream
+    );
+
+    if (existingIndex < 0) {
+      normalized.push(entry);
+      continue;
+    }
+
+    normalized[existingIndex] = entry;
+  }
+
+  return normalized;
+}
+
+function buildOpenAITranslationTranscriptDisplayEntry(
+  entry: OpenAITranslationTranscriptEntry,
+  index: number
+): OpenAITranslationTranscriptDisplayEntry {
+  const status: OpenAITranslationTranscriptDisplayStatus = entry.isFinal ? 'final' : 'partial';
+  const streamLabel = OPENAI_TRANSLATION_TRANSCRIPT_STREAM_LABELS[entry.stream];
+  const statusLabel = OPENAI_TRANSLATION_TRANSCRIPT_STATUS_LABELS[status];
+
+  return {
+    ...entry,
+    sequence: index + 1,
+    status,
+    streamLabel,
+    statusLabel,
+    ariaLabel: `${streamLabel} transcript ${statusLabel.toLowerCase()}: ${entry.text}`,
+  };
 }
 
 function assertNeverTranscriptPhase(phase: never): OpenAITranslationTranscriptEntry {
