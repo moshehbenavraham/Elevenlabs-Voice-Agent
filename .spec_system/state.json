@@ -4,8 +4,8 @@
   "description": "A multi-provider voice AI demo platform showcasing integrations with ElevenLabs, OpenAI, xAI, Ultravox, Vapi, Retell, Gemini Live APIs, and planned OpenAI live translation",
   "monorepo": false,
   "packages": [],
-  "current_phase": 3,
-  "current_session": null,
+  "current_phase": 4,
+  "current_session": "phase04-session01-lifecycle-reliability",
   "phases": {
     "0": {
       "name": "Ngrok Demo Mode Integration",
@@ -34,7 +34,7 @@
     "4": {
       "name": "Hardening, Quality, and Demo Readiness",
       "description": "Harden translation lifecycle cleanup, diagnostics, unit/integration/E2E coverage, and documentation for repeated local demos",
-      "status": "planned",
+      "status": "in_progress",
       "session_count": 5
     },
     "5": {
@@ -62,8 +62,10 @@
     "phase03-session02-source-capture-modes",
     "phase03-session03-translation-tab-ui-mvp",
     "phase03-session04-transcript-and-caption-experience",
-    "phase03-session05-audio-mix-and-export-controls"
+    "phase03-session05-audio-mix-and-export-controls",
+    "phase04-session01-lifecycle-reliability"
   ],
+  "current_session": null,
   "next_session_history": [
     {
       "date": "2026-01-18",
@@ -213,6 +215,16 @@
     {
       "date": "2026-05-11",
       "session": "phase03-session05-audio-mix-and-export-controls",
+      "status": "completed"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase04-session01-lifecycle-reliability",
+      "status": "planned"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase04-session01-lifecycle-reliability",
       "status": "completed"
     }
   ]
