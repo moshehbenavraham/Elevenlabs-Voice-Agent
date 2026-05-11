@@ -1,275 +1,650 @@
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react';
 import { motion } from 'framer-motion';
-import { Clock3, Languages, Mic, Monitor, Play, Radio, ShieldCheck } from 'lucide-react';
+import { Languages, Play, Square } from 'lucide-react';
+import { OpenAITranslationAudioPlayer } from '@/components/providers/OpenAITranslationAudioPlayer';
+import { OpenAITranslationLanguageSelect } from '@/components/providers/OpenAITranslationLanguageSelect';
+import { OpenAITranslationSourceSelector } from '@/components/providers/OpenAITranslationSourceSelector';
+import {
+  OpenAITranslationStatusPanel,
+  type OpenAITranslationUiStatus,
+} from '@/components/providers/OpenAITranslationStatusPanel';
+import { useOpenAITranslation } from '@/hooks/useOpenAITranslation';
+import { useOpenAITranslationSource } from '@/hooks/useOpenAITranslationSource';
 import {
   OPENAI_TRANSLATION_DEFAULT_TARGET_LANGUAGE,
-  OPENAI_TRANSLATION_LANGUAGE_COUNT,
-  detectOpenAITranslationSourceCapabilities,
   getOpenAITranslationSourceCapability,
   getOpenAITranslationSourceModes,
+  getOpenAITranslationSourceModeMetadata,
   getTranslationTargetLanguage,
-  getTranslationTargetLanguages,
+  isOpenAITranslationBusyStatus,
 } from '@/lib/openaiTranslation';
 import { cn } from '@/lib/utils';
-import type { OpenAITranslationSourceMode } from '@/types/openai-translation';
+import type {
+  OpenAITranslationHookStatus,
+  OpenAITranslationRuntimeError,
+  OpenAITranslationSourceError,
+  OpenAITranslationSourceCapabilities,
+  OpenAITranslationSourceMode,
+  OpenAITranslationSourceStatus,
+  OpenAITranslationTargetLanguageCode,
+} from '@/types/openai-translation';
 
 interface OpenAITranslationProviderProps {
-  className?: string;
-  isLoading?: boolean;
-  isEmpty?: boolean;
-  isOffline?: boolean;
-  errorMessage?: string | null;
+  readonly className?: string;
+  readonly isLoading?: boolean;
+  readonly isEmpty?: boolean;
+  readonly isOffline?: boolean;
+  readonly errorMessage?: string | null;
+  readonly stopRef?: MutableRefObject<(() => Promise<void>) | null>;
 }
 
-const SOURCE_MODE_ICONS: Record<OpenAITranslationSourceMode, typeof Mic> = {
-  microphone: Mic,
-  'browser-tab': Monitor,
-};
+interface PendingStart {
+  readonly operationId: number;
+  readonly mode: OpenAITranslationSourceMode;
+  readonly targetLanguage: OpenAITranslationTargetLanguageCode;
+}
 
-const STATUS_ITEMS = [
-  'Client secret route is available through the backend boundary.',
-  'Source capability checks run without requesting microphone or tab permissions.',
-  'SDP exchange, playback, and transcripts are deferred.',
-  'No microphone permissions or network requests are started from this scaffold.',
+type TranslationAction = 'start' | 'stop';
+
+const HEADER_STATUS_ITEMS = [
+  'Capture starts only after Start is pressed.',
+  'Client secrets stay behind the backend route.',
+  'Translated audio plays through the browser audio element.',
 ] as const;
 
 export function OpenAITranslationProvider({
   className,
-  isLoading = false,
-  isEmpty = true,
   isOffline = false,
   errorMessage = null,
+  stopRef,
 }: OpenAITranslationProviderProps) {
-  const targetLanguages = getTranslationTargetLanguages();
-  const defaultLanguage = getTranslationTargetLanguage(OPENAI_TRANSLATION_DEFAULT_TARGET_LANGUAGE);
-  const defaultLanguageLabel = defaultLanguage?.label ?? 'English';
-  const previewLanguages = targetLanguages.slice(0, 5);
-  const sourceCapabilities = detectOpenAITranslationSourceCapabilities();
-  const sourceModes = getOpenAITranslationSourceModes();
-  const isStartDeferred = true;
-  const isStartPending = false;
-  const scaffoldStates = [
-    {
-      label: 'Loading',
-      value: isLoading ? 'Preparing scaffold' : 'Idle',
-    },
-    {
-      label: 'Empty',
-      value: isEmpty ? 'No translation session started' : 'Session placeholder occupied',
-    },
-    {
-      label: 'Error',
-      value: errorMessage ?? 'No scaffold errors',
-    },
-    {
-      label: 'Offline',
-      value: isOffline ? 'Offline' : 'Online',
-    },
-  ] as const;
+  const sourceController = useOpenAITranslationSource();
+  const runtime = useOpenAITranslation();
+  const {
+    capabilities: sourceCapabilities,
+    captureBrowserTab,
+    captureMicrophone,
+    error: sourceError,
+    isReady: isSourceReady,
+    isRequesting: isSourceRequesting,
+    refreshCapabilities,
+    source: capturedSource,
+    status: sourceStatus,
+    stop: stopSource,
+  } = sourceController;
+  const {
+    error: runtimeError,
+    isConnected: isRuntimeConnected,
+    isStarting: isRuntimeStarting,
+    reset: resetRuntime,
+    start: runtimeStart,
+    status: runtimeStatus,
+    stop: stopRuntime,
+    translatedAudioStream,
+  } = runtime;
+  const [selectedSourceMode, setSelectedSourceMode] = useState<OpenAITranslationSourceMode>(() =>
+    resolveInitialSourceMode(sourceCapabilities)
+  );
+  const [targetLanguage, setTargetLanguage] = useState<OpenAITranslationTargetLanguageCode>(
+    OPENAI_TRANSLATION_DEFAULT_TARGET_LANGUAGE
+  );
+  const [actionInFlight, setActionInFlight] = useState<TranslationAction | null>(null);
+  const [pendingStart, setPendingStart] = useState<PendingStart | null>(null);
+  const operationIdRef = useRef(0);
+  const pendingStartRef = useRef<PendingStart | null>(null);
+  const stopPromiseRef = useRef<Promise<void> | null>(null);
+
+  useEffect(() => {
+    refreshCapabilities();
+  }, [refreshCapabilities]);
+
+  const preferredSourceCapability = getOpenAITranslationSourceCapability(
+    sourceCapabilities,
+    selectedSourceMode
+  );
+  const fallbackSourceMode = resolveAvailableSourceMode(sourceCapabilities);
+  const activeSourceMode =
+    preferredSourceCapability.canRequest || !fallbackSourceMode
+      ? selectedSourceMode
+      : fallbackSourceMode;
+  const selectedCapability = getOpenAITranslationSourceCapability(
+    sourceCapabilities,
+    activeSourceMode
+  );
+  const selectedSourceLabel = getOpenAITranslationSourceModeMetadata(activeSourceMode).shortLabel;
+  const targetLanguageLabel =
+    getTranslationTargetLanguage(targetLanguage)?.label ?? targetLanguage.toUpperCase();
+  const isRuntimeBusy = isOpenAITranslationBusyStatus(runtimeStatus);
+  const isStartPending = actionInFlight === 'start' || isSourceRequesting || isRuntimeStarting;
+  const isStopPending = actionInFlight === 'stop' || runtimeStatus === 'stopping';
+  const areConfigurationControlsDisabled =
+    actionInFlight !== null || isSourceRequesting || isRuntimeBusy || isRuntimeConnected;
+  const isStartDisabled =
+    isOffline ||
+    Boolean(errorMessage) ||
+    !selectedCapability.canRequest ||
+    actionInFlight !== null ||
+    isSourceRequesting ||
+    isRuntimeStarting ||
+    isRuntimeConnected ||
+    runtimeStatus === 'stopping';
+  const canStop =
+    actionInFlight === 'start' ||
+    isSourceRequesting ||
+    isSourceReady ||
+    isRuntimeStarting ||
+    isRuntimeConnected ||
+    runtimeStatus === 'stopping';
+  const isStopDisabled = !canStop || isStopPending;
+  const uiStatus = useMemo(
+    () =>
+      deriveOpenAITranslationUiStatus({
+        errorMessage,
+        isOffline,
+        isStartPending,
+        isStopPending,
+        runtimeError,
+        runtimeStatus,
+        translatedAudioStream,
+        selectedSourceLabel,
+        sourceError,
+        sourceStatus,
+        targetLanguageLabel,
+      }),
+    [
+      errorMessage,
+      isOffline,
+      isStartPending,
+      isStopPending,
+      runtimeError,
+      runtimeStatus,
+      translatedAudioStream,
+      selectedSourceLabel,
+      sourceError,
+      sourceStatus,
+      targetLanguageLabel,
+    ]
+  );
+
+  const handleStart = useCallback(async (): Promise<void> => {
+    if (isStartDisabled) {
+      return;
+    }
+
+    const operationId = operationIdRef.current + 1;
+    operationIdRef.current = operationId;
+    const nextPendingStart: PendingStart = {
+      operationId,
+      mode: activeSourceMode,
+      targetLanguage,
+    };
+
+    pendingStartRef.current = nextPendingStart;
+    setPendingStart(nextPendingStart);
+    setActionInFlight('start');
+    resetRuntime();
+
+    const captured =
+      activeSourceMode === 'microphone' ? await captureMicrophone() : await captureBrowserTab();
+
+    if (!captured && pendingStartRef.current?.operationId === operationId) {
+      pendingStartRef.current = null;
+      setPendingStart(null);
+      setActionInFlight(null);
+    }
+  }, [
+    activeSourceMode,
+    captureBrowserTab,
+    captureMicrophone,
+    isStartDisabled,
+    resetRuntime,
+    targetLanguage,
+  ]);
+
+  const stopTranslation = useCallback(async (): Promise<void> => {
+    if (stopPromiseRef.current) {
+      return stopPromiseRef.current;
+    }
+
+    operationIdRef.current += 1;
+    pendingStartRef.current = null;
+    setPendingStart(null);
+
+    const stopPromise = (async (): Promise<void> => {
+      setActionInFlight('stop');
+      try {
+        await stopRuntime();
+      } finally {
+        stopSource();
+        setActionInFlight(null);
+      }
+    })();
+
+    stopPromiseRef.current = stopPromise;
+    try {
+      await stopPromise;
+    } finally {
+      if (stopPromiseRef.current === stopPromise) {
+        stopPromiseRef.current = null;
+      }
+    }
+  }, [stopRuntime, stopSource]);
+
+  useEffect(() => {
+    if (!pendingStart || !capturedSource || sourceStatus !== 'ready') {
+      return undefined;
+    }
+
+    if (
+      pendingStartRef.current?.operationId !== pendingStart.operationId ||
+      capturedSource.mode !== pendingStart.mode
+    ) {
+      return undefined;
+    }
+
+    const readySource = capturedSource;
+    let cancelled = false;
+    pendingStartRef.current = null;
+
+    const startRuntimeOperation = async (): Promise<void> => {
+      try {
+        const started = await runtimeStart({
+          sourceStream: readySource.sourceStream,
+          targetLanguage: pendingStart.targetLanguage,
+          ownsSourceStream: readySource.ownsSourceStream,
+        });
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!started) {
+          stopSource();
+        }
+      } catch (error) {
+        if (!cancelled) {
+          console.error('[OpenAITranslationProvider] Failed to start translation runtime', error);
+          stopSource();
+        }
+      } finally {
+        if (!cancelled) {
+          setPendingStart((currentPendingStart) =>
+            currentPendingStart?.operationId === pendingStart.operationId
+              ? null
+              : currentPendingStart
+          );
+          setActionInFlight((currentAction) => (currentAction === 'start' ? null : currentAction));
+        }
+      }
+    };
+
+    void startRuntimeOperation();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [capturedSource, pendingStart, runtimeStart, sourceStatus, stopSource]);
+
+  useEffect(() => {
+    if (!stopRef) {
+      return undefined;
+    }
+
+    stopRef.current = stopTranslation;
+
+    return () => {
+      if (stopRef.current === stopTranslation) {
+        stopRef.current = null;
+      }
+    };
+  }, [stopRef, stopTranslation]);
 
   return (
     <motion.section
-      key="openai-translation-scaffold"
+      key="openai-translation-provider"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.5 }}
-      className={cn('min-h-screen flex items-center justify-center px-4 sm:px-6 py-28', className)}
+      className={cn('min-h-screen px-4 py-28 sm:px-6', className)}
       aria-labelledby="openai-translation-title"
     >
-      <div className="w-full max-w-4xl">
-        <div className="text-center mb-8">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/25">
-            <Languages className="h-7 w-7 text-emerald-300" aria-hidden="true" />
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+        <header className="flex flex-col gap-5 rounded-xl border border-white/10 bg-zinc-950/60 p-5 backdrop-blur-xl md:flex-row md:items-center md:justify-between">
+          <div className="flex gap-4">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-emerald-500/25 bg-emerald-500/10">
+              <Languages className="h-6 w-6 text-emerald-300" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-300/80">
+                OpenAI Realtime Translation
+              </p>
+              <h1
+                id="openai-translation-title"
+                className="mt-2 font-display text-4xl text-zinc-100"
+              >
+                Live Translation
+              </h1>
+              <ul className="mt-3 grid gap-1 text-sm leading-6 text-zinc-500 sm:grid-cols-3">
+                {HEADER_STATUS_ITEMS.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </div>
           </div>
-          <p className="text-xs font-medium uppercase tracking-[0.2em] text-emerald-300/80">
-            OpenAI Realtime Translation
-          </p>
-          <h1
-            id="openai-translation-title"
-            className="mt-3 font-display text-4xl sm:text-5xl text-zinc-100"
-          >
-            Live Translation
-          </h1>
-          <p className="mt-4 text-zinc-400 max-w-2xl mx-auto">
-            A dedicated translation provider path is scaffolded separately from OpenAI voice-agent
-            conversations.
-          </p>
-        </div>
 
-        <div className="grid gap-4 md:grid-cols-[1fr_1fr]">
-          <section className="rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-5">
-            <div className="flex items-center gap-3 mb-5">
-              <Radio className="h-5 w-5 text-emerald-300" aria-hidden="true" />
-              <h2 className="font-display text-xl text-zinc-100">Source Mode</h2>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              {sourceModes.map((sourceMode) => {
-                const Icon = SOURCE_MODE_ICONS[sourceMode.mode];
-                const capability = getOpenAITranslationSourceCapability(
-                  sourceCapabilities,
-                  sourceMode.mode
-                );
-                const capabilityLabel = capability.canRequest
-                  ? 'Available'
-                  : capability.status === 'restricted'
-                    ? 'Secure context required'
-                    : 'Unavailable';
-                const description = capability.canRequest
-                  ? sourceMode.description
-                  : (capability.message ?? sourceMode.unavailableDescription);
-
-                return (
-                  <button
-                    key={sourceMode.mode}
-                    type="button"
-                    disabled
-                    aria-disabled="true"
-                    aria-label={`${sourceMode.label} source mode ${capabilityLabel.toLowerCase()}`}
-                    className={cn(
-                      'min-h-[124px] rounded-lg border bg-zinc-950/50 p-4',
-                      'text-left opacity-75 cursor-not-allowed',
-                      capability.canRequest ? 'border-emerald-500/25' : 'border-zinc-800/80'
-                    )}
-                  >
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <Icon
-                        className={cn(
-                          'h-5 w-5',
-                          capability.canRequest ? 'text-emerald-300' : 'text-zinc-500'
-                        )}
-                        aria-hidden="true"
-                      />
-                      <span
-                        className={cn(
-                          'rounded-full border px-2 py-0.5 text-[11px] leading-5',
-                          capability.canRequest
-                            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200/90'
-                            : 'border-zinc-800 bg-zinc-900/80 text-zinc-500'
-                        )}
-                      >
-                        {capabilityLabel}
-                      </span>
-                    </div>
-                    <span className="block text-sm font-medium text-zinc-200">
-                      {sourceMode.label}
-                    </span>
-                    <span className="mt-1 block text-xs leading-5 text-zinc-500">
-                      {description}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="rounded-xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-5">
-            <div className="flex items-center gap-3 mb-5">
-              <Languages className="h-5 w-5 text-emerald-300" aria-hidden="true" />
-              <h2 className="font-display text-xl text-zinc-100">Target Language</h2>
-            </div>
-
-            <label
-              htmlFor="openai-translation-target-language"
-              className="block text-sm font-medium text-zinc-300"
-            >
-              Deferred target language
-            </label>
-            <select
-              id="openai-translation-target-language"
-              value={OPENAI_TRANSLATION_DEFAULT_TARGET_LANGUAGE}
-              disabled
-              aria-describedby="openai-translation-language-help"
-              className={cn(
-                'mt-2 h-11 w-full rounded-lg border border-zinc-800 bg-zinc-950/70 px-3',
-                'text-sm text-zinc-300 disabled:cursor-not-allowed disabled:opacity-75',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50'
-              )}
-              onChange={() => undefined}
-            >
-              {targetLanguages.map((language) => (
-                <option key={language.code} value={language.code}>
-                  {language.label}
-                </option>
-              ))}
-            </select>
-            <p id="openai-translation-language-help" className="mt-3 text-sm text-zinc-500">
-              Defaulting to {defaultLanguageLabel}. {OPENAI_TRANSLATION_LANGUAGE_COUNT} supported
-              target languages are loaded from shared translation metadata.
-            </p>
-
-            <div className="mt-4 flex flex-wrap gap-2" aria-label="Language preview">
-              {previewLanguages.map((language) => (
-                <span
-                  key={language.code}
-                  className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200/90"
-                >
-                  {language.label}
-                </span>
-              ))}
-            </div>
-          </section>
-        </div>
-
-        <section className="mt-4 rounded-xl border border-white/10 bg-zinc-950/60 backdrop-blur-xl p-5">
-          <div
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between"
-          >
-            <div className="flex gap-4">
-              <ShieldCheck className="mt-1 h-6 w-6 flex-shrink-0 text-emerald-300" />
-              <div>
-                <h2 className="font-display text-xl text-zinc-100">Scaffold Ready</h2>
-                <ul className="mt-2 space-y-1 text-sm text-zinc-500">
-                  {STATUS_ITEMS.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-                <dl className="mt-4 grid gap-2 sm:grid-cols-2">
-                  {scaffoldStates.map((item) => (
-                    <div
-                      key={item.label}
-                      className="rounded-lg border border-zinc-800/80 bg-zinc-950/50 px-3 py-2"
-                    >
-                      <dt className="text-xs uppercase tracking-[0.18em] text-zinc-600">
-                        {item.label}
-                      </dt>
-                      <dd className="mt-1 text-sm text-zinc-300">{item.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </div>
-            </div>
-
+          <div className="grid gap-2 sm:grid-cols-2 md:min-w-[280px]">
             <button
               type="button"
-              disabled={isStartDeferred || isStartPending || isOffline || Boolean(errorMessage)}
-              aria-disabled="true"
+              onClick={() => {
+                void handleStart();
+              }}
+              disabled={isStartDisabled}
               aria-busy={isStartPending}
-              aria-describedby="openai-translation-start-help"
               className={cn(
-                'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-6 py-3',
-                'border border-emerald-500/20 bg-emerald-500/10 text-sm font-medium text-emerald-200/70',
-                'disabled:cursor-not-allowed disabled:opacity-70'
+                'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-5 py-3',
+                'border border-emerald-500/30 bg-emerald-500/15 text-sm font-medium text-emerald-100',
+                'transition-colors hover:bg-emerald-500/20',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/60',
+                'disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:bg-emerald-500/15'
               )}
             >
               <Play className="h-4 w-4" aria-hidden="true" />
               Start translation
             </button>
+            <button
+              type="button"
+              onClick={() => {
+                void stopTranslation();
+              }}
+              disabled={isStopDisabled}
+              aria-busy={isStopPending}
+              className={cn(
+                'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-5 py-3',
+                'border border-red-500/25 bg-red-500/10 text-sm font-medium text-red-100',
+                'transition-colors hover:bg-red-500/15',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/60',
+                'disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:bg-red-500/10'
+              )}
+            >
+              <Square className="h-4 w-4" aria-hidden="true" />
+              Stop translation
+            </button>
           </div>
+        </header>
 
-          <p
-            id="openai-translation-start-help"
-            className="mt-4 flex items-center gap-2 text-xs text-zinc-500"
-          >
-            <Clock3 className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-            Runtime start is disabled until browser capture and WebRTC lifecycle handling are
-            implemented.
-          </p>
-        </section>
+        <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+          <OpenAITranslationSourceSelector
+            selectedMode={activeSourceMode}
+            capabilities={sourceCapabilities}
+            disabled={areConfigurationControlsDisabled}
+            onModeChange={setSelectedSourceMode}
+          />
+          <OpenAITranslationLanguageSelect
+            value={targetLanguage}
+            disabled={areConfigurationControlsDisabled}
+            onChange={setTargetLanguage}
+          />
+        </div>
+
+        <OpenAITranslationStatusPanel
+          status={uiStatus}
+          sourceStatus={sourceStatus}
+          runtimeStatus={runtimeStatus}
+        />
+
+        <OpenAITranslationAudioPlayer
+          stream={translatedAudioStream}
+          disabled={!translatedAudioStream}
+        />
       </div>
     </motion.section>
   );
+}
+
+interface OpenAITranslationUiStatusInput {
+  readonly errorMessage: string | null;
+  readonly isOffline: boolean;
+  readonly isStartPending: boolean;
+  readonly isStopPending: boolean;
+  readonly runtimeError: OpenAITranslationRuntimeError | null;
+  readonly runtimeStatus: OpenAITranslationHookStatus;
+  readonly selectedSourceLabel: string;
+  readonly sourceError: OpenAITranslationSourceError | null;
+  readonly sourceStatus: OpenAITranslationSourceStatus;
+  readonly targetLanguageLabel: string;
+  readonly translatedAudioStream: MediaStream | null;
+}
+
+function deriveOpenAITranslationUiStatus({
+  errorMessage,
+  isOffline,
+  isStartPending,
+  isStopPending,
+  runtimeError,
+  runtimeStatus,
+  selectedSourceLabel,
+  sourceError,
+  sourceStatus,
+  targetLanguageLabel,
+  translatedAudioStream,
+}: OpenAITranslationUiStatusInput): OpenAITranslationUiStatus {
+  const details = [
+    `Source: ${describeSourceStatus(sourceStatus)}`,
+    `Runtime: ${describeRuntimeStatus(runtimeStatus)}`,
+    `Selected: ${selectedSourceLabel} to ${targetLanguageLabel}`,
+  ];
+
+  if (errorMessage) {
+    return {
+      tone: 'error',
+      title: 'Translation unavailable',
+      message: errorMessage,
+      details,
+    };
+  }
+
+  if (isOffline) {
+    return {
+      tone: 'warning',
+      title: 'Browser offline',
+      message: 'Reconnect before starting a translation session.',
+      details,
+    };
+  }
+
+  if (runtimeError || sourceError) {
+    const error = runtimeError ?? sourceError;
+    return {
+      tone: 'error',
+      title: formatErrorTitle(error),
+      message: error?.message ?? 'Translation failed unexpectedly.',
+      details: appendErrorCode(details, error),
+    };
+  }
+
+  if (isStopPending || runtimeStatus === 'stopping') {
+    return {
+      tone: 'busy',
+      title: 'Stopping translation',
+      message: 'Runtime and source resources are being released.',
+      details,
+    };
+  }
+
+  if (runtimeStatus === 'requesting-client-secret') {
+    return {
+      tone: 'busy',
+      title: 'Requesting client secret',
+      message: 'The backend translation route is preparing an ephemeral session.',
+      details,
+    };
+  }
+
+  if (runtimeStatus === 'connecting') {
+    return {
+      tone: 'busy',
+      title: 'Connecting translation',
+      message: 'WebRTC negotiation is in progress.',
+      details,
+    };
+  }
+
+  if (sourceStatus === 'requesting' || isStartPending) {
+    return {
+      tone: 'busy',
+      title: 'Requesting audio source',
+      message: 'Approve the selected browser audio source to continue.',
+      details,
+    };
+  }
+
+  if (runtimeStatus === 'connected') {
+    return {
+      tone: 'success',
+      title: 'Translation connected',
+      message: translatedAudioStream
+        ? 'Translated audio is attached and ready for playback.'
+        : 'Translation is connected and waiting for remote audio.',
+      details,
+    };
+  }
+
+  if (sourceStatus === 'ready') {
+    return {
+      tone: 'success',
+      title: 'Audio source ready',
+      message: 'The selected source is captured and ready for translation startup.',
+      details,
+    };
+  }
+
+  if (sourceStatus === 'ended') {
+    return {
+      tone: 'warning',
+      title: 'Audio source ended',
+      message: 'Choose a source and start again when audio is available.',
+      details,
+    };
+  }
+
+  if (runtimeStatus === 'stopped' || sourceStatus === 'stopped') {
+    return {
+      tone: 'idle',
+      title: 'Translation stopped',
+      message: 'Resources were released and the controls are ready for another session.',
+      details,
+    };
+  }
+
+  return {
+    tone: 'idle',
+    title: 'Ready to translate',
+    message: 'Choose a source and target language, then start translation.',
+    details,
+  };
+}
+
+function resolveInitialSourceMode(
+  capabilities: OpenAITranslationSourceCapabilities
+): OpenAITranslationSourceMode {
+  return resolveAvailableSourceMode(capabilities) ?? 'microphone';
+}
+
+function resolveAvailableSourceMode(
+  capabilities: OpenAITranslationSourceCapabilities
+): OpenAITranslationSourceMode | null {
+  return (
+    getOpenAITranslationSourceModes().find((sourceMode) => {
+      return getOpenAITranslationSourceCapability(capabilities, sourceMode.mode).canRequest;
+    })?.mode ?? null
+  );
+}
+
+function describeSourceStatus(status: OpenAITranslationSourceStatus): string {
+  switch (status) {
+    case 'idle':
+      return 'idle';
+    case 'requesting':
+      return 'requesting source';
+    case 'ready':
+      return 'source ready';
+    case 'ended':
+      return 'source ended';
+    case 'stopped':
+      return 'source stopped';
+    case 'error':
+      return 'source error';
+    default:
+      return assertNeverSourceStatus(status);
+  }
+}
+
+function describeRuntimeStatus(status: OpenAITranslationHookStatus): string {
+  switch (status) {
+    case 'idle':
+      return 'idle';
+    case 'requesting-client-secret':
+      return 'requesting client secret';
+    case 'connecting':
+      return 'connecting';
+    case 'connected':
+      return 'connected';
+    case 'stopping':
+      return 'stopping';
+    case 'stopped':
+      return 'stopped';
+    case 'error':
+      return 'runtime error';
+    default:
+      return assertNeverRuntimeStatus(status);
+  }
+}
+
+function formatErrorTitle(
+  error: OpenAITranslationRuntimeError | OpenAITranslationSourceError | null | undefined
+): string {
+  if (!error) {
+    return 'Translation error';
+  }
+
+  switch (error.kind) {
+    case 'permission-denied':
+      return 'Source permission denied';
+    case 'capture-cancelled':
+      return 'Source selection cancelled';
+    case 'missing-audio-track':
+      return 'No audio track found';
+    case 'offline':
+      return 'Browser offline';
+    case 'client-secret':
+      return 'Client secret request failed';
+    case 'sdp-exchange':
+      return 'SDP exchange failed';
+    case 'webrtc':
+      return 'WebRTC connection failed';
+    case 'cleanup':
+      return 'Cleanup failed';
+    default:
+      return 'Translation error';
+  }
+}
+
+function appendErrorCode(
+  details: readonly string[],
+  error: OpenAITranslationRuntimeError | OpenAITranslationSourceError | null | undefined
+): readonly string[] {
+  if (!error?.code) {
+    return details;
+  }
+
+  return [...details, `Code: ${error.code}`];
+}
+
+function assertNeverSourceStatus(status: never): never {
+  throw new Error(`Unhandled OpenAI translation source status: ${String(status)}`);
+}
+
+function assertNeverRuntimeStatus(status: never): never {
+  throw new Error(`Unhandled OpenAI translation runtime status: ${String(status)}`);
 }

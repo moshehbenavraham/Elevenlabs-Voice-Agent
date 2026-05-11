@@ -4,7 +4,7 @@
 **Sessions**: 5
 **Estimated Duration**: 5-8 days
 
-**Progress**: 2/5 sessions (40%)
+**Progress**: 3/5 sessions (60%)
 
 ---
 
@@ -20,7 +20,7 @@ Phase 03 delivers the first usable OpenAI live translation tab inside the app. I
 | ------- | --------------------------------- | ----------- | ---------- | ---------- |
 | 01      | Reusable WebRTC Translation Hook  | Complete    | 18-24      | 2026-05-11 |
 | 02      | Source Capture Modes              | Complete    | 16-22      | 2026-05-11 |
-| 03      | Translation Tab UI MVP            | Not Started | 18-24      | -          |
+| 03      | Translation Tab UI MVP            | Complete    | 18-24      | 2026-05-11 |
 | 04      | Transcript and Caption Experience | Not Started | 14-20      | -          |
 | 05      | Audio Mix and Export Controls     | Not Started | 14-20      | -          |
 
@@ -30,12 +30,12 @@ Phase 03 delivers the first usable OpenAI live translation tab inside the app. I
 
 1. Session 01: Reusable WebRTC Translation Hook (validated 2026-05-11)
 2. Session 02: Source Capture Modes (validated 2026-05-11)
+3. Session 03: Translation Tab UI MVP (validated 2026-05-11)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 03: Translation Tab UI MVP
 - Session 04: Transcript and Caption Experience
 - Session 05: Audio Mix and Export Controls
 
@@ -100,15 +100,15 @@ OpenAI live translation remains a separate protocol path from the existing OpenA
 Phase complete when:
 
 - [ ] All 5 sessions completed.
-- [ ] Translation tab can start and stop microphone translation through browser WebRTC.
-- [ ] Translation tab can request browser-tab audio and handle unsupported, denied, or no-audio-track cases.
-- [ ] Translated remote audio playback works through a browser-controlled element.
-- [ ] Target language selection uses the Phase 02 supported-language contract.
+- [x] Translation tab can start and stop microphone translation through browser WebRTC.
+- [x] Translation tab can request browser-tab audio and handle unsupported, denied, or no-audio-track cases.
+- [x] Translated remote audio playback works through a browser-controlled element.
+- [x] Target language selection uses the Phase 02 supported-language contract.
 - [ ] Source and translated transcript state can render stable latest-caption and panel views.
 - [ ] Clear and export controls work for the current session transcript.
 - [ ] Original/translated audio mix controls work for browser-tab translation.
 - [ ] Default 30-minute max-session guard is enforced without exceeding the configured hard maximum.
-- [ ] Stop and provider switching clean up peer connections, data channels, source tracks, audio elements, abort controllers, timers, and transcript streams.
+- [x] Stop and provider switching clean up peer connections, data channels, source tracks, audio elements, abort controllers, timers, and transcript streams.
 
 ---
 

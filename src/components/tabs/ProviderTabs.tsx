@@ -46,7 +46,7 @@ interface ProviderTabsProps {
   /** Additional CSS classes for the container */
   className?: string;
   /** Callback when provider changes (for handling disconnect before switch) */
-  onProviderChange?: (provider: ProviderType) => void;
+  onProviderChange?: (provider: ProviderType) => Promise<void> | void;
 }
 
 /**
@@ -109,7 +109,7 @@ export function ProviderTabs({ children, className, onProviderChange }: Provider
     });
   };
 
-  const handleValueChange = (value: string) => {
+  const handleValueChange = async (value: string) => {
     const provider = value as ProviderType;
 
     if (!providers.includes(provider) || !isProviderAvailable(provider)) {
@@ -118,7 +118,7 @@ export function ProviderTabs({ children, className, onProviderChange }: Provider
 
     // Call optional callback for disconnect handling
     if (onProviderChange) {
-      onProviderChange(provider);
+      await onProviderChange(provider);
     }
 
     setActiveProvider(provider);

@@ -59,7 +59,8 @@
     "phase02-session03-provider-tab-scaffold",
     "phase02-session04-backend-and-config-tests",
     "phase03-session01-reusable-webrtc-translation-hook",
-    "phase03-session02-source-capture-modes"
+    "phase03-session02-source-capture-modes",
+    "phase03-session03-translation-tab-ui-mvp"
   ],
   "next_session_history": [
     {
@@ -175,6 +176,16 @@
     {
       "date": "2026-05-11",
       "session": "phase03-session02-source-capture-modes",
+      "status": "completed"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase03-session03-translation-tab-ui-mvp",
+      "status": "planned"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase03-session03-translation-tab-ui-mvp",
       "status": "completed"
     }
   ]

@@ -83,26 +83,6 @@ function XAIEndConversationButton() {
   return <EndConversationButton onClick={disconnect} />;
 }
 
-interface OpenAITranslationRuntimeResources {
-  sourceTracks: MediaStreamTrack[];
-  peerConnection: RTCPeerConnection | null;
-  dataChannel: RTCDataChannel | null;
-  audioElement: HTMLAudioElement | null;
-  timerIds: number[];
-  transcriptEntries: string[];
-}
-
-function createEmptyOpenAITranslationResources(): OpenAITranslationRuntimeResources {
-  return {
-    sourceTracks: [],
-    peerConnection: null,
-    dataChannel: null,
-    audioElement: null,
-    timerIds: [],
-    transcriptEntries: [],
-  };
-}
-
 export const Index = () => {
   const { error, clearError, isLoading, connect, disconnect, isConnected } = useVoice();
   const { activeProvider } = useProvider();
@@ -114,50 +94,13 @@ export const Index = () => {
   const [vapiHasStarted, setVapiHasStarted] = useState(false);
   const [retellHasStarted, setRetellHasStarted] = useState(false);
   const [geminiHasStarted, setGeminiHasStarted] = useState(false);
-  const [openaiTranslationHasStarted, setOpenaiTranslationHasStarted] = useState(false);
-  const [openaiTranslationIsLoading, setOpenaiTranslationIsLoading] = useState(false);
-  const [openaiTranslationError, setOpenaiTranslationError] = useState<string | null>(null);
   const [openaiTranslationIsOffline, setOpenaiTranslationIsOffline] = useState(() => {
     return typeof navigator !== 'undefined' ? !navigator.onLine : false;
   });
 
   // Refs to expose provider disconnect functions for clean provider switching
   const geminiDisconnectRef = useRef<(() => Promise<void>) | null>(null);
-  const openaiTranslationRuntimeRef = useRef<OpenAITranslationRuntimeResources>(
-    createEmptyOpenAITranslationResources()
-  );
-
-  const releaseOpenAITranslationRuntimeResources = useCallback(() => {
-    const resources = openaiTranslationRuntimeRef.current;
-
-    resources.sourceTracks.forEach((track) => {
-      track.stop();
-    });
-    resources.dataChannel?.close();
-    resources.peerConnection?.close();
-    if (resources.audioElement) {
-      resources.audioElement.pause();
-      resources.audioElement.srcObject = null;
-      resources.audioElement.removeAttribute('src');
-      resources.audioElement.load();
-    }
-    resources.timerIds.forEach((timerId) => {
-      globalThis.clearTimeout(timerId);
-    });
-
-    openaiTranslationRuntimeRef.current = createEmptyOpenAITranslationResources();
-  }, []);
-
-  const resetOpenAITranslationScaffoldState = useCallback(() => {
-    setOpenaiTranslationHasStarted(false);
-    setOpenaiTranslationIsLoading(false);
-    setOpenaiTranslationError(null);
-  }, []);
-
-  const cleanupOpenAITranslationRuntime = useCallback(() => {
-    releaseOpenAITranslationRuntimeResources();
-    resetOpenAITranslationScaffoldState();
-  }, [releaseOpenAITranslationRuntimeResources, resetOpenAITranslationScaffoldState]);
+  const openaiTranslationStopRef = useRef<(() => Promise<void>) | null>(null);
 
   // Handle provider change - disconnect active connection before switching
   const handleProviderChange = useCallback(
@@ -166,10 +109,6 @@ export const Index = () => {
         from: activeProvider,
         to: newProvider,
       });
-
-      if (newProvider === 'openai-translation') {
-        resetOpenAITranslationScaffoldState();
-      }
 
       // Disconnect ElevenLabs SDK if active
       if (isConnected && activeProvider === 'elevenlabs-sdk') {
@@ -190,10 +129,12 @@ export const Index = () => {
         setOpenaiHasStarted(false);
       }
 
-      // Cleanup OpenAI Translation scaffold/runtime placeholders if active
+      // Stop OpenAI Translation if active
       if (activeProvider === 'openai-translation') {
         debugLog('handleProviderChange', 'Cleaning up OpenAI Translation before switch');
-        cleanupOpenAITranslationRuntime();
+        if (openaiTranslationStopRef.current) {
+          await openaiTranslationStopRef.current();
+        }
       }
 
       // Disconnect Ultravox if active
@@ -232,8 +173,6 @@ export const Index = () => {
       activeProvider,
       isConnected,
       disconnect,
-      cleanupOpenAITranslationRuntime,
-      resetOpenAITranslationScaffoldState,
       xaiHasStarted,
       openaiHasStarted,
       ultravoxHasStarted,
@@ -261,12 +200,6 @@ export const Index = () => {
       window.removeEventListener('offline', updateTranslationNetworkState);
     };
   }, []);
-
-  useEffect(() => {
-    return () => {
-      releaseOpenAITranslationRuntimeResources();
-    };
-  }, [releaseOpenAITranslationRuntimeResources]);
 
   // Handle xAI disconnect
   const handleXAIDisconnect = useCallback(() => {
@@ -927,10 +860,8 @@ export const Index = () => {
           {/* OpenAI Translation Provider */}
           {activeProvider === 'openai-translation' && (
             <OpenAITranslationProvider
-              isLoading={openaiTranslationIsLoading}
-              isEmpty={!openaiTranslationHasStarted}
               isOffline={openaiTranslationIsOffline}
-              errorMessage={openaiTranslationError}
+              stopRef={openaiTranslationStopRef}
             />
           )}
 
