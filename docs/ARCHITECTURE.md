@@ -471,6 +471,16 @@ authorizes provider credentials, webhook security, shared rate limits, room
 authorization, and privacy review. It is future architecture outside the
 shipped runtime.
 
+Future external subtitle overlay options are documented as assessment-only
+guidance in
+[External Subtitle Overlay Assessment](./ongoing-projects/external-subtitle-overlay-assessment.md).
+That note compares the shipped in-app latest-caption and transcript surfaces
+with future in-app floating captions, browser-extension content scripts,
+offscreen documents, shadow DOM isolation, and sidecar options. It does not
+ship a Chrome extension, content script, offscreen document, service worker,
+cross-site overlay, arbitrary website injection path, persistent transcript
+store, or runtime UI change.
+
 ### xAI Token Flow
 
 ```

@@ -40,7 +40,7 @@
     "5": {
       "name": "Production Extensions and Media Variants",
       "description": "Document or prototype production safety controls, evaluation workflow, raw-audio bridge, room/telephony architecture, and optional subtitle overlay posture",
-      "status": "in_progress",
+      "status": "complete",
       "session_count": 5
     }
   },
@@ -70,7 +70,9 @@
     "phase04-session05-documentation-and-demo-configuration",
     "phase05-session01-production-safety-and-usage-controls",
     "phase05-session02-evaluation-harness-and-sample-workflow",
-    "phase05-session03-backend-raw-audio-bridge-spike"
+    "phase05-session03-backend-raw-audio-bridge-spike",
+    "phase05-session04-room-telephony-translation-architecture",
+    "phase05-session05-external-subtitle-overlay-assessment"
   ],
   "next_session_history": [
     {
@@ -326,6 +328,16 @@
     {
       "date": "2026-05-12",
       "session": "phase05-session04-room-telephony-translation-architecture",
+      "status": "completed"
+    },
+    {
+      "date": "2026-05-12",
+      "session": "phase05-session05-external-subtitle-overlay-assessment",
+      "status": "planned"
+    },
+    {
+      "date": "2026-05-12",
+      "session": "phase05-session05-external-subtitle-overlay-assessment",
       "status": "completed"
     }
   ]

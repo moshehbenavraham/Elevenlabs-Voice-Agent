@@ -4,7 +4,7 @@
 
 Voice-Agent-PuPuPlatter is a multi-provider voice AI demo platform showcasing real-time voice integrations with ElevenLabs, OpenAI Realtime, xAI Grok, Ultravox, Vapi, Retell, and Google Gemini Live APIs. The platform provides a unified glassmorphism UI for demonstrating and comparing voice AI providers with WebSocket-based real-time conversations, audio visualization, and function calling capabilities.
 
-This PRD was reconciled against the repository on 2026-05-12 after formal Phase 04 validation and update workflow closure. Phases 00 through 04 are complete. Phase 05 remains planned as the next product expansion.
+This PRD was reconciled against the repository on 2026-05-12 after formal Phase 05 validation and update workflow closure. Phases 00 through 05 are complete.
 
 The completed OpenAI live language translation tab uses `gpt-realtime-translate` and remains intentionally separate from the existing OpenAI voice-agent provider because OpenAI's live translation API uses dedicated `/v1/realtime/translations` sessions, browser WebRTC media, translated audio as a remote track, and transcript deltas over an `oai-events` data channel instead of normal assistant turns, tools, prompts, or `response.create`.
 
@@ -145,14 +145,14 @@ The completed OpenAI live language translation tab uses `gpt-realtime-translate`
 
 This system delivers the product via phases. Each phase is implemented via multiple 2-4 hour sessions (12-25 tasks each).
 
-| Phase | Name                                     | Sessions | Status      | Completed  |
-| ----- | ---------------------------------------- | -------- | ----------- | ---------- |
-| 00    | Ngrok Demo Mode Integration              | 4        | Complete    | 2026-01-18 |
-| 01    | Production Deployment & DevOps           | 5        | Complete    | 2026-05-11 |
-| 02    | Translation Foundation                   | 4        | Complete    | 2026-05-11 |
-| 03    | Browser Translation MVP                  | 5        | Complete    | 2026-05-11 |
-| 04    | Hardening, Quality, and Demo Readiness   | 5        | Complete    | 2026-05-12 |
-| 05    | Production Extensions and Media Variants | 5        | In Progress | -          |
+| Phase | Name                                     | Sessions | Status   | Completed  |
+| ----- | ---------------------------------------- | -------- | -------- | ---------- |
+| 00    | Ngrok Demo Mode Integration              | 4        | Complete | 2026-01-18 |
+| 01    | Production Deployment & DevOps           | 5        | Complete | 2026-05-11 |
+| 02    | Translation Foundation                   | 4        | Complete | 2026-05-11 |
+| 03    | Browser Translation MVP                  | 5        | Complete | 2026-05-11 |
+| 04    | Hardening, Quality, and Demo Readiness   | 5        | Complete | 2026-05-12 |
+| 05    | Production Extensions and Media Variants | 5        | Complete | 2026-05-12 |
 
 ## Phase 00: Ngrok Demo Mode Integration
 
@@ -304,7 +304,17 @@ Session details archived in `.spec_system/archive/phases/phase_04/`.
 | 02      | Evaluation Harness and Sample Workflow  | Complete    | Define a repeatable local golden-script workflow for latency, translated transcript quality, names/numbers, domain terms, and mixed-language behavior, with optional ignored user-supplied media overrides. | 12-18 tasks | `docs/ongoing-projects/`, optional `tests/fixtures/translation/`        | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide.mdx`, `EXAMPLE/LinguaForge/test-output/realtime-translation-vs-obsidian-clipper-comparison.md`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/scripts/smoke-realtime.mjs`                                                                                                        |
 | 03      | Backend/Raw-Audio Bridge Spike          | Not Started | Create a contained proof or design spec for server-side WebSocket translation if the app later ingests raw audio, SIP, telephony, or media-worker audio.                                                    | 12-18 tasks | New docs/spec or isolated server prototype, no default UI dependency    | `EXAMPLE/mtg-realtime-translator/app.py`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/realtime-translation.js`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/audio.js`                                                                                                                       |
 | 04      | Room/Telephony Translation Architecture | Not Started | Document and optionally scaffold future one-session-per-direction and one-session-per-listener-language patterns for calls or rooms.                                                                        | 12-18 tasks | `docs/ongoing-projects/`, optional future server routes                 | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/room.js`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/languages.js`, `EXAMPLE/twilio-live-translation-openai-realtime-api/src/services/StreamSocket.ts`, `EXAMPLE/twilio-live-translation-openai-realtime-api/src/services/AudioInterceptor.ts` |
-| 05      | External Subtitle Overlay Assessment    | Not Started | Decide whether a later browser-extension or overlay companion is worth building, and document the reusable overlay patterns.                                                                                | 12-16 tasks | `docs/ongoing-projects/`, optional future overlay component             | `EXAMPLE/open-realtime-translate/src/content/subtitle.ts`, `EXAMPLE/open-realtime-translate/src/background/service-worker.ts`, `EXAMPLE/open-realtime-translate/src/offscreen/offscreen.ts`                                                                                                                                                                                                                                                                     |
+| 05      | External Subtitle Overlay Assessment    | Complete    | Decide whether a later browser-extension or overlay companion is worth building, and document the reusable overlay patterns.                                                                                | 12-16 tasks | `docs/ongoing-projects/`, optional future overlay component             | `EXAMPLE/open-realtime-translate/src/content/subtitle.ts`, `EXAMPLE/open-realtime-translate/src/background/service-worker.ts`, `EXAMPLE/open-realtime-translate/src/offscreen/offscreen.ts`                                                                                                                                                                                                                                                                     |
+
+Session details for Phase 05 are archived in `.spec_system/archive/phases/phase_05/`.
+
+### Completed Sessions
+
+1. Session 01: Production Safety and Usage Controls (validated 2026-05-12)
+2. Session 02: Evaluation Harness and Sample Workflow (validated 2026-05-12)
+3. Session 03: Backend/Raw-Audio Bridge Spike (validated 2026-05-12)
+4. Session 04: Room/Telephony Translation Architecture (validated 2026-05-12)
+5. Session 05: External Subtitle Overlay Assessment (validated 2026-05-12)
 
 ## OpenAI Live Translation Reference Assessment
 
@@ -652,12 +662,12 @@ Do not require the user to provide an audio or video file for the baseline Phase
 - [x] Phase 02 defines and validates the OpenAI translation backend route, shared config, provider-tab scaffold, and focused backend/config tests
 - [x] Phase 03 delivers a usable OpenAI Translation tab with source capture, language selection, translated audio playback, transcripts, and export controls
 - [x] Phase 04 hardens translation lifecycle cleanup, diagnostics, automated tests, and documentation to demo-ready quality
-- [ ] Phase 05 documents or prototypes production safety controls, evaluation workflow, raw-audio bridge, room/telephony architecture, and optional subtitle overlay posture
+- [x] Phase 05 documents or prototypes production safety controls, evaluation workflow, raw-audio bridge, room/telephony architecture, and optional subtitle overlay posture
 - [x] Translation client secrets are minted only server-side and sanitized before reaching the browser
 - [x] Translation sessions use WebRTC for browser media and the dedicated `/v1/realtime/translations/calls` endpoint
 - [x] The first shipping translation MVP supports both microphone and browser-tab source modes, with browser-tab as the primary demo path and microphone as the quick-test/fallback path
 - [x] Translation demos enforce a 30-minute default max-session guard and document any shorter test-mode override or longer local-demo configuration
-- [ ] Phase 05 evaluation can run from committed non-sensitive golden scripts/fixtures without requiring private user-provided media
+- [x] Phase 05 evaluation can run from committed non-sensitive golden scripts/fixtures without requiring private user-provided media
 - [x] Existing provider tabs continue to work after translation feature integration
 
 ## Risks

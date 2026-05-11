@@ -1,10 +1,10 @@
 # PRD Phase 05: Production Extensions and Media Variants
 
-**Status**: In Progress
+**Status**: Complete
 **Sessions**: 5
 **Estimated Duration**: 5-8 days
 
-**Progress**: 4/5 sessions (80%)
+**Progress**: 5/5 sessions (100%)
 
 ---
 
@@ -16,13 +16,15 @@ Phase 05 extends the completed browser translation MVP toward production readine
 
 ## Progress Tracker
 
-| Session | Name                                    | Status      | Est. Tasks | Validated  |
-| ------- | --------------------------------------- | ----------- | ---------- | ---------- |
-| 01      | Production Safety and Usage Controls    | Complete    | 14-20      | 2026-05-12 |
-| 02      | Evaluation Harness and Sample Workflow  | Complete    | 12-18      | 2026-05-12 |
-| 03      | Backend/Raw-Audio Bridge Spike          | Complete    | 12-18      | 2026-05-12 |
-| 04      | Room/Telephony Translation Architecture | Complete    | 12-18      | 2026-05-12 |
-| 05      | External Subtitle Overlay Assessment    | Not Started | 12-16      | -          |
+| Session | Name                                    | Status   | Est. Tasks | Validated  |
+| ------- | --------------------------------------- | -------- | ---------- | ---------- |
+| 01      | Production Safety and Usage Controls    | Complete | 14-20      | 2026-05-12 |
+| 02      | Evaluation Harness and Sample Workflow  | Complete | 12-18      | 2026-05-12 |
+| 03      | Backend/Raw-Audio Bridge Spike          | Complete | 12-18      | 2026-05-12 |
+| 04      | Room/Telephony Translation Architecture | Complete | 12-18      | 2026-05-12 |
+| 05      | External Subtitle Overlay Assessment    | Complete | 12-16      | 2026-05-12 |
+
+Session details for Phase 05 are archived in `.spec_system/archive/phases/phase_05/`.
 
 ---
 
@@ -32,12 +34,13 @@ Phase 05 extends the completed browser translation MVP toward production readine
 2. Session 02: Evaluation Harness and Sample Workflow (validated 2026-05-12)
 3. Session 03: Backend/Raw-Audio Bridge Spike (validated 2026-05-12)
 4. Session 04: Room/Telephony Translation Architecture (validated 2026-05-12)
+5. Session 05: External Subtitle Overlay Assessment (validated 2026-05-12)
 
 ---
 
 ## Upcoming Sessions
 
-- Session 05: External Subtitle Overlay Assessment
+None.
 
 ---
 
@@ -98,7 +101,7 @@ Phase 05 should keep the dedicated OpenAI live translation tab separate from nor
 
 Phase complete when:
 
-- [ ] All 5 sessions completed.
+- [x] All 5 sessions completed.
 - [ ] Translation production controls are documented and enforce configured session-duration bounds.
 - [ ] Translation token and session usage observability remains sanitized and avoids raw provider bodies or user media.
 - [ ] A repeatable local evaluation workflow exists with non-sensitive baseline fixtures or fixture-generation guidance.
