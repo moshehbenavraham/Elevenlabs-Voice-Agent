@@ -461,6 +461,16 @@ spike covers server-side media sources such as telephony, SIP, broadcast ingest,
 or media workers, and explicitly does not ship a route, webhook, provider tab,
 or default UI path.
 
+Future room and telephony translation topology is documented as architecture
+only in
+[Room and Telephony Translation Architecture](./ongoing-projects/room-telephony-translation-architecture.md).
+That decision note compares call, SIP, room-worker, listener-language, and
+speaker-language fanout models. It keeps Twilio, SIP, LiveKit, room media
+workers, and telephony translation out of the shipped runtime until a later PRD
+authorizes provider credentials, webhook security, shared rate limits, room
+authorization, and privacy review. It is future architecture outside the
+shipped runtime.
+
 ### xAI Token Flow
 
 ```
