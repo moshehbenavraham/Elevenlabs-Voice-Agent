@@ -93,6 +93,71 @@ The route intentionally does not create a WebRTC call, post SDP to
 `/v1/realtime/translations/calls`, render transcripts, or add a translation
 provider tab. Those pieces are owned by later translation sessions.
 
+## Shared Translation Config
+
+`src/lib/openaiTranslation.ts` is the frontend-safe shared config surface for
+future OpenAI translation UI and hook work. It is a pure TypeScript module with
+no React imports, DOM access, browser media ownership, WebRTC state, data
+channels, localStorage, or network calls.
+
+Primary exports:
+
+| Export family                                  | Purpose                                                     |
+| ---------------------------------------------- | ----------------------------------------------------------- |
+| `OPENAI_TRANSLATION_MODEL`                     | Default model, `gpt-realtime-translate`                     |
+| `OPENAI_TRANSLATION_INPUT_TRANSCRIPTION_MODEL` | Optional source transcript model, `gpt-realtime-whisper`    |
+| `OPENAI_TRANSLATION_BACKEND_SESSION_ROUTE`     | Local route, `/api/openai/translation-session`              |
+| `OPENAI_TRANSLATION_ENDPOINTS`                 | OpenAI translation endpoint metadata for later WebRTC work  |
+| `OPENAI_TRANSLATION_TARGET_LANGUAGES`          | Ordered 13-language list with ASCII English labels          |
+| `validateTranslationTargetLanguage`            | Explicit validation result for user-provided language input |
+| `normalizeTranslationTargetLanguage`           | Trim/lowercase helper that returns a supported code or null |
+| `buildTranslationAudioMixState`                | Clamped original/translated percent and volume state        |
+| `buildTranslationSessionConfig`                | Session config with `audio.output.language`                 |
+| `buildTranslationSessionUpdate`                | `session.update` payload without prompt/tool/voice fields   |
+| `buildTranslationSessionRequestDescriptor`     | Typed descriptor for the local backend token request        |
+
+The type contracts live in `src/types/openai-translation.ts` and are exported
+through `src/types/index.ts`. These contracts describe the local route request
+and response, translation session update payloads, language metadata, and audio
+mix state.
+
+The shared config consumes the Session 01 backend contract by building request
+bodies shaped as:
+
+```json
+{
+  "targetLanguage": "es"
+}
+```
+
+It also builds translation session payloads shaped around:
+
+```json
+{
+  "audio": {
+    "output": {
+      "language": "es"
+    }
+  }
+}
+```
+
+Optional source transcription adds
+`audio.input.transcription.model: "gpt-realtime-whisper"`. Optional noise
+reduction adds `audio.input.noise_reduction.type`. Both are opt-in. The shared
+module does not expose or reference `OPENAI_API_KEY`; the backend remains the
+only owner of OpenAI API credentials.
+
+Deferred runtime work:
+
+- Provider tab rendering and feature-flag wiring are owned by the next Phase 02
+  provider scaffold session.
+- WebRTC peer connection setup, SDP exchange, data channel events, translated
+  audio playback, transcript rendering, abort controllers, timers, and cleanup
+  are owned by Phase 03 runtime sessions.
+- Backend/frontend language-list drift tests and broader edge-case coverage are
+  owned by the Phase 02 backend and config test session.
+
 ## Configuration
 
 Required server-side variable:

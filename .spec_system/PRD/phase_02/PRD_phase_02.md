@@ -4,7 +4,7 @@
 **Sessions**: 4
 **Estimated Duration**: 2-4 days
 
-**Progress**: 1/4 sessions (25%)
+**Progress**: 2/4 sessions (50%)
 
 ---
 
@@ -19,7 +19,7 @@ Phase 02 establishes the foundation for a dedicated OpenAI live translation tab.
 | Session | Name                                      | Status      | Est. Tasks | Validated  |
 | ------- | ----------------------------------------- | ----------- | ---------- | ---------- |
 | 01      | Translation API Contract and Server Route | Completed   | 14-18      | 2026-05-11 |
-| 02      | Shared Translation Config Library         | Not Started | 12-16      | -          |
+| 02      | Shared Translation Config Library         | Completed   | 12-16      | 2026-05-11 |
 | 03      | Provider-Tab Scaffold                     | Not Started | 12-18      | -          |
 | 04      | Backend and Config Tests                  | Not Started | 14-20      | -          |
 
@@ -28,12 +28,12 @@ Phase 02 establishes the foundation for a dedicated OpenAI live translation tab.
 ## Completed Sessions
 
 1. Session 01: Translation API Contract and Server Route
+2. Session 02: Shared Translation Config Library
 
 ---
 
 ## Upcoming Sessions
 
-- Session 02: Shared Translation Config Library
 - Session 03: Provider-Tab Scaffold
 - Session 04: Backend and Config Tests
 
@@ -92,9 +92,9 @@ OpenAI live translation must be implemented as a separate provider tab and proto
 Phase complete when:
 
 - [ ] All 4 sessions completed.
-- [ ] Backend translation client-secret route exists and validates target language server-side.
+- [x] Backend translation client-secret route exists and validates target language server-side.
 - [ ] OpenAI client-secret responses are normalized and sanitized before reaching the browser.
-- [ ] Shared translation config exposes the documented 13 target languages and audio mix helpers.
+- [x] Shared translation config exposes the documented 13 target languages and audio mix helpers.
 - [ ] Provider tab scaffold can be feature-gated without disrupting existing providers.
 - [ ] Focused route/config tests cover validation, missing key handling, sanitization, language list correctness, and audio mix clamping.
 

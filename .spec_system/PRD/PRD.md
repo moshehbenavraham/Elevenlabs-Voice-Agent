@@ -81,7 +81,8 @@ The next product expansion is a dedicated OpenAI live language translation tab u
 
 - User can open a dedicated OpenAI Translation provider tab without disrupting existing voice-agent provider tabs
 - User can choose a supported target output language from the documented `gpt-realtime-translate` language list: `es`, `pt`, `fr`, `ja`, `ru`, `zh`, `de`, `ko`, `hi`, `id`, `vi`, `it`, `en`
-- User can start and stop a live translation session for microphone audio and, in the preferred MVP, browser-tab audio
+- User can start and stop a live translation session for both microphone audio and browser-tab audio in the first shipping translation MVP
+- Browser-tab capture is the primary demo workflow for translating meetings, videos, and listen-along content; microphone capture is required as the quick-test path, fallback path, and conversational-demo path
 - User can hear translated output audio through a browser-controlled playback element
 - User can view translated transcript output and optionally source-language transcript deltas when source transcription is enabled
 - User can adjust original/translated audio mix for browser-tab translation, because same-language or mixed-language source segments may intentionally produce silence
@@ -104,7 +105,7 @@ The next product expansion is a dedicated OpenAI live language translation tab u
 - Browser extension or cross-site subtitle overlay companion
 - Backend raw-audio WebSocket bridge for server-side media workers
 - SIP, telephony, Twilio, LiveKit room, or one-session-per-listener translation architecture
-- Evaluation harness beyond the initial local/manual workflow
+- Customer- or domain-specific evaluation audio beyond the baseline local fixture workflow
 - Production safety identifier once the app has a stable hashed user or session identifier
 
 ## Non-Functional Requirements
@@ -115,8 +116,10 @@ The next product expansion is a dedicated OpenAI live language translation tab u
 - **Accessibility**: Clear terminal output readable by screen readers; no emoji-only status
 - **Translation Latency**: Browser translation should use WebRTC for client media and should avoid app-level PCM relays for the first implementation
 - **Translation Security**: Browser translation must use short-lived client secrets minted server-side through `/v1/realtime/translations/client_secrets`; raw `OPENAI_API_KEY` must never be exposed to frontend code
-- **Translation Reliability**: Switching away from the translation tab or pressing stop must tear down active tracks, peer connections, data channels, audio elements, abort controllers, timers, and transcript streams
+- **Translation Reliability**: Pressing stop or confirming provider/tab switching during an active translation session must tear down active tracks, peer connections, data channels, audio elements, abort controllers, timers, and transcript streams
 - **Translation Accessibility**: Translation status, errors, language selection, start/stop controls, and transcripts must be usable by keyboard and screen-reader users
+- **Translation Demo Guardrails**: Production translation demos must stop automatically after 30 minutes by default, support environment-based reduction for test/demo cost control, and enforce a 120-minute hard maximum unless a future production PRD adds authenticated usage policy
+- **Translation Evaluation**: The repeatable evaluation baseline must use local golden scripts and generated or checked-in non-sensitive audio fixtures so Phase 05 is not blocked on private user media
 
 ## Constraints and Dependencies
 
@@ -135,6 +138,7 @@ The next product expansion is a dedicated OpenAI live language translation tab u
 - `gpt-realtime-whisper` is used only when source-language transcript deltas are needed
 - Translation implementation must not rely on custom prompts, function calls, fixed output voice selection, `response.create`, or assistant turn state
 - `getDisplayMedia()` tab-audio capture availability and behavior varies by browser and must be detected in the UI
+- Microphone capture must remain available wherever `getUserMedia()` works, even when tab-audio capture is unsupported or the selected browser/share target does not expose an audio track
 - The downloaded `EXAMPLE/` directory is gitignored reference material; durable implementation guidance must live in this PRD and future specs
 
 ## Phases
@@ -227,7 +231,7 @@ Phase 02 starts the translation work because Phases 00 and 01 are already reserv
 
 ### Objectives
 
-1. Deliver the first usable in-app translation tab for microphone and/or browser-tab audio
+1. Deliver the first usable in-app translation tab for microphone and browser-tab audio
 2. Use browser WebRTC for media transport and translated audio playback
 3. Add source capture modes, target language selection, status, translated audio, transcripts, and export controls
 4. Preserve clear lifecycle boundaries so this feature does not destabilize the existing voice-agent providers
@@ -240,7 +244,7 @@ Phase 02 starts the translation work because Phases 00 and 01 are already reserv
 | 02      | Source Capture Modes              | Planned | Add source acquisition for microphone and browser-tab audio, including permission errors, track-ended handling, and `getDisplayMedia()` options. | 16-22 tasks | `src/hooks/useOpenAITranslationSource.ts`, `src/components/providers/OpenAITranslationProvider.tsx`            | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/src/public/capture-options.js`, `EXAMPLE/LinguaForge/yt-translate-poc/public/index.html`, `EXAMPLE/open-realtime-translate/src/offscreen/offscreen.ts`                      |
 | 03      | Translation Tab UI MVP            | Planned | Build the initial provider screen with source selector, language selector, start/stop control, status, translated audio, and core responsive UI. | 18-24 tasks | `src/components/providers/OpenAITranslationProvider.tsx`, `src/pages/Index.tsx`, `src/components/ui/`          | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/src/public/index.html`, `EXAMPLE/LinguaForge/yt-translate-poc/public/index.html`                                                                                            |
 | 04      | Transcript and Caption Experience | Planned | Add source/translated transcript state, latest-subtitle rendering, clear controls, and stable transcript panel behavior.                         | 14-20 tasks | `src/components/conversation/TranslationTranscriptPanel.tsx`, `src/hooks/useOpenAITranslation.ts`, `src/test/` | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/livekit-translation-demo/lib/realtime-translation.ts`, `EXAMPLE/open-realtime-translate/src/content/subtitle.ts`                                                                                     |
-| 05      | Audio Mix and Export Controls     | Planned | Add original/translated mix controls for tab audio, transcript Markdown export, elapsed time, and basic max-session guard.                       | 14-20 tasks | `src/components/providers/OpenAITranslationProvider.tsx`, `src/lib/openaiTranslation.ts`                       | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/src/public/audio-mix.js`, `EXAMPLE/LinguaForge/yt-translate-poc/public/index.html`                                                                                          |
+| 05      | Audio Mix and Export Controls     | Planned | Add original/translated mix controls for tab audio, transcript Markdown export, elapsed time, and the 30-minute default max-session guard.       | 14-20 tasks | `src/components/providers/OpenAITranslationProvider.tsx`, `src/lib/openaiTranslation.ts`                       | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/src/public/audio-mix.js`, `EXAMPLE/LinguaForge/yt-translate-poc/public/index.html`                                                                                          |
 
 ## Phase 04: Hardening, Quality, and Demo Readiness
 
@@ -265,20 +269,20 @@ Phase 02 starts the translation work because Phases 00 and 01 are already reserv
 
 ### Objectives
 
-1. Complete the broader translation feature goals beyond the first browser-tab MVP
+1. Complete the broader translation feature goals beyond the first browser translation MVP
 2. Add production controls, observability, safety posture, and evaluation workflow
-3. Decide which future media variants deserve implementation after the browser MVP proves out
+3. Decide which future media variants deserve implementation after the browser translation MVP proves out
 4. Document or prototype backend raw-audio, telephony, room translation, and subtitle overlay paths without making them default UI dependencies
 
 ### Sessions
 
-| Session | Name                                    | Status  | Clear Objective                                                                                                                                               | Target Size | Primary Repo Touchpoints                                                | EXAMPLE/ References                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ------- | --------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 01      | Production Safety and Usage Controls    | Planned | Add stronger server controls: safety identifier hook, token rate-limit coverage, session duration limits, transcript privacy notes, and observability events. | 14-20 tasks | `server/index.js`, `server/routes/openai.js`, `src/lib/logger.ts`, docs | `EXAMPLE/LinguaForge/yt-translate-poc/server.js`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/security.js`                                                                                                                                                                                                                                                                    |
-| 02      | Evaluation Harness and Sample Workflow  | Planned | Define a repeatable manual and automated evaluation flow for latency, translated transcript quality, names/numbers, and mixed-language behavior.              | 12-18 tasks | `docs/ongoing-projects/`, optional `tests/fixtures/translation/`        | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide.mdx`, `EXAMPLE/LinguaForge/test-output/realtime-translation-vs-obsidian-clipper-comparison.md`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/scripts/smoke-realtime.mjs`                                                                                                        |
-| 03      | Backend/Raw-Audio Bridge Spike          | Planned | Create a contained proof or design spec for server-side WebSocket translation if the app later ingests raw audio, SIP, telephony, or media-worker audio.      | 12-18 tasks | New docs/spec or isolated server prototype, no default UI dependency    | `EXAMPLE/mtg-realtime-translator/app.py`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/realtime-translation.js`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/audio.js`                                                                                                                       |
-| 04      | Room/Telephony Translation Architecture | Planned | Document and optionally scaffold future one-session-per-direction and one-session-per-listener-language patterns for calls or rooms.                          | 12-18 tasks | `docs/ongoing-projects/`, optional future server routes                 | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/room.js`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/languages.js`, `EXAMPLE/twilio-live-translation-openai-realtime-api/src/services/StreamSocket.ts`, `EXAMPLE/twilio-live-translation-openai-realtime-api/src/services/AudioInterceptor.ts` |
-| 05      | External Subtitle Overlay Assessment    | Planned | Decide whether a later browser-extension or overlay companion is worth building, and document the reusable overlay patterns.                                  | 12-16 tasks | `docs/ongoing-projects/`, optional future overlay component             | `EXAMPLE/open-realtime-translate/src/content/subtitle.ts`, `EXAMPLE/open-realtime-translate/src/background/service-worker.ts`, `EXAMPLE/open-realtime-translate/src/offscreen/offscreen.ts`                                                                                                                                                                                                                                                                     |
+| Session | Name                                    | Status  | Clear Objective                                                                                                                                                                                             | Target Size | Primary Repo Touchpoints                                                | EXAMPLE/ References                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------- | --------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01      | Production Safety and Usage Controls    | Planned | Add stronger server controls: safety identifier hook, token rate-limit coverage, 30-minute default session duration limit with 120-minute hard max, transcript privacy notes, and observability events.     | 14-20 tasks | `server/index.js`, `server/routes/openai.js`, `src/lib/logger.ts`, docs | `EXAMPLE/LinguaForge/yt-translate-poc/server.js`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/security.js`                                                                                                                                                                                                                                                                    |
+| 02      | Evaluation Harness and Sample Workflow  | Planned | Define a repeatable local golden-script workflow for latency, translated transcript quality, names/numbers, domain terms, and mixed-language behavior, with optional ignored user-supplied media overrides. | 12-18 tasks | `docs/ongoing-projects/`, optional `tests/fixtures/translation/`        | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide.mdx`, `EXAMPLE/LinguaForge/test-output/realtime-translation-vs-obsidian-clipper-comparison.md`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/browser-translation-demo/scripts/smoke-realtime.mjs`                                                                                                        |
+| 03      | Backend/Raw-Audio Bridge Spike          | Planned | Create a contained proof or design spec for server-side WebSocket translation if the app later ingests raw audio, SIP, telephony, or media-worker audio.                                                    | 12-18 tasks | New docs/spec or isolated server prototype, no default UI dependency    | `EXAMPLE/mtg-realtime-translator/app.py`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/realtime-translation.js`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/audio.js`                                                                                                                       |
+| 04      | Room/Telephony Translation Architecture | Planned | Document and optionally scaffold future one-session-per-direction and one-session-per-listener-language patterns for calls or rooms.                                                                        | 12-18 tasks | `docs/ongoing-projects/`, optional future server routes                 | `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/room.js`, `EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/twilio-translation-demo/src/languages.js`, `EXAMPLE/twilio-live-translation-openai-realtime-api/src/services/StreamSocket.ts`, `EXAMPLE/twilio-live-translation-openai-realtime-api/src/services/AudioInterceptor.ts` |
+| 05      | External Subtitle Overlay Assessment    | Planned | Decide whether a later browser-extension or overlay companion is worth building, and document the reusable overlay patterns.                                                                                | 12-16 tasks | `docs/ongoing-projects/`, optional future overlay component             | `EXAMPLE/open-realtime-translate/src/content/subtitle.ts`, `EXAMPLE/open-realtime-translate/src/background/service-worker.ts`, `EXAMPLE/open-realtime-translate/src/offscreen/offscreen.ts`                                                                                                                                                                                                                                                                     |
 
 ## OpenAI Live Translation Reference Assessment
 
@@ -510,7 +514,7 @@ Suggested frontend modules:
   - `buildSessionUpdate()`
 - `src/hooks/useOpenAITranslation.ts`
   - Adapted from the official LiveKit `useRemoteTranslation`
-  - Accepts `sourceTrack`, `targetLanguage`, `sourceTranscriptionEnabled`, `noiseReductionEnabled`, `translatedVolume`
+  - Accepts `sourceTrack`, `sourceMode`, `targetLanguage`, `sourceTranscriptionEnabled`, `noiseReductionEnabled`, `translatedVolume`
   - Owns `RTCPeerConnection`, `RTCDataChannel`, translated `<audio>` element, transcript state, cleanup
 - `src/components/providers/OpenAITranslationProvider.tsx`
   - Status, start/stop, source selector, language selector, audio mix, subtitles, export button
@@ -527,9 +531,10 @@ Suggested tab wiring:
 
 ### Initial UX Scope
 
-Preferred scope:
+MVP scope:
 
 - Source mode: `Microphone` and `Browser tab`.
+- Browser tab is the default suggested source for listen-along translation of meetings, videos, and local media; microphone is the required quick-test and fallback source.
 - Target language selector.
 - Start/stop control.
 - Translated audio playback.
@@ -537,15 +542,8 @@ Preferred scope:
 - Source transcript toggle.
 - Translated transcript panel.
 - Markdown export.
+- 30-minute default max-session guard, with a shorter test-mode override and a 120-minute hard maximum for manually extended demos.
 - Clear status and error states.
-
-Smaller MVP:
-
-- Browser-tab source only.
-- Target language selector.
-- Start/stop.
-- Translated audio and translated captions.
-- Original/translated mix.
 
 Avoid for the first version:
 
@@ -579,13 +577,27 @@ E2E smoke:
 - Translation tab renders when enabled.
 - Start button is disabled while connecting.
 - Browser without `getDisplayMedia` gets a useful error.
-- Switching tabs stops any active translation session.
+- Switching providers or tabs during an active translation session requires explicit confirmation, then stops the session and cleans up media resources before navigation.
+- Microphone source still starts when tab-audio capture is unavailable.
+
+Phase 05 evaluation workflow:
+
+- Maintain `docs/ongoing-projects/translation-evaluation.md` or equivalent with the golden script, expected target languages, latency checkpoints, and manual bilingual review checklist.
+- Create local non-sensitive fixtures under `tests/fixtures/translation/` when practical: one short general-English clip, one technical clip with names/numbers/dates, and one mixed-language/code-switching clip.
+- Prefer generated or self-recorded fixtures from the golden script for the baseline so the harness is reproducible in CI and does not depend on private meeting recordings.
+- Allow optional user-provided media only through an ignored local path such as `tests/fixtures/translation/local/`; those files must not be required for baseline validation or committed to the repository.
 
 ### Translation Decision
 
 Use the official cookbook React/WebRTC hook and browser-tab demo as the primary source. Use LinguaForge as the secondary source for Express hardening and product controls. Keep `open-realtime-translate`, `mtg-realtime-translator`, and Twilio assets as pattern references for later variants.
 
 The first implementation should be a dedicated translation tab, not a mode inside the existing OpenAI voice-agent tab.
+
+The first shipping translation MVP must include both `Microphone` and `Browser tab` source modes. The hook and backend contract are source-track based, so shipping both at the UI level is lower risk than creating a browser-tab-only branch and retrofitting microphone capture later. Browser-tab capture remains the main demo path; microphone capture provides permission validation, quick smoke tests, and a fallback for browsers or share targets that do not expose tab audio.
+
+Use a 30-minute default maximum translation session duration for production demos. This is long enough for stakeholder demos and short meeting excerpts while limiting runaway cost and unattended browser media capture. Keep the LinguaForge-style 120-minute value only as a configurable hard maximum for deliberately extended local demos, and keep shortened test-mode timers for automated coverage.
+
+Do not require the user to provide an audio or video file for the baseline Phase 05 evaluation harness. Build the baseline around local golden scripts plus generated or self-recorded non-sensitive fixtures. If a real customer or domain workflow needs evaluation later, accept an optional user-provided 5-10 minute, non-sensitive audio/video sample in an ignored local fixtures directory and document that it is outside the committed baseline.
 
 ## Technical Stack
 
@@ -621,6 +633,9 @@ The first implementation should be a dedicated translation tab, not a mode insid
 - [ ] Phase 05 documents or prototypes production safety controls, evaluation workflow, raw-audio bridge, room/telephony architecture, and optional subtitle overlay posture
 - [ ] Translation client secrets are minted only server-side and sanitized before reaching the browser
 - [ ] Translation sessions use WebRTC for browser media and the dedicated `/v1/realtime/translations/calls` endpoint
+- [ ] The first shipping translation MVP supports both microphone and browser-tab source modes, with browser-tab as the primary demo path and microphone as the quick-test/fallback path
+- [ ] Translation demos enforce a 30-minute default max-session guard and document any shorter test-mode override or longer local-demo configuration
+- [ ] Phase 05 evaluation can run from committed non-sensitive golden scripts/fixtures without requiring private user-provided media
 - [ ] Existing provider tabs continue to work after translation feature integration
 
 ## Risks
@@ -633,6 +648,8 @@ The first implementation should be a dedicated translation tab, not a mode insid
 - **Session leakage**: Failed cleanup can leave active audio tracks, peer connections, or translated audio playback; mitigate with explicit stop routines, tab-switch cleanup, duplicate-start guards, and hook cleanup tests
 - **Language drift**: Example projects may include unsupported target languages; mitigate by validating against the documented 13-language list in both frontend and backend code
 - **Data exposure**: Returning raw OpenAI responses or storing transcripts by default could leak more than needed; mitigate by response sanitization, no persistent transcript storage, and explicit transcript export only
+- **Unattended media capture/cost**: Long browser translation sessions can continue consuming audio-duration quota if left running; mitigate with a 30-minute default cap, visible elapsed time, stop confirmation cleanup, and shorter automated-test timers
+- **Evaluation bias**: A single local sample can hide language-pair or domain failures; mitigate with a golden set covering general speech, names/numbers/dates, technical terms, mixed-language segments, and optional user-supplied local fixtures for domain review
 - **Future-media overreach**: Telephony, raw-audio bridges, and overlays can distract from the browser-tab MVP; mitigate by keeping them in Phase 05 docs/spec spikes until the core tab is stable
 
 ## Assumptions
@@ -645,10 +662,7 @@ The first implementation should be a dedicated translation tab, not a mode insid
 - OpenAI `gpt-realtime-translate` and the realtime translation endpoints remain available to this project
 - The first browser MVP can use WebRTC directly from the browser instead of a backend PCM relay
 - Translation transcripts are session-local unless a future PRD explicitly adds persistence
+- The first translation MVP ships with both microphone and browser-tab source modes; browser-tab is the primary demo source, and microphone is the required quick-test/fallback source
+- Production translation demos use a 30-minute default max-session cap, with a configurable local-demo ceiling no higher than 120 minutes
+- The baseline translation evaluation harness uses non-sensitive local golden scripts/fixtures and does not require a private audio/video file from the user
 - The `EXAMPLE/` assets remain available locally during implementation, but this PRD is the durable source of truth for the plan
-
-## Open Questions
-
-1. Should the first shipping MVP include both microphone and browser-tab source modes, or should browser-tab source ship first with microphone added in the same phase if time allows?
-2. What maximum session duration should the production guard use for translation demos?
-3. Which local sample audio or meeting/video workflow should be used for the repeatable Phase 05 evaluation harness?

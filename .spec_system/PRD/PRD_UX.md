@@ -2,7 +2,7 @@
 
 **Companion to**: [PRD.md](PRD.md)
 **Created**: 2026-05-11
-**Folded source**: 2026-05-11 frontend UI/UX design audit, incorporated into Sections 13-16
+**Folded source**: 2026-05-11 frontend UI/UX design audit and resolved PRD decisions, incorporated into Sections 1-16
 
 ---
 
@@ -20,7 +20,7 @@ The interface should feel premium and demo-ready, but the user should never have
 - **Era / movement**: Contemporary cinematic dashboard with restrained Swiss-style information hierarchy.
 - **Material metaphor**: Smoked glass over warm metal, with amber signal light and subtle acoustic motion.
 
-The existing "Acoustic Noir" direction is the design baseline. Future frontend work should preserve the dark cinematic cockpit while adding denser operational surfaces where the product has outgrown a single-provider demo.
+The existing "Acoustic Noir" direction is the design baseline. Future frontend work should preserve the dark cinematic cockpit while adding denser operational surfaces where the product has outgrown a single-provider demo. The product is intentionally dark-only until a future PRD designs and validates a complete light theme.
 
 ### Signature Moment
 
@@ -30,7 +30,7 @@ The main shareable moment should be an active live session view where the voice 
 
 Arrival -> Orientation -> Readiness -> Live Session -> Artifact.
 
-On arrival, the user sees the selected provider and whether it is ready. During orientation, they can switch providers, inspect setup, and confirm audio. During readiness, the interface makes permission, device, provider, and transport state explicit. During the live session, provider navigation recedes and call controls become primary. After the session, the transcript and metadata become copyable/exportable artifacts.
+On arrival, the user sees the selected provider and whether it is ready. During orientation, they can switch providers, inspect setup, and confirm audio. During readiness, the interface makes permission, device, provider, and transport state explicit. During the live session, provider navigation recedes and call controls become primary; switching providers requires ending or explicitly confirming cleanup of the active session. After the session, the current transcript and metadata become copyable/exportable artifacts rather than persistent local history.
 
 ---
 
@@ -70,7 +70,7 @@ Select provider --> Readiness state --> Setup panel
                            Re-check --> Ready or still blocked
 ```
 
-**Happy path**: The user sees required variables/settings, understands what is configured server-side, saves editable values where supported, and the provider moves to ready.
+**Happy path**: The user sees required variables/settings, understands what is configured server-side, copies safe `.env` guidance when needed, saves editable values where supported, and the provider moves to ready.
 **Error states**: Save failure, invalid API key shape, unavailable backend route, disabled feature flag, and provider configured externally with no browser-editable fields.
 
 ### Flow 3: Active Conversation Control
@@ -86,12 +86,12 @@ Diagnostics      Transcript grows          Export/copy/clear
 ```
 
 **Happy path**: User can see provider, model/voice, connection state, elapsed time, audio activity, transcript count, and end-session controls in one stable live-session surface.
-**Error states**: Reconnecting, no remote audio, no mic input, stale transcript, failed stop cleanup, and provider switch during active session.
+**Error states**: Reconnecting, no remote audio, no mic input, stale transcript, failed stop cleanup, cancelled provider-switch confirmation, and provider-switch cleanup failure.
 
 ### Flow 4: OpenAI Live Translation Session
 
 **Trigger**: User opens the dedicated OpenAI Translation tab described in the functional PRD.
-**Goal**: Translate microphone or browser-tab audio with live translated audio and transcripts.
+**Goal**: Translate browser-tab or microphone audio with live translated audio and transcripts.
 
 ```text
 Open Translation tab --> Choose source --> Choose target language --> Start
@@ -103,7 +103,7 @@ Unsupported API       Permission prompt      Language validation   WebRTC connec
 Translated audio + transcript --> Stop --> Export Markdown
 ```
 
-**Happy path**: User selects a supported output language, starts source capture, receives translated audio, sees transcript deltas, stops cleanly, and exports the session.
+**Happy path**: User selects browser-tab capture for listen-along translation or microphone capture for quick tests/fallback, chooses a supported output language, receives translated audio, sees transcript deltas, stops cleanly, and exports the current session.
 **Error states**: Unsupported `getDisplayMedia`, missing audio track, permission denial, token route failure, invalid target language, SDP exchange failure, WebRTC connection failure, data-channel failure, and source track ending.
 
 ### Flow 5: Review And Export Session Artifacts
@@ -120,7 +120,7 @@ Session ended --> Review transcript --> Choose action
 ```
 
 **Happy path**: Export includes provider, model or voice where available, start time, end time, duration, end reason, target language where relevant, and transcript content.
-**Error states**: Empty transcript, export failure, clear confirmation cancelled, and local history unavailable.
+**Error states**: Empty transcript, export failure, clear confirmation cancelled, and transcript unavailable because the current in-memory session was cleared or the page reloaded.
 
 ### Flow 6: Diagnose A Failed Demo
 
@@ -143,18 +143,18 @@ Failure observed --> Open diagnostics --> Inspect status
 
 ## 3. Screen Inventory
 
-| Screen                        | Route/Path                  | Purpose                                    | Key Components                                                                           |
-| ----------------------------- | --------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| Provider Cockpit              | `/`                         | Main multi-provider voice demo surface     | Header, provider selector, provider landing, settings action, background effects         |
-| Provider Landing              | `/` state                   | Pre-call view for selected provider        | Provider headline, readiness state, voice/model selector, start CTA, setup prompt        |
-| Active Voice Session          | `/` state                   | Live conversation workspace                | Voice orb, live session dock, transcript panel, diagnostics entry, end action            |
-| OpenAI Translation Landing    | `/` provider state          | Dedicated translation entry point          | Source selector, target language selector, readiness row, start CTA                      |
-| Active Translation Session    | `/` provider state          | Live translation workspace                 | Translated audio, source/translated transcript, audio mix, elapsed time, stop action     |
-| Settings / Provider Readiness | Dialog                      | Configure and inspect providers            | Provider tabs/details, editable settings, read-only env status, diagnostics, save/cancel |
-| Diagnostics Panel             | Dialog or collapsible panel | Troubleshoot live media and provider state | Mic permission, input meter, endpoint health, transport status, last event/error         |
-| Transcript Artifacts          | Panel actions               | Preserve session output                    | Copy, Markdown export, JSON export, clear confirmation, local session history            |
-| Mobile Provider Menu          | Mobile shell                | Replace wrapping provider tabs             | Active provider summary, provider picker, setup indicators                               |
-| Error / Setup Required State  | Inline state                | Explain blocked actions                    | Missing config details, recovery CTA, docs/settings link                                 |
+| Screen                        | Route/Path                  | Purpose                                    | Key Components                                                                                 |
+| ----------------------------- | --------------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| Provider Cockpit              | `/`                         | Main multi-provider voice demo surface     | Header, provider selector, provider landing, settings action, background effects               |
+| Provider Landing              | `/` state                   | Pre-call view for selected provider        | Provider headline, readiness state, voice/model selector, start CTA, setup prompt              |
+| Active Voice Session          | `/` state                   | Live conversation workspace                | Voice orb, live session dock, transcript panel, diagnostics entry, end action                  |
+| OpenAI Translation Landing    | `/` provider state          | Dedicated translation entry point          | Browser-tab and microphone source selector, target language selector, readiness row, start CTA |
+| Active Translation Session    | `/` provider state          | Live translation workspace                 | Translated audio, source/translated transcript, audio mix, elapsed time, stop action           |
+| Settings / Provider Readiness | Dialog                      | Configure and inspect providers            | Provider tabs/details, editable settings, read-only env status, diagnostics, save/cancel       |
+| Diagnostics Panel             | Dialog or collapsible panel | Troubleshoot live media and provider state | Mic permission, input meter, endpoint health, transport status, last event/error               |
+| Transcript Artifacts          | Panel actions               | Preserve current session output            | Copy, Markdown export, JSON export, clear confirmation                                         |
+| Mobile Provider Menu          | Mobile shell                | Replace wrapping provider tabs             | Active provider summary, provider picker, setup indicators                                     |
+| Error / Setup Required State  | Inline state                | Explain blocked actions                    | Missing config details, recovery CTA, docs/settings link                                       |
 
 ---
 
@@ -166,8 +166,7 @@ App Shell (/)
 |   |-- Brand
 |   |-- Active provider summary
 |   |-- Provider picker
-|   |-- Settings
-|   \-- Theme control if supported
+|   \-- Settings
 |-- Provider surface
 |   |-- Provider landing
 |   |-- Active voice session
@@ -176,10 +175,10 @@ App Shell (/)
 |   |-- Provider readiness
 |   |-- Provider-specific configuration
 |   \-- Diagnostics
-\-- Transcript/session artifacts
+\-- Current transcript/session artifacts
 ```
 
-**Navigation pattern**: Single-page cockpit with provider selection as the primary pre-call navigation. During active calls, session controls become primary and provider switching becomes secondary.
+**Navigation pattern**: Single-page cockpit with provider selection as the primary pre-call navigation. Do not add a persistent dashboard home in the current PRD. Add dashboard-grade surfaces inside the cockpit: readiness matrix, diagnostics, active-session metadata, and current-session artifacts.
 
 **Deep linking**: Not required by the current PRD. If added later, provider tabs and the translation provider should be linkable without persisting secret or session data in the URL.
 
@@ -188,6 +187,7 @@ App Shell (/)
 - Desktop must show all providers clearly or expose a first-class provider menu with the active provider visible.
 - Mobile must not wrap provider tabs over content. Use a compact menu, sheet, or single-row non-wrapping control.
 - Provider entries must expose readiness status: ready, setup required, disabled, error, or checking.
+- During an active session, provider entries are secondary controls. Selecting a different provider must open an explicit "end current session and switch" confirmation before cleanup and navigation.
 
 ---
 
@@ -204,14 +204,14 @@ App Shell (/)
 
 - Every provider must resolve to one shared readiness model.
 - Blocked providers must render setup/readiness UI before a call CTA.
-- Providers configured only by server environment variables should show read-only readiness and docs links rather than fake editable fields.
+- Providers configured only by server environment variables should show read-only readiness, required variable names, docs links, and copyable `.env` example snippets with placeholder values rather than fake editable fields.
 - Disabled providers should remain discoverable only if useful for demos; otherwise they should be hidden from the primary picker.
 
 ### Live Session Controls
 
 - Active sessions require a persistent dock or control bar with provider, model/voice, connection state, elapsed time, transport state, selected audio input/output, and end-call action.
 - Start, stop, and end controls must be disabled based on a shared session state machine.
-- Provider switching during an active session must either be blocked with clear copy or trigger explicit cleanup with confirmation.
+- Provider switching during an active session must never happen silently. The provider picker should be visually de-emphasized or disabled; if the user selects another provider, show a confirmation that ends the current session, runs cleanup, and then switches.
 
 ### Session State Machine
 
@@ -253,9 +253,10 @@ Each state controls CTA labels, disabled controls, status color, toast behavior,
 
 ### Transcript Actions
 
-- Conversation and translation panels must support copy transcript, download Markdown, download JSON metadata, and clear with confirmation.
+- Conversation and translation panels must support copy transcript, download Markdown, download JSON metadata, and clear with confirmation for the current in-memory session.
 - Translation transcript should distinguish source and translated text where both are available.
 - Transcript panels should retain `role="log"` and polite live-region behavior.
+- Do not persist transcript/session history beyond the current page session by default. A future opt-in history feature needs a functional PRD update, privacy copy, retention rules, and explicit user control.
 
 ---
 
@@ -360,6 +361,10 @@ Palette character: Warm, synthetic, quiet, premium.
 
 Provider-specific colors may appear in metadata, icons, and subtle status accents, but they should not fragment the shared product identity.
 
+### Theme Policy
+
+The current product is dark-only. Do not expose light/dark/system theme controls or claim theme support until light mode is designed, implemented, and tested across provider surfaces, dialogs, transcripts, diagnostics, and embedded-provider edge cases.
+
 ### Typography
 
 - **Display font**: Cormorant Garamond for brand and large cinematic provider moments.
@@ -388,20 +393,20 @@ Keep subtle film grain, warm glows, and acoustic motion as background atmosphere
 
 ## 11. Component Patterns
 
-| Component                    | Used In                   | Behavior                                                                               |
-| ---------------------------- | ------------------------- | -------------------------------------------------------------------------------------- |
-| Provider Picker              | Header/mobile shell       | Shows active provider, readiness state, and provider list without overlap              |
-| Provider Landing             | Provider surface          | Shows provider identity, setup state, voice/model options, and start CTA               |
-| Readiness Panel              | Provider landing/settings | Shows configured state, required settings/env vars, health, and blocked action         |
-| Voice Orb Button             | Landing/active session    | Reflects ready/listening/thinking/speaking/error states with accessible labels         |
-| Live Session Dock            | Active voice/translation  | Shows provider, model/voice, elapsed time, transport state, controls, and audio status |
-| Conversation Panel           | Active voice session      | Displays transcript log, message count, empty state, and transcript actions            |
-| Translation Transcript Panel | Active translation        | Displays source/translated lines, latest caption, clear/export actions                 |
-| Diagnostics Panel            | Settings/active session   | Shows mic permission, input level, route health, transport state, last event/error     |
-| Settings Dialog              | App shell                 | Provides save/cancel/reset and provider-specific editable or read-only settings        |
-| Audio Meter                  | Readiness/active session  | Shows real input level from browser audio where available                              |
-| Status Pill                  | Header/panels             | Encodes ready/checking/blocked/error/reconnecting/active states                        |
-| Export Menu                  | Transcript panels         | Offers copy, Markdown download, JSON download, and clear with confirmation             |
+| Component                    | Used In                   | Behavior                                                                                             |
+| ---------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Provider Picker              | Header/mobile shell       | Shows active provider, readiness state, and provider list without overlap                            |
+| Provider Landing             | Provider surface          | Shows provider identity, setup state, voice/model options, and start CTA                             |
+| Readiness Panel              | Provider landing/settings | Shows configured state, required settings/env vars, safe `.env` guidance, health, and blocked action |
+| Voice Orb Button             | Landing/active session    | Reflects ready/listening/thinking/speaking/error states with accessible labels                       |
+| Live Session Dock            | Active voice/translation  | Shows provider, model/voice, elapsed time, transport state, controls, and audio status               |
+| Conversation Panel           | Active voice session      | Displays transcript log, message count, empty state, and transcript actions                          |
+| Translation Transcript Panel | Active translation        | Displays source/translated lines, latest caption, clear/export actions                               |
+| Diagnostics Panel            | Settings/active session   | Shows mic permission, input level, route health, transport state, last event/error                   |
+| Settings Dialog              | App shell                 | Provides save/cancel/reset and provider-specific editable or read-only settings                      |
+| Audio Meter                  | Readiness/active session  | Shows real input level from browser audio where available                                            |
+| Status Pill                  | Header/panels             | Encodes ready/checking/blocked/error/reconnecting/active states                                      |
+| Export Menu                  | Transcript panels         | Offers copy, Markdown download, JSON download, and clear with confirmation for the current session   |
 
 ---
 
@@ -413,6 +418,8 @@ Keep subtle film grain, warm glows, and acoustic motion as background atmosphere
 - Do not duplicate provider UI layouts per provider when shared primitives can keep status, spacing, and controls consistent.
 - Do not use decorative motion as a substitute for real audio/session state.
 - Do not create a generic admin dashboard that erases the existing Acoustic Noir identity.
+- Do not add a visible theme toggle until the app has a complete, tested light theme.
+- Do not persist transcripts or session history in localStorage by default.
 - Do not expose editable controls for settings that are actually server-only environment configuration.
 
 ---
@@ -451,7 +458,7 @@ The app is not yet a traditional analytics or admin dashboard. It is currently a
 - Settings modal for a subset of provider configuration.
 - Toast notifications for provider switching and connection status.
 
-That focus is useful for demos, but the product now claims support for eight providers. A dashboard-level experience needs clearer provider readiness, diagnostics, configuration coverage, and session/transcript affordances.
+That focus is useful for demos, but the product now claims support for eight providers. The next frontend step should stay a single-page cockpit while adding dashboard-grade readiness, diagnostics, configuration coverage, and current-session transcript affordances inside that cockpit. A separate persistent dashboard home and recent-session history are out of scope for the current functional PRD.
 
 ### Visual Design System Baseline
 
@@ -470,7 +477,7 @@ Risks:
 - The ElevenLabs embedded widget introduces a bright white card that clashes with the dark design system.
 - Several secondary labels are low contrast on the dark/noir background, especially after overlays, blur, and animated backgrounds stack.
 - Provider accent colors are inconsistent: provider hero text uses provider-specific colors, but the active provider tab remains amber for every provider.
-- The current design is more immersive demo than dashboard. It lacks dense provider health, readiness, recent sessions, logs, cost, latency, or transcript management.
+- The current design is more immersive demo than dashboard. It lacks dense provider health, readiness, active-session logs, cost, latency, or current-session transcript management.
 
 ### UI Architecture Observations
 
@@ -590,7 +597,7 @@ Without the following surfaces, the app is best described as a polished multi-pr
 
 - Provider readiness matrix: enabled, configured, backend health, required env vars, last checked.
 - Active session summary: provider, model, voice, connection status, elapsed time, reconnect state.
-- Transcript management: export, copy, clear, session history.
+- Transcript management: export, copy, clear, and current-session metadata.
 - Operational diagnostics: token/session endpoint health, WebSocket/WebRTC status, permissions, audio device status.
 - Cost/latency indicators where provider APIs expose enough data.
 - Settings coverage for all eight providers.
@@ -639,13 +646,13 @@ Objective improvement: during active calls, provider switching should become sec
 
 `LinguaForge` exports a Markdown transcript with start time, end time, duration, target language, end reason, and transcript in [buildMarkdown](../../EXAMPLE/LinguaForge/yt-translate-poc/public/index.html:706). Its main UI exposes a Markdown download button alongside start/stop/language/status/elapsed controls in [index.html](../../EXAMPLE/LinguaForge/yt-translate-poc/public/index.html:189). The current [ConversationPanel](../../src/components/conversation/ConversationPanel.tsx:61) only shows a title and message count.
 
-Objective improvement: add transcript actions to copy transcript, download Markdown, download JSON with provider/model/session metadata, clear with confirmation, and preserve ended sessions in a local session history list.
+Objective improvement: add transcript actions to copy transcript, download Markdown, download JSON with provider/model/session metadata, and clear with confirmation. Preserve only the current in-memory session by default; rely on explicit export for anything durable.
 
 ### Provider Setup And Secret Readiness UX
 
 `open-realtime-translate` gates start behind a configured API key, validates the key shape, shows configured/not-configured pills, and switches into key editing when start is attempted without configuration in [Popup.tsx](../../EXAMPLE/open-realtime-translate/src/popup/Popup.tsx:54) and [Popup.tsx](../../EXAMPLE/open-realtime-translate/src/popup/Popup.tsx:110). The Twilio sample documents required and optional environment variables in a setup table in [Twilio README](../../EXAMPLE/twilio-live-translation-openai-realtime-api/README.md:61).
 
-Objective improvement: turn settings into a provider readiness wizard. For each provider, show required variables/settings, current configured state, transport health, and the exact blocked action. If a provider is externally configured, expose read-only setup status and docs links rather than pretending it has the same editable fields as OpenAI/xAI.
+Objective improvement: turn settings into a provider readiness wizard. For each provider, show required variables/settings, current configured state, transport health, safe copyable `.env` snippets with placeholder values, and the exact blocked action. If a provider is externally configured, expose read-only setup status and docs links rather than pretending it has the same editable fields as OpenAI/xAI.
 
 ### Caption/Subtitles Mode
 
@@ -657,7 +664,7 @@ Objective improvement: if this app keeps pursuing translation/captioning, add a 
 
 The LiveKit example includes a visible light/dark/system theme group in its header in [app-header.tsx](../../EXAMPLE/openai-cookbook-realtime-translation/examples/voice_solutions/realtime_translation_guide/livekit-translation-demo/components/app-header.tsx:76). This app already has theme infrastructure but no mounted control in the main shell.
 
-Objective improvement: either expose the existing theme toggle in the header/settings or remove theme support from product claims.
+Objective improvement: keep the app dark-only for now and remove theme support from product claims until a complete light/dark/system implementation is designed and tested.
 
 ### Example-Derived Priority Impact
 
@@ -667,7 +674,7 @@ The examples strengthen the case that the next frontend phase should prioritize 
 2. Live session dock with elapsed time, provider/model/voice, and start/stop controls.
 3. Media diagnostics and input-level meter.
 4. Pre-call provider/audio readiness.
-5. Transcript copy/export/session-history actions.
+5. Transcript copy/export/current-session artifact actions.
 6. Provider setup wizard covering all eight providers.
 
 ---
@@ -731,13 +738,13 @@ Recommendation: extract provider-agnostic layout primitives:
 
 Provider modules should supply metadata, hooks, and special capability slots rather than whole duplicated screens.
 
-### P2: Theme Capability Is Present But Not Exposed
+### P2: Theme Capability Should Stay Internal
 
 Evidence: `ThemeProvider` wraps the app, and `ThemeToggle` exists, but the main shell only renders settings. Search found no mounted `ThemeToggle`.
 
-Impact: docs claim dark/light support, but users do not have an obvious in-app control.
+Impact: docs claim dark/light support, but the product direction is an intentionally dark Acoustic Noir cockpit and the current light-mode surface is not validated.
 
-Recommendation: either expose theme toggle in the header/settings or revise docs/product copy to match the current dark-only experience.
+Recommendation: keep the user-facing app dark-only, remove dark/light/system claims from product copy, and do not expose a theme toggle until a future PRD defines a complete light-mode pass.
 
 ### P2: Motion System Needs A Single Reduced-Motion Strategy
 
@@ -799,28 +806,17 @@ Tasks:
 - Ensure toasts do not compete with modal focus.
 - Add keyboard/focus regression tests for provider switching and settings.
 
-### Session 5: Dashboard Upgrade
+### Session 5: Cockpit Operational Surfaces
 
-Goal: evolve from demo cockpit to multi-provider operations dashboard.
+Goal: keep the single-page demo cockpit while adding dashboard-grade operational surfaces.
 
 Tasks:
 
 - Add provider readiness matrix.
-- Add session metadata and transcript actions.
+- Add active-session metadata and current-session transcript actions.
 - Add diagnostics for audio permission, API health, and backend routes.
 - Add current provider detail panel with voice/model/config links.
 
 ### Bottom Line
 
-The app has a strong visual identity and a credible voice-demo interaction model. The next frontend work should be structural: fix responsive navigation, make settings reliable, expose provider readiness, and consolidate duplicated provider UI. Those changes will make the existing design system feel intentional at eight-provider scale instead of stretched beyond its original single-provider shape.
-
----
-
-## 17. Open UX Questions
-
-1. Should the product remain primarily a demo cockpit, or should the next frontend phase introduce a persistent dashboard home with provider readiness matrix and recent sessions?
-2. Should theme support be exposed as light/dark/system, or should the product intentionally remain dark-only and remove theme claims?
-3. For providers configured by server environment variables, should the UI show read-only setup status only, or should it also provide copyable `.env` guidance?
-4. Should local transcript/session history be allowed beyond the current session, given the functional PRD does not require database-backed persistence?
-5. Should the translation MVP prioritize microphone capture first, browser-tab capture first, or present both from the first usable UI?
-6. Should active provider switching during a live session be blocked, confirmed with cleanup, or allowed only after session end?
+The app has a strong visual identity and a credible voice-demo interaction model. The next frontend work should be structural: fix responsive navigation, make settings reliable, expose provider readiness with safe setup guidance, consolidate duplicated provider UI, and add cockpit-level operational surfaces without creating a separate persistent dashboard home. Those changes will make the existing dark-only Acoustic Noir design system feel intentional at eight-provider scale instead of stretched beyond its original single-provider shape.

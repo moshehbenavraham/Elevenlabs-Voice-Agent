@@ -55,3 +55,26 @@ export type {
 } from './gemini';
 
 export { GEMINI_SESSION_TIMERS, GEMINI_INITIAL_STATE } from './gemini';
+
+export type {
+  OpenAITranslationTargetLanguageCode,
+  OpenAITranslationTargetLanguage,
+  OpenAITranslationTargetLanguageValidationSuccess,
+  OpenAITranslationTargetLanguageValidationFailure,
+  OpenAITranslationTargetLanguageValidationResult,
+  OpenAITranslationSessionRequest,
+  OpenAITranslationSessionResponse,
+  OpenAITranslationErrorResponse,
+  OpenAITranslationSessionRequestDescriptor,
+  OpenAITranslationNoiseReductionType,
+  OpenAITranslationInputTranscriptionConfig,
+  OpenAITranslationNoiseReductionConfig,
+  OpenAITranslationInputAudioConfig,
+  OpenAITranslationOutputAudioConfig,
+  OpenAITranslationAudioConfig,
+  OpenAITranslationSessionConfig,
+  OpenAITranslationSessionUpdateConfig,
+  OpenAITranslationSessionUpdatePayload,
+  OpenAITranslationSessionConfigOptions,
+  OpenAITranslationAudioMixState,
+} from './openai-translation';

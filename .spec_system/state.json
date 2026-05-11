@@ -54,7 +54,8 @@
     "phase01-session03-cloud-deployment-configuration",
     "phase01-session04-monitoring-observability",
     "phase01-session05-production-security-hardening",
-    "phase02-session01-translation-api-contract-and-server-route"
+    "phase02-session01-translation-api-contract-and-server-route",
+    "phase02-session02-shared-translation-config-library"
   ],
   "next_session_history": [
     {
@@ -125,6 +126,16 @@
     {
       "date": "2026-05-11",
       "session": "phase02-session01-translation-api-contract-and-server-route",
+      "status": "completed"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase02-session02-shared-translation-config-library",
+      "status": "planned"
+    },
+    {
+      "date": "2026-05-11",
+      "session": "phase02-session02-shared-translation-config-library",
       "status": "completed"
     }
   ]
