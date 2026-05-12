@@ -110,7 +110,7 @@
 **Symptoms**:
 
 - A raw provider API key appears in a browser response, browser console, network capture, log, issue, screenshot, or support artifact
-- `/api/gemini/session` returns a raw server key in production
+- `/api/gemini/session` returns anything other than a short-lived Gemini Live `auth_tokens/...` value in production
 - A provider key is accidentally added to a `VITE_*` variable or Docker build arg
 
 **Resolution**:

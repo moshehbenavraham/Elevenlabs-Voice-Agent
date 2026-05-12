@@ -502,14 +502,14 @@ Proxy requirements:
 
 Provider checks:
 
-| Provider | Verification path                                                                         | Expected result                                                                                                 |
-| -------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| OpenAI   | Open the OpenAI tab, grant microphone permission, start a conversation, then stop it.     | `/api/openai/session` returns an ephemeral token and the browser WebSocket reaches connected state.             |
-| xAI      | Open the xAI tab, start a conversation, speak one short sentence, then stop it.           | `/api/xai/session` returns an ephemeral token and the WebSocket remains connected long enough for a response.   |
-| Gemini   | Keep Gemini disabled in production unless a browser-safe token exchange exists.           | `/api/gemini/session` blocks raw server key return in production; development compatibility remains local-only. |
-| Ultravox | Open the Ultravox tab and start a call.                                                   | `/api/ultravox/call` returns a join URL and the Ultravox client connects to the provider WebSocket.             |
-| Vapi     | Open the Vapi tab with `VITE_VAPI_WEB_TOKEN` built into the frontend and start a call.    | The Vapi SDK starts a WebRTC session; no backend token endpoint is required.                                    |
-| Retell   | Open the Retell tab with `VITE_RETELL_AGENT_ID` built into the frontend and start a call. | `/api/retell/create-web-call` returns an access token and the Retell client connects through LiveKit.           |
+| Provider | Verification path                                                                         | Expected result                                                                                                |
+| -------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| OpenAI   | Open the OpenAI tab, grant microphone permission, start a conversation, then stop it.     | `/api/openai/session` returns an ephemeral token and the browser WebSocket reaches connected state.            |
+| xAI      | Open the xAI tab, start a conversation, speak one short sentence, then stop it.           | `/api/xai/session` returns an ephemeral token and the WebSocket remains connected long enough for a response.  |
+| Gemini   | Open the Gemini tab, grant microphone permission, start a conversation, then stop it.     | `/api/gemini/session` returns a Gemini Live ephemeral token and the browser WebSocket reaches connected state. |
+| Ultravox | Open the Ultravox tab and start a call.                                                   | `/api/ultravox/call` returns a join URL and the Ultravox client connects to the provider WebSocket.            |
+| Vapi     | Open the Vapi tab with `VITE_VAPI_WEB_TOKEN` built into the frontend and start a call.    | The Vapi SDK starts a WebRTC session; no backend token endpoint is required.                                   |
+| Retell   | Open the Retell tab with `VITE_RETELL_AGENT_ID` built into the frontend and start a call. | `/api/retell/create-web-call` returns an access token and the Retell client connects through LiveKit.          |
 
 If token endpoints fail, check runtime provider secrets and `CORS_ORIGIN`. If token endpoints pass but media does not connect, check HTTPS, microphone permission, provider dashboard configuration, proxy timeouts, and WebSocket/WebRTC support on the host.
 

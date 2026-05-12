@@ -241,7 +241,7 @@ describe('WebSocket Configuration', () => {
   });
 
   describe('buildWebSocketUrl', () => {
-    it('appends token as query parameter', () => {
+    it('appends local development tokens as key query parameter', () => {
       const url = buildWebSocketUrl('test-token-123');
       expect(url).toContain('key=test-token-123');
     });
@@ -259,6 +259,15 @@ describe('WebSocket Configuration', () => {
     it('uses ? for query parameter', () => {
       const url = buildWebSocketUrl('token');
       expect(url).toContain('?key=');
+    });
+
+    it('uses the constrained Live endpoint for Gemini ephemeral auth tokens', () => {
+      const url = buildWebSocketUrl('auth_tokens/test-token');
+
+      expect(url).toContain('v1alpha');
+      expect(url).toContain('BidiGenerateContentConstrained');
+      expect(url).toContain('?access_token=auth_tokens%2Ftest-token');
+      expect(url).not.toContain('?key=');
     });
   });
 });

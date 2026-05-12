@@ -156,6 +156,12 @@ export function isValidModelId(id: string): boolean {
  */
 export const GEMINI_LIVE_WS_URL =
   'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
+export const GEMINI_LIVE_EPHEMERAL_WS_URL =
+  'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained';
+
+function isEphemeralAuthToken(token: string): boolean {
+  return token.startsWith('auth_tokens/');
+}
 
 /**
  * Build the full WebSocket URL with token authentication.
@@ -163,7 +169,11 @@ export const GEMINI_LIVE_WS_URL =
  * @returns Full WebSocket URL with query parameters
  */
 export function buildWebSocketUrl(token: string): string {
-  return `${GEMINI_LIVE_WS_URL}?key=${encodeURIComponent(token)}`;
+  const usesEphemeralAuth = isEphemeralAuthToken(token);
+  const baseUrl = usesEphemeralAuth ? GEMINI_LIVE_EPHEMERAL_WS_URL : GEMINI_LIVE_WS_URL;
+  const queryParam = usesEphemeralAuth ? 'access_token' : 'key';
+
+  return `${baseUrl}?${queryParam}=${encodeURIComponent(token)}`;
 }
 
 // =============================================================================

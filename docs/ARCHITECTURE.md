@@ -422,7 +422,7 @@ server/
 | POST   | `/api/openai/translation-session` | Create OpenAI translation client secret |
 | POST   | `/api/ultravox/call`              | Create Ultravox call (joinUrl)          |
 | POST   | `/api/retell/create-web-call`     | Create Retell call access token         |
-| POST   | `/api/gemini/token`               | Create Gemini ephemeral token           |
+| POST   | `/api/gemini/session`             | Create Gemini Live ephemeral token      |
 | GET    | `/api/gemini/health`              | Gemini service health check             |
 | GET    | `/api/gemini/voices`              | List available Gemini voices            |
 

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { GoogleGenAI } from '@google/genai';
 import {
   getGeminiBrowserTokenPolicy,
   validateAllowedKeys,
@@ -13,6 +14,8 @@ const REQUEST_TIMEOUT_MS = 30000;
 const MODEL_PATTERN = /^[A-Za-z0-9._:-]+$/;
 // Token expiry: 30 minutes (Gemini sessions can be long-lived)
 const TOKEN_EXPIRY_SECONDS = 30 * 60;
+// Gemini defaults to one minute for opening a new Live session from a token.
+const NEW_SESSION_EXPIRY_SECONDS = 60;
 
 /**
  * Validates that GEMINI_API_KEY environment variable is configured.
@@ -26,8 +29,8 @@ function validateApiKey() {
       valid: false,
       error: {
         error: 'Server configuration error',
-        message: 'Gemini API key not configured'
-      }
+        message: 'Gemini API key not configured',
+      },
     };
   }
   return { valid: true, apiKey };
@@ -48,22 +51,41 @@ async function createEphemeralToken(apiKey, model) {
   try {
     console.log(`[Server] Creating Gemini Live session for model: ${model}`);
 
-    // Calculate expiration time
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_SECONDS * 1000).toISOString();
+    const newSessionExpiresAt = new Date(
+      Date.now() + NEW_SESSION_EXPIRY_SECONDS * 1000
+    ).toISOString();
+
+    const client = new GoogleGenAI({ apiKey });
+    const token = await client.authTokens.create({
+      config: {
+        uses: 1,
+        expireTime: expiresAt,
+        newSessionExpireTime: newSessionExpiresAt,
+        liveConnectConstraints: {
+          model,
+        },
+        lockAdditionalFields: [],
+        httpOptions: { apiVersion: 'v1alpha' },
+        abortSignal: controller.signal,
+      },
+    });
+
+    if (!token?.name || typeof token.name !== 'string') {
+      throw new Error('Gemini token response did not include a token name');
+    }
 
     clearTimeout(timeoutId);
 
     console.log('[Server] Gemini ephemeral token generated successfully');
 
-    // Development compatibility only. Production route handling blocks raw key
-    // return unless a browser-safe Gemini token exchange is added.
     return {
       success: true,
-      token: apiKey,
+      token: token.name,
       expiresAt,
-      model
+      newSessionExpiresAt,
+      model,
     };
-
   } catch (error) {
     clearTimeout(timeoutId);
 
@@ -74,8 +96,8 @@ async function createEphemeralToken(apiKey, model) {
         status: 504,
         error: {
           error: 'Request timeout',
-          message: 'Gemini API request timed out'
-        }
+          message: 'Gemini API request timed out',
+        },
       };
     }
 
@@ -86,8 +108,8 @@ async function createEphemeralToken(apiKey, model) {
       status: 500,
       error: {
         error: 'Gemini API error',
-        message: 'Failed to create Gemini session'
-      }
+        message: 'Failed to create Gemini session',
+      },
     };
   }
 }
@@ -127,7 +149,7 @@ router.get('/health', (req, res) => {
 
   res.json({
     configured,
-    provider: 'gemini'
+    provider: 'gemini',
   });
 });
 
@@ -155,25 +177,28 @@ router.post('/session', async (req, res) => {
     return res.status(400).json(requestValidation.error);
   }
 
-  const tokenPolicy = getGeminiBrowserTokenPolicy({ nodeEnv: process.env.NODE_ENV });
-  if (!tokenPolicy.canReturnRawApiKey) {
-    return res.status(501).json({
-      error: 'Gemini browser token unavailable',
-      message: tokenPolicy.message,
-    });
-  }
-
-  // Create ephemeral token
   const result = await createEphemeralToken(validation.apiKey, requestValidation.model);
 
   if (!result.success) {
+    const tokenPolicy = getGeminiBrowserTokenPolicy({ nodeEnv: process.env.NODE_ENV });
+    if (tokenPolicy.canReturnRawApiKey) {
+      console.warn(
+        '[Server] Falling back to raw Gemini API key for local development compatibility'
+      );
+      return res.json({
+        token: validation.apiKey,
+        expiresAt: new Date(Date.now() + TOKEN_EXPIRY_SECONDS * 1000).toISOString(),
+        model: requestValidation.model,
+      });
+    }
+
     return res.status(result.status || 500).json(result.error);
   }
 
   res.json({
     token: result.token,
     expiresAt: result.expiresAt,
-    model: result.model
+    model: result.model,
   });
 });
 
@@ -224,3 +249,4 @@ router.get('/voices', (req, res) => {
 });
 
 export default router;
+export { createEphemeralToken, validateSessionRequest };

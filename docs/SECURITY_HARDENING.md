@@ -98,21 +98,21 @@ from creating multiple provider sessions at the same time.
 
 ## Gemini Production Posture
 
-The current Gemini Live browser flow can use the server API key directly in
-development for local compatibility. In production, the server blocks raw
-`GEMINI_API_KEY` return because the key is a server credential.
+The Gemini Live browser flow uses a server-side `GEMINI_API_KEY` to mint
+short-lived Live API auth tokens. The browser receives only the
+`auth_tokens/...` value from `/api/gemini/session`, not the long-lived server
+credential.
 
-Production deployments should leave Gemini disabled unless a browser-safe token
-exchange or provider-supported ephemeral credential flow is available:
+Development still has a local compatibility fallback that can return the raw key
+if the auth-token exchange is unavailable. Production does not use that fallback:
 
 ```bash
-VITE_GEMINI_ENABLED=false
+VITE_GEMINI_ENABLED=true
 GEMINI_API_KEY=CHANGE_ME_GEMINI_API_KEY
 ```
 
-If Gemini is enabled in production before a safe token exchange exists, the
-frontend may show a configuration or session error for the Gemini tab. Other
-providers are unaffected.
+If token creation fails in production, the frontend shows a Gemini session error.
+Other providers are unaffected.
 
 ## API Key Rotation
 
