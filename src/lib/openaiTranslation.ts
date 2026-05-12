@@ -1069,7 +1069,7 @@ function formatOpenAITranslationTimestamp(value: number | null | undefined): str
 }
 
 function escapeMarkdownTableCell(value: string): string {
-  return value.replace(/\|/g, '\\|').replace(/\r?\n/g, '<br>');
+  return value.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, '<br>');
 }
 
 function assertNeverSessionEndReason(reason: never): never {

@@ -5,6 +5,38 @@
 
 import { test, expect } from '../fixtures';
 
+const BENIGN_FONT_HOSTS = new Set(['fonts.gstatic.com', 'fonts.googleapis.com']);
+const URL_PATTERN = /https?:\/\/[^\s"'<>]+/g;
+
+function referencesBenignFontHost(error: string): boolean {
+  const matches = error.matchAll(URL_PATTERN);
+
+  for (const match of matches) {
+    try {
+      const parsed = new URL(match[0]);
+      if (BENIGN_FONT_HOSTS.has(parsed.hostname)) {
+        return true;
+      }
+    } catch {
+      // Ignore malformed URL-like text in browser console output.
+    }
+  }
+
+  return false;
+}
+
+function isKnownBenignAppLoadError(error: string): boolean {
+  return (
+    error.includes('favicon.ico') ||
+    error.includes('ERR_NETWORK') || // Network errors in mocked env
+    error.includes('[E2E Mock]') || // Our mock console logs
+    referencesBenignFontHost(error) ||
+    error.includes('FRAGMENT_SHADER') || // Firefox WebGL quirk
+    error.includes('is null') || // Firefox rendering quirk with refs
+    error.includes('Failed to load resource') // Generic resource loading
+  );
+}
+
 test.describe('App Load', () => {
   test.describe.configure({ mode: 'parallel' });
 
@@ -30,20 +62,7 @@ test.describe('App Load', () => {
     await mockedPage.waitForLoadState('networkidle');
 
     // Filter out expected/benign errors
-    // Note: The .includes() checks below are for filtering test output, NOT security validation.
-    // These filter known benign errors (fonts, network) that occur during E2E testing.
-    // lgtm[js/incomplete-url-substring-sanitization]
-    const criticalErrors = errors.filter(
-      (error) =>
-        !error.includes('favicon.ico') &&
-        !error.includes('ERR_NETWORK') && // Network errors in mocked env
-        !error.includes('[E2E Mock]') && // Our mock console logs
-        !error.includes('fonts.gstatic.com') && // Font loading in CI - lgtm[js/incomplete-url-substring-sanitization]
-        !error.includes('fonts.googleapis.com') && // Font loading - lgtm[js/incomplete-url-substring-sanitization]
-        !error.includes('FRAGMENT_SHADER') && // Firefox WebGL quirk
-        !error.includes('is null') && // Firefox rendering quirk with refs
-        !error.includes('Failed to load resource') // Generic resource loading
-    );
+    const criticalErrors = errors.filter((error) => !isKnownBenignAppLoadError(error));
 
     expect(criticalErrors).toHaveLength(0);
   });

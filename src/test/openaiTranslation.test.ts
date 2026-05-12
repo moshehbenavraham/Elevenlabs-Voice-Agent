@@ -624,7 +624,7 @@ describe('openaiTranslation', () => {
           {
             id: 'translated-1',
             stream: 'translated',
-            text: 'hola | mundo\nline 2',
+            text: 'path C:\\temp | mundo\nline 2',
             isFinal: false,
             updatedAt: 20,
           },
@@ -638,7 +638,9 @@ describe('openaiTranslation', () => {
       expect(markdown).toContain('- Target language: Spanish (es)');
       expect(markdown).toContain('- End reason: Manual stop');
       expect(markdown).toContain('| 1 | Source | Final | hello |');
-      expect(markdown).toContain('| 2 | Translated | Partial | hola \\| mundo<br>line 2 |');
+      expect(markdown).toContain(
+        '| 2 | Translated | Partial | path C:\\\\temp \\| mundo<br>line 2 |'
+      );
       expect(markdown).not.toContain('OPENAI_API_KEY');
     });
 

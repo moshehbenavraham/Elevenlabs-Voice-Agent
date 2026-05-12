@@ -5,6 +5,7 @@ import {
   validateAllowedKeys,
   validateString,
 } from '../utils/security.js';
+import { sanitizeLogInput } from '../utils/sanitize.js';
 
 const router = Router();
 
@@ -49,7 +50,9 @@ async function createEphemeralToken(apiKey, model) {
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    console.log(`[Server] Creating Gemini Live session for model: ${model}`);
+    console.log(
+      `[Server] Creating Gemini Live session for model: ${sanitizeLogInput(model).slice(0, 128)}`
+    );
 
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_SECONDS * 1000).toISOString();
     const newSessionExpiresAt = new Date(

@@ -165,26 +165,35 @@ describe('server observability utilities', () => {
       path: '/api/missing',
       route: '/api/missing',
     });
+    metrics.recordRequest({
+      statusCode: 200,
+      durationMs: 20,
+      method: '__proto__',
+      path: '/api/prototype',
+      route: '__proto__',
+    });
 
     const snapshot = metrics.getSnapshot({ includeRoutes: true });
 
-    expect(snapshot.requests.total).toBe(3);
+    expect(snapshot.requests.total).toBe(4);
     expect(snapshot.requests.errors).toEqual({ total: 2, client: 1, server: 1 });
     expect(Object.keys(snapshot.requests.byStatusCode)).toEqual(['200', '404', '503']);
-    expect(snapshot.requests.byStatusClass).toMatchObject({ '2xx': 1, '4xx': 1, '5xx': 1 });
-    expect(snapshot.requests.byMethod).toEqual({ GET: 2, POST: 1 });
+    expect(snapshot.requests.byStatusClass).toMatchObject({ '2xx': 2, '4xx': 1, '5xx': 1 });
+    expect(snapshot.requests.byMethod).toEqual({ GET: 2, POST: 1, UNKNOWN: 1 });
     expect(Object.keys(snapshot.requests.byRoute ?? {})).toEqual([
       '/api/health',
       '/api/missing',
       '/api/openai/token',
+      'unknown',
     ]);
+    expect(Object.hasOwn(Object.prototype, 'polluted')).toBe(false);
     expect(snapshot.latencyMs).toMatchObject({
-      count: 3,
+      count: 4,
       sampleCount: 2,
       min: 10,
       max: 80,
-      average: 43.33,
-      p50: 10,
+      average: 37.5,
+      p50: 20,
       p95: 40,
       sampleLimit: 2,
     });

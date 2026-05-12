@@ -11,6 +11,7 @@ export const REQUEST_ID_HEADER = 'x-request-id';
 const DEFAULT_MAX_LATENCY_SAMPLES = 100;
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{8,128}$/;
 const STATUS_CLASSES = ['1xx', '2xx', '3xx', '4xx', '5xx'];
+const RESERVED_COUNT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 export const TRANSLATION_LIFECYCLE_LOG_FIELDS = [
   'event',
   'phase',
@@ -31,16 +32,17 @@ const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
 
 export const serverLogger = pino({
   level: process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug'),
-  transport: isProduction || isTest
-    ? undefined
-    : {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname',
+  transport:
+    isProduction || isTest
+      ? undefined
+      : {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'SYS:standard',
+            ignore: 'pid,hostname',
+          },
         },
-      },
   formatters: {
     level: (label) => ({ level: label }),
   },
@@ -108,6 +110,11 @@ function safeString(value, maxLength = 200) {
   return sanitizeLogInput(value).slice(0, maxLength);
 }
 
+function safeCountKey(value, fallback = 'unknown', maxLength = 256) {
+  const key = safeString(value, maxLength) || fallback;
+  return RESERVED_COUNT_KEYS.has(key) ? fallback : key;
+}
+
 function safeReferer(value) {
   const raw = firstHeaderValue(value);
   if (typeof raw !== 'string' || raw.length === 0) {
@@ -147,25 +154,22 @@ function getStatusClass(statusCode) {
 }
 
 function incrementCount(target, key) {
-  target[key] = (target[key] || 0) + 1;
+  target.set(key, (target.get(key) || 0) + 1);
 }
 
-function sortCountObject(counts) {
-  return Object.keys(counts)
-    .sort((left, right) => {
-      const leftNumber = Number(left);
-      const rightNumber = Number(right);
+function sortCountMap(counts) {
+  const entries = [...counts.entries()].sort(([left], [right]) => {
+    const leftNumber = Number(left);
+    const rightNumber = Number(right);
 
-      if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
-        return leftNumber - rightNumber;
-      }
+    if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) {
+      return leftNumber - rightNumber;
+    }
 
-      return left.localeCompare(right);
-    })
-    .reduce((result, key) => {
-      result[key] = counts[key];
-      return result;
-    }, {});
+    return left.localeCompare(right);
+  });
+
+  return Object.fromEntries(entries);
 }
 
 function percentile(sortedValues, percentileValue) {
@@ -251,10 +255,10 @@ export function createRequestMetrics(options = {}) {
     clientErrorRequests: 0,
     serverErrorRequests: 0,
     inFlightRequests: 0,
-    statusCounts: {},
-    statusClassCounts: Object.fromEntries(STATUS_CLASSES.map((key) => [key, 0])),
-    methodCounts: {},
-    routeCounts: {},
+    statusCounts: new Map(),
+    statusClassCounts: new Map(STATUS_CLASSES.map((key) => [key, 0])),
+    methodCounts: new Map(),
+    routeCounts: new Map(),
     latencySamplesMs: [],
     latencyTotalMs: 0,
     latencyMinMs: null,
@@ -265,8 +269,8 @@ export function createRequestMetrics(options = {}) {
   function recordRequest(result) {
     const statusCode = Number(result?.statusCode || 0);
     const durationMs = Math.max(0, Number(result?.durationMs || 0));
-    const method = safeString(result?.method, 16) || 'UNKNOWN';
-    const route = safeString(result?.route || result?.path || 'unknown', 256) || 'unknown';
+    const method = safeCountKey(result?.method, 'UNKNOWN', 16);
+    const route = safeCountKey(result?.route || result?.path, 'unknown', 256);
     const statusKey = Number.isInteger(statusCode) ? String(statusCode) : 'unknown';
     const statusClass = getStatusClass(statusCode);
 
@@ -290,8 +294,10 @@ export function createRequestMetrics(options = {}) {
     }
 
     state.latencyTotalMs += durationMs;
-    state.latencyMinMs = state.latencyMinMs === null ? durationMs : Math.min(state.latencyMinMs, durationMs);
-    state.latencyMaxMs = state.latencyMaxMs === null ? durationMs : Math.max(state.latencyMaxMs, durationMs);
+    state.latencyMinMs =
+      state.latencyMinMs === null ? durationMs : Math.min(state.latencyMinMs, durationMs);
+    state.latencyMaxMs =
+      state.latencyMaxMs === null ? durationMs : Math.max(state.latencyMaxMs, durationMs);
     state.latencySamplesMs.push(durationMs);
     if (state.latencySamplesMs.length > maxLatencySamples) {
       state.latencySamplesMs.shift();
@@ -313,10 +319,10 @@ export function createRequestMetrics(options = {}) {
     state.clientErrorRequests = 0;
     state.serverErrorRequests = 0;
     state.inFlightRequests = 0;
-    state.statusCounts = {};
-    state.statusClassCounts = Object.fromEntries(STATUS_CLASSES.map((key) => [key, 0]));
-    state.methodCounts = {};
-    state.routeCounts = {};
+    state.statusCounts = new Map();
+    state.statusClassCounts = new Map(STATUS_CLASSES.map((key) => [key, 0]));
+    state.methodCounts = new Map();
+    state.routeCounts = new Map();
     state.latencySamplesMs = [];
     state.latencyTotalMs = 0;
     state.latencyMinMs = null;
@@ -342,17 +348,16 @@ export function createRequestMetrics(options = {}) {
           client: state.clientErrorRequests,
           server: state.serverErrorRequests,
         },
-        byStatusCode: sortCountObject(state.statusCounts),
-        byStatusClass: sortCountObject(state.statusClassCounts),
-        byMethod: sortCountObject(state.methodCounts),
+        byStatusCode: sortCountMap(state.statusCounts),
+        byStatusClass: sortCountMap(state.statusClassCounts),
+        byMethod: sortCountMap(state.methodCounts),
       },
       latencyMs: {
         count: latencyCount,
         sampleCount: state.latencySamplesMs.length,
         min: state.latencyMinMs === null ? 0 : roundMilliseconds(state.latencyMinMs),
         max: state.latencyMaxMs === null ? 0 : roundMilliseconds(state.latencyMaxMs),
-        average:
-          latencyCount === 0 ? 0 : roundMilliseconds(state.latencyTotalMs / latencyCount),
+        average: latencyCount === 0 ? 0 : roundMilliseconds(state.latencyTotalMs / latencyCount),
         p50: roundMilliseconds(percentile(sortedSamples, 50)),
         p95: roundMilliseconds(percentile(sortedSamples, 95)),
         sampleLimit: maxLatencySamples,
@@ -361,7 +366,7 @@ export function createRequestMetrics(options = {}) {
     };
 
     if (includeRoutes) {
-      snapshot.requests.byRoute = sortCountObject(state.routeCounts);
+      snapshot.requests.byRoute = sortCountMap(state.routeCounts);
     }
 
     return snapshot;
