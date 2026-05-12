@@ -71,7 +71,7 @@ jobs:
 
       - name: Build and push Docker image
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           push: true
@@ -258,7 +258,7 @@ jobs:
 
     steps:
       - name: Create failure issue
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const title = `Deployment failed for ${context.sha.substring(0, 7)}`;
