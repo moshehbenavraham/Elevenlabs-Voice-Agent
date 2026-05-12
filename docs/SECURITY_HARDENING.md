@@ -203,7 +203,8 @@ and escalation steps.
 
 ## Known Deferrals
 
-This phase does not add user authentication, tenant authorization, WAF rules,
-DDoS protection, secret-manager integration, penetration testing, or a CSP
-reporting endpoint. Those controls belong to the hosting platform or later
-product phases.
+This phase does not add user authentication, tenant authorization, DDoS
+protection, secret-manager integration, penetration testing, or a CSP
+reporting endpoint. WAF rules are expected to be enforced by the hosting
+platform or edge provider, not by the repo itself, and should be configured
+before public launch. Those controls otherwise belong to later product phases.

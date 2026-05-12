@@ -1,10 +1,10 @@
 # Troubleshooting Guide
 
-This comprehensive guide helps you diagnose and resolve common issues with the ElevenLabs Voice Agent.
+This comprehensive guide helps you diagnose and resolve common issues with Voice-Agent-PuPuPlatter.
 
 ## Overview
 
-This troubleshooting guide covers common issues, error messages, and solutions for the ElevenLabs Voice Agent. Use the table of contents to quickly find solutions for your specific issue.
+This troubleshooting guide covers common issues, error messages, and solutions for Voice-Agent-PuPuPlatter. Use the table of contents to quickly find solutions for your specific issue.
 
 ## Table of Contents
 
@@ -50,7 +50,7 @@ const runSystemDiagnostics = async () => {
     environment: {
       https: location.protocol === 'https:',
       localhost: location.hostname === 'localhost',
-      apiKey: !!process.env.VITE_ELEVENLABS_API_KEY,
+      apiKey: !!process.env.ELEVENLABS_API_KEY,
     },
   };
 
@@ -249,7 +249,7 @@ Before diving into specific issues, try these quick fixes:
      return pattern.test(apiKey);
    };
 
-   const apiKey = process.env.VITE_ELEVENLABS_API_KEY;
+   const apiKey = process.env.ELEVENLABS_API_KEY;
    if (!validateApiKey(apiKey)) {
      console.error('Invalid API key format');
    }
@@ -259,7 +259,7 @@ Before diving into specific issues, try these quick fixes:
 
    ```bash
    # Verify environment variables are set
-   echo $VITE_ELEVENLABS_API_KEY
+   echo $ELEVENLABS_API_KEY
    echo $VITE_ELEVENLABS_AGENT_ID
    ```
 
@@ -859,7 +859,7 @@ Quick checks:
    cat .env
 
    # Required variables:
-   # VITE_ELEVENLABS_API_KEY=your_key_here
+   # ELEVENLABS_API_KEY=your_key_here
    # VITE_ELEVENLABS_AGENT_ID=your_agent_id_here
    ```
 

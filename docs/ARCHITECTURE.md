@@ -1,10 +1,16 @@
-# System Architecture
+# Architecture
 
-This document outlines the technical architecture of the Conversational Voice AI Agents application.
+This document outlines the technical architecture of Voice-Agent-PuPuPlatter.
 
 ## Architecture Overview
 
-A multi-provider voice AI application built with React and TypeScript, supporting real-time voice conversations with ElevenLabs, xAI (Grok), OpenAI, Ultravox, Vapi, Retell, and Google Gemini Live. It also includes a dedicated OpenAI Translation browser MVP with WebRTC media, transcripts, and export controls. The architecture emphasizes provider abstraction, performance, and accessibility.
+A multi-provider voice AI demo platform built with React and TypeScript.
+It supports real-time voice conversations with ElevenLabs, xAI (Grok), OpenAI,
+Ultravox, Vapi, Retell, and Google Gemini Live. It also includes a dedicated
+OpenAI Translation browser MVP with WebRTC media, transcripts, audio mix
+controls, and export support. The architecture emphasizes provider
+abstraction, cleanup on provider switch, and browser-safe server minting of
+translation client secrets.
 
 ## Table of Contents
 
@@ -35,8 +41,8 @@ A multi-provider voice AI application built with React and TypeScript, supportin
 |  +---------------+  |  +-------------+  +---------------------+   | |
 |         |           +---------------------------------------------+ |
 |  +-------------+  +-------------+  +-----------------------------+  |
-|  | Audio Utils |  |  Web Audio  |  |      WebSocket/HTTP         |  |
-|  | (PCM/Base64)|  |     API     |  |     Communication           |  |
+|  | OpenAI      |  |  Web Audio  |  |      WebSocket/HTTP         |  |
+|  | Translation |  |     API     |  |     Communication           |  |
 |  +-------------+  +-------------+  +-----------------------------+  |
 +---------------------------------------------------------------------+
 |                         Platform APIs                                |
@@ -48,9 +54,9 @@ A multi-provider voice AI application built with React and TypeScript, supportin
 +----------+------------+           +-----------+------------+
 |   Backend (Express)   |           |      Provider APIs      |
 |  +-----------------+  |           |  +-----------------+   |
-|  | /api/elevenlabs |  |           |  |   ElevenLabs    |   |
+|  | /api/openai     |  |           |  |   ElevenLabs    |   |
 |  | /api/xai        |  |           |  |   xAI Realtime  |   |
-|  | /api/health     |  |           |  |   (Future)      |   |
+|  | /api/health     |  |           |  |   OpenAI Live   |   |
 |  +-----------------+  |           |  +-----------------+   |
 +-----------------------+           +------------------------+
 ```
@@ -111,47 +117,34 @@ ProviderContext (active provider selection)
 ```
 App
 |-- ThemeProvider
-|-- ProviderProvider              # NEW: Active provider selection
+|-- ProviderProvider
 |-- Router
 |   |-- Index (Main Page)
-|   |   |-- ProviderTabs          # NEW: Tab navigation for providers
-|   |   |   \-- ProviderTab       # Individual tab component
-|   |   |-- ElevenLabs Provider
-|   |   |   |-- HeroSection
-|   |   |   |-- VoiceButton
-|   |   |   |-- VoiceStatus
-|   |   |   |-- VoiceVisualizer
-|   |   |   \-- ElevenLabsEmptyState
-|   |   |-- xAI Provider          # xAI voice integration
-|   |   |   |-- XAIVoiceButton
-|   |   |   |-- XAIVoiceStatus
-|   |   |   |-- XAIVoiceVisualizer
-|   |   |   \-- XAIEmptyState
-|   |   |-- Gemini Provider       # Gemini Live voice integration
-|   |   |   |-- GeminiButton
-|   |   |   |-- GeminiVoiceStatus
-|   |   |   |-- GeminiVoiceSelector
-|   |   |   \-- GeminiEmptyState
-|   |   |-- OpenAI Translation Provider # Feature-flagged browser translation MVP
-|   |   |   \-- OpenAITranslationProvider
-|   |   |-- BackgroundEffects
-|   |   \-- ConfigurationDialog   # Settings modal (Phase 03)
+|   |   |-- ProviderTabs
+|   |   |-- ElevenLabsConversationPanel
+|   |   |-- XAIConversationPanel
+|   |   |-- OpenAIConversationPanel
+|   |   |-- OpenAITranslationProvider
+|   |   |-- UltravoxConversationPanel
+|   |   |-- VapiConversationPanel
+|   |   |-- RetellConversationPanel
+|   |   |-- GeminiConversationPanel
+|   |   \-- ConfigurationDialog
 |   \-- NotFound
-|-- Settings Components           # NEW: Phase 03
-|   |-- ConfigurationDialog       # Main settings dialog
-|   |-- ProviderSettingsPanel     # Tabbed provider settings
-|   |-- OpenAISettingsTab         # OpenAI voice/prompt config
-|   |-- XAISettingsTab            # xAI voice/prompt config
-|   |-- ElevenLabsSettingsTab     # ElevenLabs info display
-|   |-- ConnectionDiagnostics     # Provider connection status
-|   \-- SettingsFooter            # Reset/save actions
-|-- UI Components
-|   |-- EmptyState                # Generic empty state component
-|   |-- Button, Card, Dialog
-|   \-- ... (50+ shadcn/ui components)
-\-- Global Components
+|-- Providers
+|   |-- ElevenLabsProvider
+|   |-- XAIProvider
+|   |-- OpenAIProvider
+|   |-- OpenAITranslationProvider
+|   |-- UltravoxProvider
+|   |-- VapiProvider
+|   |-- RetellProvider
+|   \-- GeminiProvider
+\-- Shared UI
+    |-- BackgroundEffects
+    |-- HeroSection
     |-- ThemeToggle
-    \-- AnimatedText
+    \-- Conversation and settings panels
 ```
 
 ### Component Responsibilities
@@ -162,23 +155,29 @@ App
 - Global providers and context setup
 - Error boundary implementation
 
+#### **ProviderContext**
+
+- Active provider selection and switch handling
+- Canonical provider ordering and availability checks
+- Coordination between provider-specific tabs
+
 #### **VoiceEnvironment**
 
-- Voice interaction orchestration
+- Voice interaction orchestration for the active provider
 - State management for voice features
-- Integration with ElevenLabs SDK
+- Integration with provider contexts and the OpenAI translation flow
 
-#### **VoiceOrb**
+#### **VoiceButton, VoiceStatus, VoiceVisualizer**
 
-- Visual representation of voice state
-- User interaction interface
-- Animation and visual feedback
+- Primary voice controls for the supported voice providers
+- Status and transcript feedback for active sessions
+- Audio visualization and user feedback during conversations
 
-#### **AudioVisualizer**
+#### **ConfigurationDialog**
 
-- Real-time audio visualization
-- Frequency analysis and display
-- Performance-optimized rendering
+- Provider and feature configuration UI
+- Status summaries and setup guidance
+- Settings persistence and diagnostics entry point
 
 #### **ThemeProvider**
 
@@ -346,7 +345,7 @@ Used for component-specific state:
 ```typescript
 // SDK Configuration
 const elevenLabsClient = new ElevenLabsClient({
-  apiKey: process.env.VITE_ELEVENLABS_API_KEY,
+  apiKey: process.env.ELEVENLABS_API_KEY,
   baseURL: 'https://api.elevenlabs.io/v1',
 });
 
@@ -524,8 +523,10 @@ the voice-agent WebSocket pipeline.
 
 ```typescript
 // Code splitting
-const LazyVoiceOrb = lazy(() => import('./components/VoiceOrb'));
-const LazyAudioVisualizer = lazy(() => import('./components/AudioVisualizer'));
+const LazyVoiceVisualizer = lazy(() => import('./components/voice/VoiceVisualizer'));
+const LazyConversationPanel = lazy(
+  () => import('./components/conversation/ElevenLabsConversationPanel')
+);
 
 // Dynamic imports
 const loadElevenLabsSDK = () => import('elevenlabs-js-sdk');
@@ -575,7 +576,7 @@ getLCP(console.log);
 
 ```typescript
 // API key management
-const apiKey = process.env.VITE_ELEVENLABS_API_KEY;
+const apiKey = process.env.ELEVENLABS_API_KEY;
 if (!apiKey) {
   throw new Error('ElevenLabs API key is required');
 }
@@ -642,9 +643,9 @@ const breakpoints = {
 };
 
 // Mobile-specific components
-const MobileVoiceOrb = () => {
+const MobileVoiceControl = () => {
   const isMobile = useMediaQuery('(max-width: 768px)');
-  return isMobile ? <TouchOptimizedOrb /> : <DesktopOrb />;
+  return isMobile ? <TouchOptimizedVoiceControl /> : <DesktopVoiceControl />;
 };
 ```
 

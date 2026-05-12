@@ -1,10 +1,10 @@
 # Voice Features Guide
 
-This comprehensive guide covers all voice-related features and capabilities of the ElevenLabs Voice Agent.
+This comprehensive guide covers all voice-related features and capabilities of Voice-Agent-PuPuPlatter.
 
 ## 🎤 Overview
 
-The ElevenLabs Voice Agent provides a sophisticated voice interaction system with real-time audio processing, visualization, and AI-powered conversations. This document covers all voice features, implementation details, and usage guidelines.
+Voice-Agent-PuPuPlatter provides a sophisticated voice interaction system with real-time audio processing, visualization, and AI-powered conversations. This document covers all voice features, implementation details, and usage guidelines.
 
 ## 📋 Table of Contents
 
@@ -23,6 +23,7 @@ The ElevenLabs Voice Agent provides a sophisticated voice interaction system wit
 ## 🎯 Voice Features Overview
 
 ### Core Capabilities
+
 - **Real-time Voice Conversation**: Seamless voice interactions with AI
 - **Audio Recording**: High-quality audio capture from microphone
 - **Voice Playback**: Clear audio playback with volume control
@@ -32,6 +33,7 @@ The ElevenLabs Voice Agent provides a sophisticated voice interaction system wit
 - **Accessibility**: Screen reader support and keyboard alternatives
 
 ### Technical Foundation
+
 - **Web Audio API**: Native browser audio processing
 - **MediaRecorder API**: Audio recording capabilities
 - **ElevenLabs SDK**: AI conversation processing
@@ -41,9 +43,11 @@ The ElevenLabs Voice Agent provides a sophisticated voice interaction system wit
 ## 🔮 Voice Orb Interface
 
 ### Visual States
+
 The Voice Orb provides visual feedback for different states:
 
 #### Idle State
+
 ```typescript
 const IdleOrb = () => (
   <div className="voice-orb idle">
@@ -55,6 +59,7 @@ const IdleOrb = () => (
 ```
 
 #### Listening State
+
 ```typescript
 const ListeningOrb = () => (
   <div className="voice-orb listening">
@@ -70,6 +75,7 @@ const ListeningOrb = () => (
 ```
 
 #### Speaking State
+
 ```typescript
 const SpeakingOrb = () => (
   <div className="voice-orb speaking">
@@ -85,10 +91,11 @@ const SpeakingOrb = () => (
 ```
 
 ### Interactive Controls
+
 ```typescript
 const VoiceControls = () => {
   const { isRecording, startRecording, stopRecording } = useVoiceRecording();
-  
+
   return (
     <div className="voice-controls">
       <button
@@ -101,7 +108,7 @@ const VoiceControls = () => {
       >
         {isRecording ? <MicIcon /> : <MicOffIcon />}
       </button>
-      
+
       <div className="voice-status">
         {isRecording ? 'Listening...' : 'Hold to speak'}
       </div>
@@ -113,6 +120,7 @@ const VoiceControls = () => {
 ## 🎵 Audio Processing
 
 ### Audio Input Configuration
+
 ```typescript
 interface AudioInputConfig {
   sampleRate: number;
@@ -127,7 +135,7 @@ const defaultConfig: AudioInputConfig = {
   channels: 1,
   echoCancellation: true,
   noiseSuppression: true,
-  autoGainControl: true
+  autoGainControl: true,
 };
 
 const setupAudioInput = async (config: AudioInputConfig) => {
@@ -137,49 +145,50 @@ const setupAudioInput = async (config: AudioInputConfig) => {
       channelCount: config.channels,
       echoCancellation: config.echoCancellation,
       noiseSuppression: config.noiseSuppression,
-      autoGainControl: config.autoGainControl
-    }
+      autoGainControl: config.autoGainControl,
+    },
   };
-  
+
   return await navigator.mediaDevices.getUserMedia(constraints);
 };
 ```
 
 ### Audio Processing Pipeline
+
 ```typescript
 class AudioProcessor {
   private audioContext: AudioContext;
   private analyser: AnalyserNode;
   private dataArray: Uint8Array;
   private source: MediaStreamAudioSourceNode;
-  
+
   constructor(stream: MediaStream) {
     this.audioContext = new AudioContext();
     this.analyser = this.audioContext.createAnalyser();
     this.source = this.audioContext.createMediaStreamSource(stream);
-    
+
     // Configure analyser
     this.analyser.fftSize = 2048;
     this.analyser.smoothingTimeConstant = 0.8;
-    
+
     // Connect nodes
     this.source.connect(this.analyser);
-    
+
     // Initialize data array
     this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
   }
-  
+
   getFrequencyData(): Uint8Array {
     this.analyser.getByteFrequencyData(this.dataArray);
     return this.dataArray;
   }
-  
+
   getVolumeLevel(): number {
     const data = this.getFrequencyData();
     const sum = data.reduce((acc, val) => acc + val, 0);
     return sum / data.length / 255;
   }
-  
+
   dispose(): void {
     this.source.disconnect();
     this.audioContext.close();
@@ -188,52 +197,53 @@ class AudioProcessor {
 ```
 
 ### Audio Recording
+
 ```typescript
 const useAudioRecording = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioData, setAudioData] = useState<Blob | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
+
       mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
+        mimeType: 'audio/webm;codecs=opus',
       });
-      
+
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
         }
       };
-      
+
       mediaRecorderRef.current.onstop = () => {
-        const audioBlob = new Blob(chunksRef.current, { 
-          type: 'audio/webm;codecs=opus' 
+        const audioBlob = new Blob(chunksRef.current, {
+          type: 'audio/webm;codecs=opus',
         });
         setAudioData(audioBlob);
         chunksRef.current = [];
-        
+
         // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       };
-      
+
       mediaRecorderRef.current.start();
       setIsRecording(true);
     } catch (error) {
       console.error('Failed to start recording:', error);
     }
   };
-  
+
   const stopRecording = () => {
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
   };
-  
+
   return { isRecording, audioData, startRecording, stopRecording };
 };
 ```
@@ -241,70 +251,72 @@ const useAudioRecording = () => {
 ## 🗣️ Voice Recognition
 
 ### Speech Recognition Setup
+
 ```typescript
 const useSpeechRecognition = () => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  
+
   useEffect(() => {
     if ('webkitSpeechRecognition' in window) {
       recognitionRef.current = new window.webkitSpeechRecognition();
       const recognition = recognitionRef.current;
-      
+
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
-      
+
       recognition.onstart = () => {
         setIsListening(true);
       };
-      
+
       recognition.onresult = (event) => {
         let finalTranscript = '';
         let interimTranscript = '';
-        
+
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const transcript = event.results[i][0].transcript;
-          
+
           if (event.results[i].isFinal) {
             finalTranscript += transcript;
           } else {
             interimTranscript += transcript;
           }
         }
-        
+
         setTranscript(finalTranscript || interimTranscript);
       };
-      
+
       recognition.onerror = (event) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
       };
-      
+
       recognition.onend = () => {
         setIsListening(false);
       };
     }
   }, []);
-  
+
   const startListening = () => {
     if (recognitionRef.current) {
       recognitionRef.current.start();
     }
   };
-  
+
   const stopListening = () => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
   };
-  
+
   return { isListening, transcript, startListening, stopListening };
 };
 ```
 
 ### Voice Command Processing
+
 ```typescript
 interface VoiceCommand {
   pattern: RegExp;
@@ -316,23 +328,23 @@ const voiceCommands: VoiceCommand[] = [
   {
     pattern: /^(start|begin) conversation$/i,
     action: () => startConversation(),
-    description: 'Start a new conversation'
+    description: 'Start a new conversation',
   },
   {
     pattern: /^(stop|end) conversation$/i,
     action: () => endConversation(),
-    description: 'End the current conversation'
+    description: 'End the current conversation',
   },
   {
     pattern: /^volume (\d+)$/i,
     action: ([, volume]) => setVolume(parseInt(volume) / 100),
-    description: 'Set volume (0-100)'
+    description: 'Set volume (0-100)',
   },
   {
     pattern: /^switch to (light|dark) theme$/i,
     action: ([, theme]) => setTheme(theme),
-    description: 'Switch theme'
-  }
+    description: 'Switch theme',
+  },
 ];
 
 const processVoiceCommand = (transcript: string) => {
@@ -350,44 +362,45 @@ const processVoiceCommand = (transcript: string) => {
 ## 📊 Audio Visualization
 
 ### Frequency Visualization
+
 ```typescript
 const AudioVisualizer = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
   const { audioProcessor } = useAudioProcessor();
-  
+
   const draw = useCallback(() => {
     if (!canvasRef.current || !audioProcessor) return;
-    
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d')!;
     const frequencyData = audioProcessor.getFrequencyData();
-    
+
     const width = canvas.width;
     const height = canvas.height;
     const barWidth = width / frequencyData.length;
-    
+
     // Clear canvas
     ctx.clearRect(0, 0, width, height);
-    
+
     // Draw frequency bars
     frequencyData.forEach((frequency, index) => {
       const barHeight = (frequency / 255) * height;
       const x = index * barWidth;
       const y = height - barHeight;
-      
+
       // Create gradient
       const gradient = ctx.createLinearGradient(0, y, 0, height);
       gradient.addColorStop(0, '#3b82f6');
       gradient.addColorStop(1, '#1e40af');
-      
+
       ctx.fillStyle = gradient;
       ctx.fillRect(x, y, barWidth - 1, barHeight);
     });
-    
+
     animationRef.current = requestAnimationFrame(draw);
   }, [audioProcessor]);
-  
+
   useEffect(() => {
     draw();
     return () => {
@@ -396,7 +409,7 @@ const AudioVisualizer = () => {
       }
     };
   }, [draw]);
-  
+
   return (
     <canvas
       ref={canvasRef}
@@ -410,46 +423,47 @@ const AudioVisualizer = () => {
 ```
 
 ### Waveform Visualization
+
 ```typescript
 const WaveformVisualizer = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { audioProcessor } = useAudioProcessor();
-  
+
   const drawWaveform = useCallback(() => {
     if (!canvasRef.current || !audioProcessor) return;
-    
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d')!;
     const timeData = audioProcessor.getTimeData();
-    
+
     const width = canvas.width;
     const height = canvas.height;
     const centerY = height / 2;
-    
+
     ctx.clearRect(0, 0, width, height);
     ctx.strokeStyle = '#3b82f6';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    
+
     timeData.forEach((amplitude, index) => {
       const x = (index / timeData.length) * width;
       const y = centerY + (amplitude - 128) * (height / 256);
-      
+
       if (index === 0) {
         ctx.moveTo(x, y);
       } else {
         ctx.lineTo(x, y);
       }
     });
-    
+
     ctx.stroke();
     requestAnimationFrame(drawWaveform);
   }, [audioProcessor]);
-  
+
   useEffect(() => {
     drawWaveform();
   }, [drawWaveform]);
-  
+
   return (
     <canvas
       ref={canvasRef}
@@ -465,12 +479,13 @@ const WaveformVisualizer = () => {
 ## 🎨 Voice Animations
 
 ### Orb Animation System
+
 ```typescript
 const useVoiceAnimations = () => {
   const [animationState, setAnimationState] = useState<'idle' | 'listening' | 'speaking'>('idle');
   const [pulseIntensity, setPulseIntensity] = useState(0);
   const [particles, setParticles] = useState<Particle[]>([]);
-  
+
   const createParticle = useCallback((x: number, y: number) => {
     return {
       id: Math.random(),
@@ -481,65 +496,64 @@ const useVoiceAnimations = () => {
       life: 1,
       decay: 0.02,
       size: Math.random() * 4 + 2,
-      color: `hsl(${Math.random() * 60 + 200}, 70%, 60%)`
+      color: `hsl(${Math.random() * 60 + 200}, 70%, 60%)`,
     };
   }, []);
-  
+
   const updateParticles = useCallback(() => {
-    setParticles(prev => prev
-      .map(particle => ({
-        ...particle,
-        x: particle.x + particle.vx,
-        y: particle.y + particle.vy,
-        life: particle.life - particle.decay
-      }))
-      .filter(particle => particle.life > 0)
+    setParticles((prev) =>
+      prev
+        .map((particle) => ({
+          ...particle,
+          x: particle.x + particle.vx,
+          y: particle.y + particle.vy,
+          life: particle.life - particle.decay,
+        }))
+        .filter((particle) => particle.life > 0)
     );
   }, []);
-  
+
   const startListeningAnimation = useCallback(() => {
     setAnimationState('listening');
     setPulseIntensity(0.5);
   }, []);
-  
+
   const startSpeakingAnimation = useCallback(() => {
     setAnimationState('speaking');
     setPulseIntensity(1);
-    
+
     // Create speech particles
-    const newParticles = Array.from({ length: 20 }, (_, i) => 
-      createParticle(
-        Math.cos(i * 0.314) * 50,
-        Math.sin(i * 0.314) * 50
-      )
+    const newParticles = Array.from({ length: 20 }, (_, i) =>
+      createParticle(Math.cos(i * 0.314) * 50, Math.sin(i * 0.314) * 50)
     );
-    setParticles(prev => [...prev, ...newParticles]);
+    setParticles((prev) => [...prev, ...newParticles]);
   }, [createParticle]);
-  
+
   const stopAnimation = useCallback(() => {
     setAnimationState('idle');
     setPulseIntensity(0);
   }, []);
-  
+
   useEffect(() => {
     if (animationState === 'speaking') {
       const interval = setInterval(updateParticles, 16);
       return () => clearInterval(interval);
     }
   }, [animationState, updateParticles]);
-  
+
   return {
     animationState,
     pulseIntensity,
     particles,
     startListeningAnimation,
     startSpeakingAnimation,
-    stopAnimation
+    stopAnimation,
   };
 };
 ```
 
 ### CSS Animations
+
 ```css
 .voice-orb {
   position: relative;
@@ -570,18 +584,33 @@ const useVoiceAnimations = () => {
 }
 
 @keyframes idle-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 @keyframes listening-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 @keyframes speaking-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
 }
 
 .audio-waves {
@@ -602,31 +631,37 @@ const useVoiceAnimations = () => {
 }
 
 @keyframes wave-animation {
-  0%, 100% { height: 20px; }
-  50% { height: 60px; }
+  0%,
+  100% {
+    height: 20px;
+  }
+  50% {
+    height: 60px;
+  }
 }
 ```
 
 ## 📱 Mobile Voice Features
 
 ### Touch-Optimized Interface
+
 ```typescript
 const MobileVoiceInterface = () => {
   const [isPressed, setIsPressed] = useState(false);
   const { startRecording, stopRecording } = useVoiceRecording();
-  
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
     setIsPressed(true);
     startRecording();
   }, [startRecording]);
-  
+
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
     e.preventDefault();
     setIsPressed(false);
     stopRecording();
   }, [stopRecording]);
-  
+
   return (
     <div className="mobile-voice-interface">
       <button
@@ -637,7 +672,7 @@ const MobileVoiceInterface = () => {
       >
         <MicrophoneIcon size={32} />
       </button>
-      
+
       <p className="mobile-voice-hint">
         Hold the button to speak
       </p>
@@ -647,30 +682,34 @@ const MobileVoiceInterface = () => {
 ```
 
 ### Mobile-Specific Optimizations
+
 ```typescript
 const useMobileVoiceOptimizations = () => {
   const [isMobile, setIsMobile] = useState(false);
-  
+
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
-    
+
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-  
+
   // Mobile-specific audio configuration
-  const mobileAudioConfig = useMemo(() => ({
-    sampleRate: isMobile ? 22050 : 44100, // Lower sample rate for mobile
-    echoCancellation: true,
-    noiseSuppression: true,
-    autoGainControl: true,
-    bufferSize: isMobile ? 1024 : 2048 // Smaller buffer for mobile
-  }), [isMobile]);
-  
+  const mobileAudioConfig = useMemo(
+    () => ({
+      sampleRate: isMobile ? 22050 : 44100, // Lower sample rate for mobile
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+      bufferSize: isMobile ? 1024 : 2048, // Smaller buffer for mobile
+    }),
+    [isMobile]
+  );
+
   return { isMobile, mobileAudioConfig };
 };
 ```
@@ -678,38 +717,39 @@ const useMobileVoiceOptimizations = () => {
 ## ♿ Voice Accessibility
 
 ### Screen Reader Support
+
 ```typescript
 const AccessibleVoiceInterface = () => {
   const [status, setStatus] = useState('Ready to listen');
   const [isRecording, setIsRecording] = useState(false);
-  
+
   const announceStatus = useCallback((message: string) => {
     setStatus(message);
-    
+
     // Announce to screen readers
     const announcement = document.createElement('div');
     announcement.setAttribute('aria-live', 'polite');
     announcement.setAttribute('aria-atomic', 'true');
     announcement.className = 'sr-only';
     announcement.textContent = message;
-    
+
     document.body.appendChild(announcement);
     setTimeout(() => document.body.removeChild(announcement), 1000);
   }, []);
-  
+
   const handleStartRecording = useCallback(() => {
     setIsRecording(true);
     announceStatus('Recording started. Speak now.');
   }, [announceStatus]);
-  
+
   const handleStopRecording = useCallback(() => {
     setIsRecording(false);
     announceStatus('Recording stopped. Processing your message.');
   }, [announceStatus]);
-  
+
   return (
     <div className="accessible-voice-interface">
-      <div 
+      <div
         className="voice-status"
         aria-live="polite"
         aria-atomic="true"
@@ -717,7 +757,7 @@ const AccessibleVoiceInterface = () => {
       >
         {status}
       </div>
-      
+
       <button
         className="voice-button"
         onClick={isRecording ? handleStopRecording : handleStartRecording}
@@ -726,7 +766,7 @@ const AccessibleVoiceInterface = () => {
       >
         {isRecording ? <StopIcon /> : <MicrophoneIcon />}
       </button>
-      
+
       <div className="keyboard-shortcuts">
         <p>Keyboard shortcuts:</p>
         <ul>
@@ -741,10 +781,11 @@ const AccessibleVoiceInterface = () => {
 ```
 
 ### Keyboard Navigation
+
 ```typescript
 const useKeyboardVoiceControls = () => {
   const { isRecording, startRecording, stopRecording } = useVoiceRecording();
-  
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       switch (event.code) {
@@ -768,17 +809,17 @@ const useKeyboardVoiceControls = () => {
           break;
       }
     };
-    
+
     const handleKeyUp = (event: KeyboardEvent) => {
       if (event.code === 'Space' && isRecording) {
         event.preventDefault();
         stopRecording();
       }
     };
-    
+
     document.addEventListener('keydown', handleKeyDown);
     document.addEventListener('keyup', handleKeyUp);
-    
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('keyup', handleKeyUp);
@@ -790,18 +831,19 @@ const useKeyboardVoiceControls = () => {
 ## ⚙️ Configuration Options
 
 ### Voice Settings
+
 ```typescript
 interface VoiceSettings {
   // Audio Settings
   sampleRate: number;
   bitRate: number;
   channels: number;
-  
+
   // Processing Settings
   echoCancellation: boolean;
   noiseSuppression: boolean;
   autoGainControl: boolean;
-  
+
   // ElevenLabs Settings
   voiceId: string;
   model: string;
@@ -809,13 +851,13 @@ interface VoiceSettings {
   similarityBoost: number;
   style: number;
   useSpeakerBoost: boolean;
-  
+
   // UI Settings
   showVisualizer: boolean;
   showWaveform: boolean;
   animationIntensity: number;
   theme: 'light' | 'dark' | 'auto';
-  
+
   // Accessibility Settings
   screenReaderSupport: boolean;
   keyboardShortcuts: boolean;
@@ -841,31 +883,32 @@ const defaultVoiceSettings: VoiceSettings = {
   theme: 'auto',
   screenReaderSupport: true,
   keyboardShortcuts: true,
-  visualAlternatives: true
+  visualAlternatives: true,
 };
 ```
 
 ### Settings Panel
+
 ```typescript
 const VoiceSettingsPanel = () => {
   const [settings, setSettings] = useState<VoiceSettings>(defaultVoiceSettings);
-  
+
   const updateSetting = useCallback(<K extends keyof VoiceSettings>(
     key: K,
     value: VoiceSettings[K]
   ) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   }, []);
-  
+
   return (
     <div className="voice-settings-panel">
       <h3>Voice Settings</h3>
-      
+
       <div className="settings-section">
         <h4>Audio Quality</h4>
         <label>
           Sample Rate:
-          <select 
+          <select
             value={settings.sampleRate}
             onChange={(e) => updateSetting('sampleRate', Number(e.target.value))}
           >
@@ -874,7 +917,7 @@ const VoiceSettingsPanel = () => {
             <option value={48000}>48 kHz</option>
           </select>
         </label>
-        
+
         <label>
           <input
             type="checkbox"
@@ -883,7 +926,7 @@ const VoiceSettingsPanel = () => {
           />
           Echo Cancellation
         </label>
-        
+
         <label>
           <input
             type="checkbox"
@@ -893,7 +936,7 @@ const VoiceSettingsPanel = () => {
           Noise Suppression
         </label>
       </div>
-      
+
       <div className="settings-section">
         <h4>Voice AI</h4>
         <label>
@@ -908,7 +951,7 @@ const VoiceSettingsPanel = () => {
           />
           <span>{settings.stability}</span>
         </label>
-        
+
         <label>
           Similarity Boost:
           <input
@@ -922,7 +965,7 @@ const VoiceSettingsPanel = () => {
           <span>{settings.similarityBoost}</span>
         </label>
       </div>
-      
+
       <div className="settings-section">
         <h4>Visualization</h4>
         <label>
@@ -933,7 +976,7 @@ const VoiceSettingsPanel = () => {
           />
           Show Audio Visualizer
         </label>
-        
+
         <label>
           <input
             type="checkbox"
@@ -942,7 +985,7 @@ const VoiceSettingsPanel = () => {
           />
           Show Waveform
         </label>
-        
+
         <label>
           Animation Intensity:
           <input
@@ -964,42 +1007,50 @@ const VoiceSettingsPanel = () => {
 ## 🚀 Advanced Features
 
 ### Voice Commands
+
 ```typescript
 const VoiceCommandProcessor = () => {
-  const commands = useMemo(() => [
-    {
-      pattern: /^play music$/i,
-      handler: () => playMusic(),
-      description: 'Play music'
-    },
-    {
-      pattern: /^what time is it$/i,
-      handler: () => speakTime(),
-      description: 'Get current time'
-    },
-    {
-      pattern: /^change theme to (light|dark)$/i,
-      handler: (matches: string[]) => setTheme(matches[1]),
-      description: 'Change theme'
-    }
-  ], []);
-  
-  const processCommand = useCallback((transcript: string) => {
-    for (const command of commands) {
-      const matches = transcript.match(command.pattern);
-      if (matches) {
-        command.handler(matches);
-        return true;
+  const commands = useMemo(
+    () => [
+      {
+        pattern: /^play music$/i,
+        handler: () => playMusic(),
+        description: 'Play music',
+      },
+      {
+        pattern: /^what time is it$/i,
+        handler: () => speakTime(),
+        description: 'Get current time',
+      },
+      {
+        pattern: /^change theme to (light|dark)$/i,
+        handler: (matches: string[]) => setTheme(matches[1]),
+        description: 'Change theme',
+      },
+    ],
+    []
+  );
+
+  const processCommand = useCallback(
+    (transcript: string) => {
+      for (const command of commands) {
+        const matches = transcript.match(command.pattern);
+        if (matches) {
+          command.handler(matches);
+          return true;
+        }
       }
-    }
-    return false;
-  }, [commands]);
-  
+      return false;
+    },
+    [commands]
+  );
+
   return { processCommand, commands };
 };
 ```
 
 ### Voice Shortcuts
+
 ```typescript
 const VoiceShortcuts = () => {
   const shortcuts = [
@@ -1009,7 +1060,7 @@ const VoiceShortcuts = () => {
     { key: 'V', action: 'Toggle visualizer', description: 'Show/hide audio visualizer' },
     { key: 'M', action: 'Mute/unmute', description: 'Toggle audio mute' }
   ];
-  
+
   return (
     <div className="voice-shortcuts">
       <h4>Voice Shortcuts</h4>
@@ -1031,38 +1082,40 @@ const VoiceShortcuts = () => {
 ### Common Issues
 
 #### Microphone Not Working
+
 ```typescript
 const diagnoseMicrophoneIssues = async () => {
   const diagnosis = {
     hasMediaDevices: !!navigator.mediaDevices,
     hasGetUserMedia: !!navigator.mediaDevices?.getUserMedia,
     permissions: 'unknown',
-    devices: []
+    devices: [],
   };
-  
+
   try {
     // Check permissions
     const permission = await navigator.permissions.query({ name: 'microphone' as any });
     diagnosis.permissions = permission.state;
-    
+
     // Check available devices
     const devices = await navigator.mediaDevices.enumerateDevices();
-    diagnosis.devices = devices.filter(device => device.kind === 'audioinput');
-    
+    diagnosis.devices = devices.filter((device) => device.kind === 'audioinput');
+
     // Test microphone access
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach(track => track.stop());
-    
+    stream.getTracks().forEach((track) => track.stop());
+
     console.log('Microphone diagnosis:', diagnosis);
   } catch (error) {
     console.error('Microphone diagnosis failed:', error);
   }
-  
+
   return diagnosis;
 };
 ```
 
 #### Audio Quality Issues
+
 ```typescript
 const optimizeAudioQuality = () => {
   const constraints = {
@@ -1076,27 +1129,28 @@ const optimizeAudioQuality = () => {
       googNoiseSuppression: true,
       googAutoGainControl: true,
       googHighpassFilter: true,
-      googTypingNoiseDetection: true
-    }
+      googTypingNoiseDetection: true,
+    },
   };
-  
+
   return navigator.mediaDevices.getUserMedia(constraints);
 };
 ```
 
 ### Performance Optimization
+
 ```typescript
 const optimizeVoicePerformance = () => {
   // Reduce visualization frequency on mobile
   const isMobile = window.innerWidth < 768;
   const visualizationRate = isMobile ? 30 : 60; // FPS
-  
+
   // Optimize audio buffer sizes
   const bufferSize = isMobile ? 1024 : 2048;
-  
+
   // Reduce particle count on mobile
   const particleCount = isMobile ? 10 : 50;
-  
+
   return { visualizationRate, bufferSize, particleCount };
 };
 ```
@@ -1104,6 +1158,7 @@ const optimizeVoicePerformance = () => {
 ## 📞 Support
 
 For voice-related issues:
+
 - Check browser compatibility requirements
 - Verify microphone permissions
 - Test with different audio devices

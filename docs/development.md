@@ -35,10 +35,14 @@
 | `npm run test:e2e`        | Run Playwright E2E tests              |
 | `npm run test:e2e:ui`     | Playwright visual test UI             |
 | `npm run test:e2e:headed` | Run E2E tests with browser visible    |
+| `npm run test:e2e:ci`     | Run the bounded CI browser subset     |
 | `npm run docker:build`    | Build Docker production image         |
-| `npm run docker:up`       | Start container via docker-compose    |
+| `npm run docker:up`       | Start container via docker compose    |
 | `npm run docker:down`     | Stop and remove container             |
-| `npm run demo`            | Start demo mode with ngrok tunnels    |
+| `npm run docker:logs`     | Follow container logs                 |
+| `npm run docker:health`   | Check the production health endpoint  |
+| `npm run docker:prod`     | Start and health-check the container  |
+| `npm run demo`            | Start demo mode with ngrok            |
 
 ## Development Workflow
 
@@ -79,9 +83,8 @@ env -u NO_COLOR npx playwright test --project=chromium --workers=1 --max-failure
 env -u NO_COLOR npx playwright test --workers=1 --max-failures=1
 ```
 
-The current post-update baseline is 739 Vitest tests and a full Playwright
-matrix that passes with expected skips for disabled or intentionally skipped
-scenarios.
+The current baseline uses a broad Vitest suite and a Playwright matrix that
+passes with expected skips for disabled or intentionally skipped scenarios.
 
 ## Dependency Maintenance
 

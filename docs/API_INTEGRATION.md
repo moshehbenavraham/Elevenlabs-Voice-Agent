@@ -4,7 +4,7 @@ This guide covers the integration of ElevenLabs API with the Voice Agent applica
 
 ## Overview
 
-The ElevenLabs Voice Agent uses the ElevenLabs Conversational AI API to provide real-time voice interactions. This document provides comprehensive guidance on integration, configuration, and best practices.
+Voice-Agent-PuPuPlatter uses the ElevenLabs Conversational AI API to provide real-time voice interactions. This document provides comprehensive guidance on integration, configuration, and best practices.
 
 OpenAI Translation uses a separate server-minted WebRTC translation flow. See
 the [OpenAI Translation Demo Guide](./OPENAI_TRANSLATION_DEMO.md) for
@@ -37,7 +37,7 @@ translation setup, ngrok checks, browser capture limits, and cost guardrails.
 
 ```bash
 # Create .env file
-VITE_ELEVENLABS_API_KEY=your_api_key_here
+ELEVENLABS_API_KEY=your_api_key_here
 VITE_ELEVENLABS_AGENT_ID=your_agent_id_here
 ```
 
@@ -221,7 +221,7 @@ const useElevenLabsConversation = () => {
 ```typescript
 // Environment-based configuration
 const getApiKey = (): string => {
-  const apiKey = process.env.VITE_ELEVENLABS_API_KEY;
+  const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
     throw new Error('ElevenLabs API key is required');
   }

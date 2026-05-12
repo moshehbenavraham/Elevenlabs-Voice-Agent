@@ -1,6 +1,6 @@
 # Support
 
-Welcome to the ElevenLabs Voice Agent support resources! We're here to help you get the most out of our voice AI application.
+Welcome to the Voice-Agent-PuPuPlatter support resources! We're here to help you get the most out of our voice AI application.
 
 ## 🆘 Getting Help
 
@@ -387,4 +387,4 @@ We regularly review and improve our support:
 **Last Updated**: January 8, 2025
 **Next Review**: April 8, 2025
 
-Thank you for using ElevenLabs Voice Agent! We're committed to providing excellent support and building a thriving community around voice AI technology. 🎤✨
+Thank you for using Voice-Agent-PuPuPlatter! We're committed to providing excellent support and building a thriving community around voice AI technology.

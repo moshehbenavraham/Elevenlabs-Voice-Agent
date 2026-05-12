@@ -66,6 +66,9 @@ npm run dev:all
 
 # Or just frontend
 npm run dev
+
+# Or the production-style demo with ngrok
+npm run demo
 ```
 
 ### 6. Verify Setup
