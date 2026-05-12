@@ -37,8 +37,12 @@ Current official OpenAI documentation confirms these translation assumptions:
   `POST /v1/realtime/translations/client_secrets`; the browser must not receive
   the standard server API key.
 - Browser WebRTC calls post SDP offers to
-  `POST /v1/realtime/translations/calls` and receive an SDP answer for the peer
+  `POST /v1/realtime/translations` and receive an SDP answer for the peer
   connection.
+- Browser SDP exchange should use the completed local description after ICE
+  gathering, and the SDP body should end with a CRLF. Sending Chrome's initial
+  trickle-only offer or an SDP string without a final newline can surface
+  upstream `invalid_offer` parse errors.
 - Translation sessions stream continuously from source audio and do not use
   `response.create`.
 - Current documented translation events include `session.output_audio.delta`,
@@ -130,8 +134,8 @@ strict token rate limiter and duplicate in-flight guard through
    browser-tab audio.
 2. The browser requests a short-lived client secret from
    `POST /api/openai/translation-session`.
-3. The client opens a translation WebRTC session against
-   `https://api.openai.com/v1/realtime/translations/calls`.
+3. The client creates a WebRTC offer, waits for ICE gathering, and posts the
+   completed SDP to `https://api.openai.com/v1/realtime/translations`.
 4. Translated audio is rendered through a browser audio element while
    transcript deltas flow over the `oai-events` data channel.
 5. Stopping the session tears down peer connections, source tracks, audio

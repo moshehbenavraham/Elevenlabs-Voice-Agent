@@ -720,6 +720,23 @@ describe('useRetellVoice', () => {
       expect(result.current.callStatus).toBe(RetellCallStatus.ERROR);
     });
 
+    it('falls back to status-specific messages when HTTP error body is not JSON', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: () => Promise.reject(new Error('Not JSON')),
+      });
+
+      const { result } = renderHook(() => useRetellVoice(), { wrapper });
+
+      await act(async () => {
+        await result.current.startCall();
+      });
+
+      expect(result.current.error).toBe('Agent not found - check VITE_RETELL_AGENT_ID');
+      expect(result.current.callStatus).toBe(RetellCallStatus.ERROR);
+    });
+
     it('handles missing access token', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,

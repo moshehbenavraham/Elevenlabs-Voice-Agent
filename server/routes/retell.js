@@ -14,6 +14,48 @@ const RETELL_API_URL = 'https://api.retellai.com/v2/create-web-call';
 const REQUEST_TIMEOUT_MS = 30000;
 const AGENT_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
+async function readRetellErrorResponse(response) {
+  const text = await response.text().catch(() => '');
+  if (!text) {
+    return {};
+  }
+
+  try {
+    const data = JSON.parse(text);
+    return {
+      message: typeof data?.message === 'string' ? data.message : data?.error,
+    };
+  } catch {
+    return { message: text };
+  }
+}
+
+export function mapRetellApiError(status) {
+  if (status === 400 || status === 422) {
+    return {
+      error: 'Retell API error',
+      message: 'Retell rejected the web call request. Verify the Retell agent configuration.',
+    };
+  }
+
+  if (status === 402) {
+    return {
+      error: 'Retell API error',
+      message: 'Retell billing or quota is blocking web call creation.',
+    };
+  }
+
+  if (status === 404) {
+    return {
+      error: 'Retell API error',
+      message:
+        'Retell agent not found. Verify VITE_RETELL_AGENT_ID belongs to the account used by RETELL_API_KEY.',
+    };
+  }
+
+  return mapProviderError('Retell', status);
+}
+
 /**
  * Validates that RETELL_API_KEY environment variable is configured.
  * Retell API keys start with 'key_' prefix.
@@ -130,12 +172,16 @@ async function createRetellWebCall(apiKey, options) {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.error(`[Server] Retell API error: ${response.status}`);
+      const providerError = await readRetellErrorResponse(response);
+      const providerMessage = providerError.message
+        ? ` - ${sanitizeLogInput(providerError.message)}`
+        : '';
+      console.error(`[Server] Retell API error: ${response.status}${providerMessage}`);
 
       return {
         success: false,
         status: response.status,
-        error: mapProviderError('Retell', response.status)
+        error: mapRetellApiError(response.status),
       };
     }
 

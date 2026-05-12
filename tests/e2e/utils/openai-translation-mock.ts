@@ -59,7 +59,7 @@ export interface OpenAITranslationMockController {
 }
 
 const TRANSLATION_SESSION_ROUTE = '**/api/openai/translation-session';
-const TRANSLATION_SDP_ROUTE = '**/v1/realtime/translations/calls';
+const TRANSLATION_SDP_ROUTE = '**/v1/realtime/translations';
 const FAKE_CLIENT_SECRET = 'ek_e2e_translation_client_secret';
 const FAKE_ANSWER_SDP = 'mock-answer-sdp';
 const CORS_HEADERS = {

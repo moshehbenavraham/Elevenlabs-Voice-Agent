@@ -195,7 +195,7 @@ export function buildContentSecurityPolicy() {
     "form-action 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: data: https://unpkg.com https://c.daily.co",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' data: https://fonts.gstatic.com",
+    "font-src 'self' data: https://fonts.gstatic.com https://frontend-cdn.perplexity.ai",
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: data:",
     "worker-src 'self' blob: data:",

@@ -426,14 +426,17 @@ Quick checks:
 
 #### SDP exchange fails
 
-After the app receives a translation client secret, the browser exchanges an
-SDP offer with OpenAI's translation calls endpoint.
+After the app receives a translation client secret, the browser exchanges a
+completed WebRTC SDP offer with OpenAI's translation WebRTC endpoint.
 
 Quick checks:
 
 - Confirm the client-secret request succeeded before debugging SDP.
 - Check browser network failures to
-  `https://api.openai.com/v1/realtime/translations/calls`.
+  `https://api.openai.com/v1/realtime/translations`.
+- For `invalid_offer` or `failed to unmarshal SDP: EOF`, confirm the app is
+  sending `peerConnection.localDescription.sdp` after ICE gathering completes
+  and that the SDP body ends with a newline.
 - Retry once after transient `408`, `429`, or `5xx` responses.
 - Do not log or paste raw client secrets, authorization headers, or SDP bodies
   into issue reports.

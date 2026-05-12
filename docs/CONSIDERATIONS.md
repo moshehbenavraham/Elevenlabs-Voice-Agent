@@ -15,7 +15,8 @@ Items requiring attention in upcoming phases. Review before each session.
 
 ### External Dependencies
 
-- [P05] **OpenAI translation endpoint volatility**: Live translation still depends on `gpt-realtime-translate`, `/v1/realtime/translations/client_secrets`, and `/v1/realtime/translations/calls`. Re-check official docs before any protocol change.
+- [P05] **OpenAI translation endpoint volatility**: Live translation still depends on `gpt-realtime-translate`, `/v1/realtime/translations/client_secrets`, and `/v1/realtime/translations`. Re-check official docs before any protocol change.
+- [P05] **OpenAI translation SDP strictness**: Browser WebRTC exchange should keep the ICE-gathering wait and final-SDP newline normalization. Removing either requires a live OpenAI smoke check because parser failures can surface only after the client secret succeeds.
 
 ### Performance / Security
 

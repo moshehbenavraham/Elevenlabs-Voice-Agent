@@ -445,6 +445,8 @@ OpenAI voice-agent context:
   audio mix, transcript, and max-session contracts.
 - `src/hooks/useOpenAITranslation.ts` owns the WebRTC translation lifecycle,
   translated audio playback, transcript parsing, and cleanup behavior.
+  It waits for ICE gathering before posting the local SDP to
+  `https://api.openai.com/v1/realtime/translations`.
 - `src/hooks/useOpenAITranslationSource.ts` owns microphone and browser-tab
   capture modes plus source permission handling.
 - `src/components/providers/OpenAITranslationProvider.tsx` renders the

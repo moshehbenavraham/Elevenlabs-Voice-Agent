@@ -299,6 +299,11 @@ OpenAI Translation starts a live WebRTC session after the app obtains a
 translation client secret and exchanges SDP with OpenAI. Treat every live
 session as billable provider usage.
 
+The browser WebRTC exchange posts completed ICE-gathered SDP to
+`https://api.openai.com/v1/realtime/translations`. Keep the runtime's SDP
+normalization in place; OpenAI can reject otherwise valid-looking offers when
+the body is missing the final newline.
+
 As of the 2026-05-12 official docs re-check, `gpt-realtime-translate` is priced
 by realtime audio duration rather than text tokens. Check the current OpenAI
 pricing page before any production demo, customer demo, or long-running test.

@@ -42,7 +42,7 @@ OpenAI guidance recorded for this architecture:
   `/v1/realtime/translations` endpoint family, not the standard
   `/v1/realtime` voice-agent endpoint.
 - Browser-held media should use WebRTC with server-minted short-lived client
-  secrets and SDP exchange through `/v1/realtime/translations/calls`.
+  secrets and SDP exchange through `/v1/realtime/translations`.
 - Server-held raw audio should use a backend WebSocket to
   `wss://api.openai.com/v1/realtime/translations?model=gpt-realtime-translate`.
 - Translation sessions stream continuously from source audio and should not

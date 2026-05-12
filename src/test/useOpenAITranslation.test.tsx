@@ -44,7 +44,7 @@ function mockSuccessfulFetches(): void {
       });
     }
 
-    if (url === 'https://api.openai.com/v1/realtime/translations/calls') {
+    if (url === 'https://api.openai.com/v1/realtime/translations') {
       return new Response('answer-sdp', { status: 200 });
     }
 
@@ -126,10 +126,10 @@ describe('useOpenAITranslation', () => {
       })
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://api.openai.com/v1/realtime/translations/calls',
+      'https://api.openai.com/v1/realtime/translations',
       expect.objectContaining({
         method: 'POST',
-        body: 'offer-sdp',
+        body: 'offer-sdp\r\n',
       })
     );
     expect(peerConnection.addTrack).toHaveBeenCalledWith(track, stream);

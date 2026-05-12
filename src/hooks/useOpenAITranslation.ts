@@ -22,6 +22,7 @@ import type {
 } from '@/types/openai-translation';
 
 const INITIAL_STATUS: OpenAITranslationHookStatus = 'idle';
+const OPENAI_TRANSLATION_ICE_GATHERING_TIMEOUT_MS = 5000;
 
 interface OpenAITranslationRuntimeResources {
   readonly peerConnection: RTCPeerConnection | null;
@@ -385,9 +386,27 @@ export function useOpenAITranslation(): UseOpenAITranslationResult {
             return false;
           }
 
+          await waitForOpenAITranslationIceGatheringComplete(
+            peerConnection,
+            abortController.signal
+          );
+          if (operationIdRef.current !== operationId) {
+            cleanupRuntimeResources({ updateState: false, abortRequests: false });
+            return false;
+          }
+
+          const localOfferSdp = peerConnection.localDescription?.sdp ?? offer.sdp;
+          if (!localOfferSdp) {
+            throw createOpenAITranslationRuntimeError(
+              'sdp-exchange',
+              'OpenAI translation local SDP offer was empty',
+              { code: 'empty-local-offer-sdp' }
+            );
+          }
+
           const answerSdp = await exchangeOpenAITranslationSdp({
             clientSecret,
-            offerSdp: offer.sdp,
+            offerSdp: localOfferSdp,
             signal: abortController.signal,
           });
 
@@ -714,6 +733,67 @@ function createOpenAITranslationRemoteStream(): MediaStream {
   }
 
   return new MediaStream();
+}
+
+function waitForOpenAITranslationIceGatheringComplete(
+  peerConnection: RTCPeerConnection,
+  signal: AbortSignal
+): Promise<void> {
+  if (peerConnection.iceGatheringState === 'complete') {
+    return Promise.resolve();
+  }
+
+  if (typeof peerConnection.addEventListener !== 'function') {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const cleanup = (): void => {
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
+      peerConnection.removeEventListener('icegatheringstatechange', handleIceGatheringStateChange);
+      signal.removeEventListener('abort', handleAbort);
+    };
+
+    const settle = (callback: () => void): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      callback();
+    };
+
+    const handleIceGatheringStateChange = (): void => {
+      if (peerConnection.iceGatheringState === 'complete') {
+        settle(resolve);
+      }
+    };
+
+    const handleAbort = (): void => {
+      settle(() => {
+        reject(
+          createOpenAITranslationRuntimeError(
+            'aborted',
+            'OpenAI translation ICE gathering was aborted',
+            { code: 'ice-gathering-aborted' }
+          )
+        );
+      });
+    };
+
+    timeoutId = setTimeout(() => {
+      settle(resolve);
+    }, OPENAI_TRANSLATION_ICE_GATHERING_TIMEOUT_MS);
+
+    peerConnection.addEventListener('icegatheringstatechange', handleIceGatheringStateChange);
+    signal.addEventListener('abort', handleAbort, { once: true });
+    handleIceGatheringStateChange();
+  });
 }
 
 function resolveOpenAITranslationRemoteStream(

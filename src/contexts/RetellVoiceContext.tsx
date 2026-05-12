@@ -243,19 +243,25 @@ export function RetellVoiceProvider({ children }: RetellVoiceProviderProps) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Server error' }));
+        const errorData = await response.json().catch(() => ({}));
         const statusMessages: Record<number, string> = {
           400: 'Invalid request - check agent configuration',
           401: 'Authentication failed - check Retell API key',
+          402: 'Retell billing or quota is blocking web call creation',
           403: 'Access denied - verify Retell permissions',
           404: 'Agent not found - check VITE_RETELL_AGENT_ID',
+          422: 'Retell rejected the agent configuration',
           429: 'Rate limited - please wait and try again',
           500: 'Retell server error - try again later',
           502: 'Retell service unavailable - try again later',
           503: 'Retell service temporarily unavailable',
         };
+        const serverMessage =
+          typeof errorData.message === 'string' && errorData.message.trim().length > 0
+            ? errorData.message
+            : undefined;
         throw new Error(
-          errorData.message ||
+          serverMessage ||
             statusMessages[response.status] ||
             `Connection failed (${response.status})`
         );

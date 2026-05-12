@@ -155,6 +155,7 @@ describe('server security utilities', () => {
   it('builds browser security headers with production HSTS', () => {
     const development = security.getSecurityHeaderValues({ isProduction: false });
     expect(development['Content-Security-Policy']).toContain("default-src 'self'");
+    expect(development['Content-Security-Policy']).toContain('https://frontend-cdn.perplexity.ai');
     expect(development['X-Content-Type-Options']).toBe('nosniff');
     expect(development['X-Frame-Options']).toBe('DENY');
     expect(development['Referrer-Policy']).toBe('no-referrer');

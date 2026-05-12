@@ -234,7 +234,7 @@ describe('openaiTranslation', () => {
       expect(OPENAI_TRANSLATION_BACKEND_SESSION_ROUTE).toBe('/api/openai/translation-session');
       expect(OPENAI_TRANSLATION_ENDPOINTS).toEqual({
         realtime: 'https://api.openai.com/v1/realtime/translations',
-        calls: 'https://api.openai.com/v1/realtime/translations/calls',
+        calls: 'https://api.openai.com/v1/realtime/translations',
         clientSecrets: 'https://api.openai.com/v1/realtime/translations/client_secrets',
       });
     });
@@ -1621,7 +1621,7 @@ describe('openaiTranslation', () => {
       });
     });
 
-    it('exchanges SDP with the translation calls endpoint', async () => {
+    it('exchanges SDP with the translation WebRTC endpoint', async () => {
       const fetcher = vi.fn(
         async (_input: RequestInfo | URL, _init?: RequestInit): Promise<Response> =>
           new Response('answer-sdp', { status: 200 })
@@ -1636,10 +1636,10 @@ describe('openaiTranslation', () => {
         })
       ).resolves.toBe('answer-sdp');
       expect(fetcher).toHaveBeenCalledWith(
-        'https://api.openai.com/v1/realtime/translations/calls',
+        'https://api.openai.com/v1/realtime/translations',
         expect.objectContaining({
           method: 'POST',
-          body: 'offer-sdp',
+          body: 'offer-sdp\r\n',
           headers: {
             Authorization: 'Bearer ek_test',
             'Content-Type': 'application/sdp',
@@ -1686,6 +1686,41 @@ describe('openaiTranslation', () => {
         status: 503,
         code: 'sdp-http-error',
         message: 'OpenAI translation SDP exchange failed with HTTP 503',
+      });
+    });
+
+    it('surfaces sanitized SDP HTTP JSON error messages', async () => {
+      const fetcher = vi.fn(
+        async (): Promise<Response> =>
+          new Response(
+            JSON.stringify({
+              error: {
+                message: 'Failed to parse offer: failed to unmarshal SDP: EOF',
+                type: 'invalid_request_error',
+                code: 'invalid_offer',
+              },
+            }),
+            {
+              status: 400,
+              headers: { 'Content-Type': 'application/json' },
+            }
+          )
+      ) satisfies OpenAITranslationFetch;
+
+      await expect(
+        exchangeOpenAITranslationSdp({
+          clientSecret: 'ek_test',
+          offerSdp: 'offer-sdp',
+          fetcher,
+          retryCount: 0,
+          retryDelayMs: 0,
+        })
+      ).rejects.toMatchObject({
+        kind: 'sdp-exchange',
+        status: 400,
+        code: 'sdp-http-error',
+        message:
+          'OpenAI translation SDP exchange failed with HTTP 400: Failed to parse offer: failed to unmarshal SDP: EOF',
       });
     });
   });

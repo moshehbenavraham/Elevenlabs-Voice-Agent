@@ -86,7 +86,7 @@ export const OPENAI_TRANSLATION_SOURCE_MODE_METADATA = [
 
 export const OPENAI_TRANSLATION_ENDPOINTS = {
   realtime: 'https://api.openai.com/v1/realtime/translations',
-  calls: 'https://api.openai.com/v1/realtime/translations/calls',
+  calls: 'https://api.openai.com/v1/realtime/translations',
   clientSecrets: 'https://api.openai.com/v1/realtime/translations/client_secrets',
 } as const;
 
@@ -517,7 +517,7 @@ export async function exchangeOpenAITranslationSdp(
           Authorization: `Bearer ${clientSecret}`,
           'Content-Type': 'application/sdp',
         },
-        body: offerSdp,
+        body: formatOpenAITranslationSdpOffer(offerSdp),
       },
       signal: options.signal,
       fetcher: options.fetcher,
@@ -1314,14 +1314,40 @@ async function parseOpenAITranslationText(
   }
 
   if (!response.ok) {
-    throw createOpenAITranslationRuntimeError(
-      errorKind,
-      `OpenAI translation SDP exchange failed with HTTP ${response.status}`,
-      { status: response.status, code: 'sdp-http-error' }
-    );
+    const upstreamMessage = readOpenAITranslationSdpErrorMessage(text);
+    const message = upstreamMessage
+      ? `OpenAI translation SDP exchange failed with HTTP ${response.status}: ${upstreamMessage}`
+      : `OpenAI translation SDP exchange failed with HTTP ${response.status}`;
+
+    throw createOpenAITranslationRuntimeError(errorKind, message, {
+      status: response.status,
+      code: 'sdp-http-error',
+    });
   }
 
   return text;
+}
+
+function formatOpenAITranslationSdpOffer(offerSdp: string): string {
+  return offerSdp.endsWith('\r\n') || offerSdp.endsWith('\n') ? offerSdp : `${offerSdp}\r\n`;
+}
+
+function readOpenAITranslationSdpErrorMessage(text: string): string | null {
+  try {
+    const data: unknown = JSON.parse(text);
+    if (isRecord(data)) {
+      const error = isRecord(data.error) ? data.error : null;
+      return (
+        readSafeErrorString(error?.message) ??
+        readSafeErrorString(data.message) ??
+        readSafeErrorString(error?.code)
+      );
+    }
+  } catch {
+    return readSafeErrorString(text);
+  }
+
+  return readSafeErrorString(text);
 }
 
 function normalizeOpenAITranslationSessionResponse(

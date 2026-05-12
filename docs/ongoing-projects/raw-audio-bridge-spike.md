@@ -133,7 +133,7 @@ The shipped OpenAI Translation path is browser-first:
   `useOpenAITranslationSource`.
 - `useOpenAITranslation` creates an `RTCPeerConnection`, adds source audio
   tracks, opens the `oai-events` data channel, exchanges SDP with
-  `/v1/realtime/translations/calls`, receives translated audio as a remote
+  `/v1/realtime/translations`, receives translated audio as a remote
   WebRTC track, and parses source and target transcript deltas.
 - The browser path already prevents duplicate start and stop actions, aborts
   in-flight requests, clears event handlers, removes source senders, closes peer
@@ -292,7 +292,7 @@ Failure handling:
 | Dimension         | Browser WebRTC translation                                               | Backend raw-audio bridge                                                                             |
 | ----------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
 | Best fit          | Microphone, browser tab, or browser-held room tracks                     | Telephony, SIP, broadcast ingest, backend media workers                                              |
-| Transport         | WebRTC SDP exchange through `/v1/realtime/translations/calls`            | Backend WebSocket to `/v1/realtime/translations?model=gpt-realtime-translate`                        |
+| Transport         | WebRTC SDP exchange through `/v1/realtime/translations`                  | Backend WebSocket to `/v1/realtime/translations?model=gpt-realtime-translate`                        |
 | Audio input       | Browser `MediaStreamTrack`                                               | Base64 24 kHz little-endian PCM16 append events                                                      |
 | Audio output      | Remote WebRTC audio track                                                | Base64 PCM deltas decoded by an output adapter                                                       |
 | Transcript path   | `oai-events` data channel                                                | WebSocket event stream                                                                               |
