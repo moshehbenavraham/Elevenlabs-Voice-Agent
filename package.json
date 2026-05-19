@@ -65,7 +65,7 @@
     "compression": "^1.8.1",
     "eventemitter3": "^5.0.4",
     "framer-motion": "^12.38.0",
-    "lucide-react": "^1.14.0",
+    "lucide-react": "^1.16.0",
     "next-themes": "^0.4.6",
     "pino": "^10.3.1",
     "pino-pretty": "^13.1.3",
