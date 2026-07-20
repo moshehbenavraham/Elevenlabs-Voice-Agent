@@ -625,7 +625,6 @@ describe('OpenAITranslationProvider', () => {
         isConnected: true,
         translatedAudioStream: createMediaStream(),
       });
-      view?.rerender(<OpenAITranslationProvider />);
       return true;
     });
 
@@ -636,16 +635,16 @@ describe('OpenAITranslationProvider', () => {
       await Promise.resolve();
       await Promise.resolve();
     });
+    await act(async () => {
+      view?.rerender(<OpenAITranslationProvider />);
+    });
 
     expect(runtimeStartMock).toHaveBeenCalledTimes(1);
     runtimeStopMock.mockClear();
     sourceStopMock.mockClear();
 
-    act(() => {
-      vi.advanceTimersByTime(3000);
-    });
     await act(async () => {
-      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(3000);
     });
 
     expect(runtimeStopMock).toHaveBeenCalledTimes(1);
@@ -666,7 +665,6 @@ describe('OpenAITranslationProvider', () => {
     let view: ReturnType<typeof render> | null = null;
     runtimeStartMock.mockImplementation(async () => {
       runtimeResult = createRuntimeHookResult({ status: 'connected', isConnected: true });
-      view?.rerender(<OpenAITranslationProvider />);
       return true;
     });
 
@@ -675,6 +673,10 @@ describe('OpenAITranslationProvider', () => {
 
     await waitFor(() => {
       expect(runtimeStartMock).toHaveBeenCalledTimes(1);
+    });
+    await act(async () => {
+      await Promise.resolve();
+      view?.rerender(<OpenAITranslationProvider />);
     });
 
     sourceResult = createSourceHookResult({
@@ -688,7 +690,9 @@ describe('OpenAITranslationProvider', () => {
         code: 'source-track-ended',
       },
     });
-    view.rerender(<OpenAITranslationProvider />);
+    await act(async () => {
+      view.rerender(<OpenAITranslationProvider />);
+    });
 
     await waitFor(() => {
       expect(runtimeStopMock).toHaveBeenCalledWith('source-ended');
