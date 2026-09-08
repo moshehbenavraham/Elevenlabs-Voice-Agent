@@ -16,6 +16,10 @@ For a shareable HTTPS demo:
 npm run demo
 ```
 
+LiveKit Cloud has a dedicated `/livekit` page and a provider tab. Run
+`npm run agent:livekit:setup` once and configure the root `.env`; `npm run demo`
+then starts its local agent with the temporary tunnel. See [LiveKit setup](docs/LIVEKIT_CLOUD.md).
+
 ## Repository Structure
 
 ```text
@@ -24,7 +28,7 @@ npm run demo
 |-- server/             # Express API and security utilities
 |-- docs/               # Deployment, architecture, onboarding, and runbooks
 |-- tests/              # Playwright fixtures and browser tests
-|-- .spec_system/       # Apex spec system state, PRD, sessions, and archives
+|-- agents/livekit/     # Independently packaged local LiveKit voice agent
 \-- scripts/            # Local automation for dev, demo, and deploy tasks
 ```
 

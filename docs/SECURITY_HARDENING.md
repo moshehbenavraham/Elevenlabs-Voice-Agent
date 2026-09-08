@@ -208,3 +208,12 @@ protection, secret-manager integration, penetration testing, or a CSP
 reporting endpoint. WAF rules are expected to be enforced by the hosting
 platform or edge provider, not by the repo itself, and should be configured
 before public launch. Those controls otherwise belong to later product phases.
+
+## LiveKit demo boundary
+
+`/api/livekit/session` uses the shared token limiter and in-flight guard. The
+server chooses a unique room, identity, microphone-only publication grant, and
+fixed agent dispatch; request bodies cannot override them. API credentials remain
+on the local server/worker, join tokens are not persisted, and the agent enforces
+the bounded session duration. Preserve ngrok access controls for client demos.
+See [LiveKit operations](LIVEKIT_CLOUD.md) for recording and logging behavior.

@@ -13,6 +13,7 @@ export const TOKEN_ENDPOINT_PATHS = [
   '/api/ultravox/call',
   '/api/retell/create-web-call',
   '/api/gemini/session',
+  '/api/livekit/session',
 ];
 
 const LOCALHOST_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1']);

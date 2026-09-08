@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, AlertCircle, X } from 'lucide-react';
 import { HeroSection } from '@/components/HeroSection';
@@ -54,6 +54,8 @@ import { trackError } from '@/lib/errorTracking';
 import type { ProviderType } from '@/types';
 import type { OpenAITranslationSessionEndReason } from '@/types/openai-translation';
 
+const LiveKitDemo = lazy(() => import('@/components/livekit/LiveKitDemo'));
+
 const DEBUG = import.meta.env.DEV;
 
 function debugLog(context: string, message: string, data?: unknown) {
@@ -99,6 +101,8 @@ export const Index = () => {
     return typeof navigator !== 'undefined' ? !navigator.onLine : false;
   });
 
+  const livekitStopRef = useRef<(() => Promise<void>) | null>(null);
+
   // Refs to expose provider disconnect functions for clean provider switching
   const geminiDisconnectRef = useRef<(() => Promise<void>) | null>(null);
   const openaiTranslationStopRef = useRef<
@@ -116,6 +120,8 @@ export const Index = () => {
         from: activeProvider,
         to: newProvider,
       });
+
+      if (activeProvider === 'livekit') await livekitStopRef.current?.();
 
       // Disconnect ElevenLabs SDK if active
       if (isConnected && activeProvider === 'elevenlabs-sdk') {
@@ -481,6 +487,13 @@ export const Index = () => {
       {/* Main Content */}
       <main className="relative z-10 min-h-screen pt-12">
         <AnimatePresence mode="wait">
+          {activeProvider === 'livekit' && (
+            <div key="livekit">
+              <Suspense fallback={<p className="text-center pt-40">Loading LiveKit…</p>}>
+                <LiveKitDemo embedded stopRef={livekitStopRef} />
+              </Suspense>
+            </div>
+          )}
           {/* ElevenLabs Widget Provider */}
           {activeProvider === 'elevenlabs' && (
             <motion.div

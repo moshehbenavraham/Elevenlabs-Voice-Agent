@@ -70,6 +70,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check local LiveKit agent
+        run: |
+          npm ci --prefix agents/livekit
+          npm run build --prefix agents/livekit
+          npm test --prefix agents/livekit
+
       - name: Run unit tests
         run: npm run test:run
         env:

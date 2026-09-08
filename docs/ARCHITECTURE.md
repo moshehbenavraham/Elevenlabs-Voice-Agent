@@ -12,6 +12,18 @@ controls, and export support. The architecture emphasizes provider
 abstraction, cleanup on provider switch, and browser-safe server minting of
 translation client secrets.
 
+## LiveKit local demo
+
+The `/livekit` route and LiveKit provider tab share one lazy-loaded demo surface.
+Express issues room-scoped tokens with explicit dispatch to a named Node worker
+in `agents/livekit/`. The worker runs locally and uses LiveKit Cloud transport
+and Inference. Browser media goes directly to LiveKit Cloud; the temporary ngrok
+tunnel serves only the app and API. `npm run demo` supervises the local worker,
+Express, and tunnel and stops owned processes when the demo ends.
+
+See [LiveKit configuration and lifecycle](LIVEKIT_CLOUD.md) for token grants,
+model versions, cleanup, session limits, privacy, and verification.
+
 ## Table of Contents
 
 - [System Overview](#system-overview)

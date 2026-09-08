@@ -1,6 +1,16 @@
 # LiveKit Cloud Demo Implementation Plan
 
-Status: ready for implementation; this document does not implement or deploy the demo.
+Status: implementation checkpoint committed; final tunnel and lifecycle verification remain pending.
+
+## Implementation handoff — in progress
+
+- Branch: `feat/livekit-cloud-demo`. Baseline checks: 825 tests passed, lint and formatting passed before implementation.
+- Installed pinned browser/server SDKs: `livekit-client` 2.22.3, `@livekit/components-react` 2.9.24, `livekit-server-sdk` 2.18.0. Isolated Node agent uses `@livekit/agents` 1.8.0 and builds successfully.
+- Implemented configuration/token routes, shared bounded configuration, microphone-only grants, explicit dispatch, provider registration, `/livekit`, transcript, controls, help, and cyan waveform UI. Local ignored `.env` now enables LiveKit.
+- The local agent registered with the cloud project. A real browser session verified speech recognition, model response, assistant audio playback, interruption, mute, and end with retained transcripts using synthetic microphone input. Latest lifecycle/privacy changes still need another live verification pass.
+- SDK decision: use manual `Room` lifecycle plus React room/transcription/audio hooks. Inspection of installed `useSession` showed token fetch on mount and unawaited token refresh on `end()`. Explicit token issuance only on Start and deterministic cancellation are better served by the documented Room API here. This supersedes the Session API preference below.
+- Visual reference generated and inspected: `/home/aiwithapex/.codex/generated_images/01a0812c-e6ed-7090-b507-4896f6c61a3f/exec-3b4e99be-1500-4564-9929-2dc757ed4e70.png`. Tokens: zinc `#09090b`, transcript `#0c0c0f`, cyan `#67e8f9`, muted `#a1a1aa`, sans display type, open left stage and one bordered right panel. Spoken suggestions are plain text, despite decorative arrows in the concept, to avoid implying unsupported chat actions.
+- Browser plugin unavailable; using repository Playwright. Root unit suite passed 851 tests and agent suite passed 4 tests. LiveKit browser tests passed on Chromium, WebKit, Mobile Chrome, and Mobile Safari. Firefox mock compatibility was corrected; its final result needs confirmation. The first demo startup correctly cleaned up its agent after ngrok failed: placeholder credentials in `.env` appear to override the saved ngrok login. Remaining: resolve ngrok configuration, verify two bounded tunnel windows and shutdown, and repeat live lifecycle/privacy checks. This branch captures work in progress, not completed acceptance.
 
 Reviewed: 2026-09-08. Repository baseline: `cfc0a8a` on `main`.
 

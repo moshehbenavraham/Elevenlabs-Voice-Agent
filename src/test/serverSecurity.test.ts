@@ -218,6 +218,7 @@ describe('server security utilities', () => {
       '/api/ultravox/call',
       '/api/retell/create-web-call',
       '/api/gemini/session',
+      '/api/livekit/session',
     ]);
     expect(security.TOKEN_ENDPOINT_PATHS).toContain(
       security.OPENAI_TRANSLATION_TOKEN_ENDPOINT_PATH
