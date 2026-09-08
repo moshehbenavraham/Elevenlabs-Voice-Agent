@@ -69,3 +69,50 @@ test('missing setup never asks for microphone access', async ({ page }) => {
   ).toBeDisabled();
   await expect(page.getByRole('alert')).toContainText('not available');
 });
+
+test('route navigation and provider switching release the active room', async ({ page }) => {
+  const connectedRooms = () =>
+    page.evaluate(
+      () =>
+        (
+          globalThis as unknown as { __livekitTestRooms: { state: string; mic: boolean }[] }
+        ).__livekitTestRooms.filter((room) => room.state === 'connected' || room.mic).length
+    );
+  await page.goto('/livekit');
+  await page.getByRole('button', { name: 'Start conversation', exact: true }).click();
+  await expect.poll(connectedRooms).toBe(1);
+  await page.getByRole('link', { name: 'Back to providers' }).click();
+  await expect.poll(connectedRooms).toBe(0);
+  await page.getByRole('tab', { name: /LiveKit/ }).click();
+  await page.getByRole('button', { name: 'Start conversation', exact: true }).click();
+  await expect.poll(connectedRooms).toBe(1);
+  await page
+    .locator('[role="tab"]:not([disabled])')
+    .filter({ hasNotText: 'LiveKit' })
+    .first()
+    .click();
+  await expect.poll(connectedRooms).toBe(0);
+  await page.getByRole('tab', { name: /LiveKit/ }).click();
+  await expect(page.getByRole('button', { name: 'Start conversation', exact: true })).toBeVisible();
+});
+
+for (const width of [360, 390, 768, 1440]) {
+  test(`layout and reduced motion at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/livekit');
+    await expect(
+      page.getByRole('heading', { name: 'A conversation, in real time.' })
+    ).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true
+    );
+    const start = page.getByRole('button', { name: 'Start conversation', exact: true });
+    const box = await start.boundingBox();
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+    const duration = await start.evaluate(
+      (element) => getComputedStyle(element).transitionDuration
+    );
+    expect(duration.split(',').every((part) => parseFloat(part) < 0.001)).toBe(true);
+  });
+}

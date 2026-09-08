@@ -6,6 +6,7 @@ import { useLiveKitVoice } from '@/hooks/useLiveKitVoice';
 
 const state = vi.hoisted(() => ({
   room: null as unknown,
+  connection: 'connected',
   assistant: { state: 'listening', agentAttributes: {} },
   transcripts: [] as unknown[],
 }));
@@ -13,7 +14,7 @@ vi.mock('@livekit/components-react', () => ({
   useRoomContext: () => state.room,
   useVoiceAssistant: () => state.assistant,
   useTranscriptions: () => state.transcripts,
-  useConnectionState: () => 'connected',
+  useConnectionState: () => state.connection,
 }));
 const token = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/livekit', async (original) => ({
@@ -46,6 +47,7 @@ let permission: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   room = new FakeRoom();
   state.room = room;
+  state.connection = 'connected';
   state.transcripts = [];
   state.assistant = { state: 'listening', agentAttributes: {} };
   stopTrack = vi.fn();
@@ -208,5 +210,85 @@ describe('LiveKit lifecycle', () => {
     await act(() => vi.advanceTimersByTimeAsync(30000));
     expect(result.current.phase).toBe('ended');
     expect(result.current.notice).toMatch(/time limit/);
+  });
+  it('keeps the room during a brief reconnection and cancels its deadline on recovery', async () => {
+    vi.useFakeTimers();
+    const { result, rerender } = renderHook(() => useLiveKitVoice(600));
+    await act(() => result.current.start());
+    state.connection = 'reconnecting';
+    rerender();
+    await act(() => vi.advanceTimersByTimeAsync(10000));
+    expect(room.disconnect).not.toHaveBeenCalled();
+    state.connection = 'connected';
+    rerender();
+    await act(() => vi.advanceTimersByTimeAsync(20000));
+    expect(result.current.phase).toBe('active');
+    expect(token).toHaveBeenCalledOnce();
+    expect(room.disconnect).not.toHaveBeenCalled();
+  });
+  it('ends a stalled reconnection without issuing another token', async () => {
+    vi.useFakeTimers();
+    const { result, rerender } = renderHook(() => useLiveKitVoice(600));
+    await act(() => result.current.start());
+    state.connection = 'reconnecting';
+    rerender();
+    await act(() => vi.advanceTimersByTimeAsync(20000));
+    expect(result.current.phase).toBe('ended');
+    expect(result.current.notice).toMatch(/Reconnection timed out/);
+    expect(token).toHaveBeenCalledOnce();
+  });
+  it('ends on a pipeline failure notice and releases the room', async () => {
+    const { result } = renderHook(() => useLiveKitVoice(600));
+    await act(() => result.current.start());
+    await act(async () => {
+      room.emit(RoomEvent.ParticipantAttributesChanged, { 'pupu.sessionEnd': 'pipeline-error' });
+    });
+    expect(result.current.phase).toBe('ended');
+    expect(result.current.notice).toMatch(/assistant ended this session/);
+    expect(room.disconnect).toHaveBeenCalledWith(true);
+  });
+  it('revises a transcript segment in place and finalizes it without duplicate turns', async () => {
+    const { result, rerender } = renderHook(() => useLiveKitVoice(600));
+    await act(() => result.current.start());
+    const segment = {
+      streamInfo: {
+        id: 'stream',
+        timestamp: Date.now(),
+        attributes: { 'lk.segment_id': 'segment', 'lk.transcription_final': 'false' },
+      },
+      participantInfo: { identity: 'visitor' },
+      text: 'What is',
+    };
+    state.transcripts = [segment];
+    rerender();
+    expect(result.current.messages).toMatchObject([
+      { id: 'segment', content: 'What is', final: false },
+    ]);
+    state.transcripts = [
+      {
+        ...segment,
+        text: 'What is a comet?',
+        streamInfo: {
+          ...segment.streamInfo,
+          attributes: { ...segment.streamInfo.attributes, 'lk.transcription_final': 'true' },
+        },
+      },
+    ];
+    rerender();
+    expect(result.current.messages).toMatchObject([
+      { id: 'segment', content: 'What is a comet?', final: true },
+    ]);
+    expect(result.current.messages).toHaveLength(1);
+  });
+  it('uses the configured wait-for-agent deadline', async () => {
+    vi.useFakeTimers();
+    state.assistant.state = 'connecting';
+    const { result } = renderHook(() => useLiveKitVoice(600, 5));
+    await act(() => result.current.start());
+    await act(() => vi.advanceTimersByTimeAsync(4999));
+    expect(result.current.phase).toBe('active');
+    await act(() => vi.advanceTimersByTimeAsync(1));
+    expect(result.current.phase).toBe('ended');
+    expect(result.current.error).toMatch(/assistant is unavailable/);
   });
 });

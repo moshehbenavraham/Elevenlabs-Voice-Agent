@@ -23,7 +23,7 @@ function Conversation({
   config: LiveKitConfig;
   stopRef?: DemoProps['stopRef'];
 }) {
-  const voice = useLiveKitVoice(config.maxSessionSeconds);
+  const voice = useLiveKitVoice(config.maxSessionSeconds, config.agentWaitSeconds);
   const { stop } = voice;
   useEffect(() => {
     if (stopRef) stopRef.current = () => stop();
@@ -80,7 +80,8 @@ function Conversation({
                 {elapsed}{' '}
                 <span>
                   {' '}
-                  / {Math.floor(config.maxSessionSeconds / 60)} min ·{' '}
+                  / {Math.floor(config.maxSessionSeconds / 60)}:
+                  {String(config.maxSessionSeconds % 60).padStart(2, '0')} ·{' '}
                   {reconnecting ? 'Reconnecting' : 'Connected'}
                 </span>
               </p>

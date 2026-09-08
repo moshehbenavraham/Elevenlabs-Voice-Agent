@@ -3,6 +3,7 @@ export interface LiveKitConfig {
   configured: boolean;
   agentOnline: null;
   maxSessionSeconds: number;
+  agentWaitSeconds: number;
 }
 
 export interface LiveKitMessage {

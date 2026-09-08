@@ -21,9 +21,12 @@ LIVEKIT_API_KEY=<your-api-key>
 LIVEKIT_API_SECRET=<your-api-secret>
 LIVEKIT_AGENT_NAME=pupuplatter-livekit-demo
 LIVEKIT_SESSION_MAX_SECONDS=600
+LIVEKIT_AGENT_WAIT_SECONDS=30
 ```
 
 The agent reads the same root `.env` regardless of the directory it is launched from. Existing process environment values take precedence. `VITE_LIVEKIT_ENABLED` controls the provider tab at build time. `LIVEKIT_ENABLED` controls server token issuance and agent startup in the demo script; it falls back to the public flag if unset. Set both together. Never add the API key or secret to a `VITE_` variable.
+
+`LIVEKIT_AGENT_WAIT_SECONDS` controls the browser wait for an available assistant (default 30 seconds, integer range 5–120).
 
 The default 600-second session cap is enforced by both the browser and agent. Valid values are integers from 30 to 1800 seconds. `LIVEKIT_AGENT_PORT` optionally changes the local worker health port from 8081. It is bound to loopback and is not exposed through ngrok.
 

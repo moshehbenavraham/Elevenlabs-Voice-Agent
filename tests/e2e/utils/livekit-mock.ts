@@ -3,7 +3,9 @@ import type { Page } from '@playwright/test';
 // Intercept only the SDK modules in the Vite test server. No mock switches ship in app code.
 const client = `
 export * from '/node_modules/.vite/deps/livekit-client.js?livekit-original';
+globalThis.__livekitTestRooms = [];
 export class Room {
+  constructor(){globalThis.__livekitTestRooms.push(this);}
   state='disconnected'; canPlaybackAudio=true; listeners=new Map(); messages=[]; agentState='disconnected';
   localParticipant={identity:'visitor',setMicrophoneEnabled:async(enabled)=>{this.mic=enabled;this.emit('change');},getTrackPublication:()=>undefined};
   on(name,fn){const list=this.listeners.get(name)||new Set();list.add(fn);this.listeners.set(name,list);return this;}

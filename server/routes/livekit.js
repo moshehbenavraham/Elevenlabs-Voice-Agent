@@ -52,6 +52,7 @@ router.get('/config', (_req, res) => {
       enabled: config.enabled,
       configured: config.configured,
       agentOnline: null,
+      agentWaitSeconds: config.configured ? config.agentWaitSeconds : 30,
       maxSessionSeconds: config.configured ? config.maxSessionSeconds : 600,
     });
 });

@@ -98,6 +98,7 @@ describe('LiveKit token boundary', () => {
       configured: true,
       agentOnline: null,
       maxSessionSeconds: 600,
+      agentWaitSeconds: 30,
     });
   });
   it('registers the route with the existing token limiter and in-flight guard', () => {
@@ -117,5 +118,15 @@ describe('LiveKit token boundary', () => {
     'wss://your-server.example.com',
   ])('rejects invalid URL %s', (url) => {
     expect(getLiveKitConfig({ ...env, LIVEKIT_URL: url }).configured).toBe(false);
+  });
+  it('bounds the configurable wait-for-agent deadline', () => {
+    for (const value of ['0', '4', '121', 'NaN', '30.5']) {
+      expect(getLiveKitConfig({ ...env, LIVEKIT_AGENT_WAIT_SECONDS: value }).configured).toBe(
+        false
+      );
+    }
+    expect(getLiveKitConfig({ ...env, LIVEKIT_AGENT_WAIT_SECONDS: '15' }).agentWaitSeconds).toBe(
+      15
+    );
   });
 });

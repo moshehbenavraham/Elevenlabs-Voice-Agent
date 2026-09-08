@@ -6,6 +6,7 @@ export function getLiveKitConfig(env?: Record<string, string | undefined>): {
   missing: string[];
   agentName: string;
   maxSessionSeconds: number;
+  agentWaitSeconds: number;
   serverUrl: string | undefined;
   apiKey: string | undefined;
   apiSecret: string | undefined;

@@ -1,6 +1,14 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it } from 'vitest';
-import { mkdtempSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
+import {
+  symlinkSync,
+  mkdtempSync,
+  mkdirSync,
+  copyFileSync,
+  writeFileSync,
+  readFileSync,
+  rmSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -24,6 +32,7 @@ function fixture() {
   const scripts = join(root, 'scripts/ngrok');
   mkdirSync(scripts, { recursive: true });
   mkdirSync(join(root, 'bin'));
+  symlinkSync(join(process.cwd(), 'node_modules'), join(root, 'node_modules'), 'dir');
   for (const file of ['start-tunnels.sh', 'generate-ngrok-config.sh', 'ngrok.yml.template']) {
     copyFileSync(join(process.cwd(), 'scripts/ngrok', file), join(scripts, file));
   }
@@ -99,5 +108,19 @@ describe('ngrok demo startup', () => {
       expect(`${result.stdout}${result.stderr}`).toContain('ERR_NGROK_105');
       expect(`${result.stdout}${result.stderr}`).not.toContain('private-test-token');
     }
+  });
+  it('preserves quoted password characters and safely encodes basic authentication', () => {
+    const { root, scripts, run } = fixture();
+    const password = 'test#with"quotes\\and:colon';
+    writeFileSync(join(root, '.env'), `NGROK_AUTH_USER=demo\nNGROK_AUTH_PASS='${password}'\n`);
+    const output = run();
+    const config = readFileSync(join(scripts, 'ngrok.yml'), 'utf8');
+    const encoded = config.match(/basic_auth:\n\s+- (.+)/)?.[1];
+    expect(JSON.parse(encoded!)).toBe(`demo:${password}`);
+    expect(output).not.toContain(password);
+  });
+  it('refuses incomplete basic authentication rather than starting a public tunnel', () => {
+    const { run } = fixture();
+    expect(() => run({ NGROK_AUTH_USER: 'demo' })).toThrow();
   });
 });

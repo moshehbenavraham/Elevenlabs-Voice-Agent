@@ -41,30 +41,33 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 load_env() {
     local env_file="${PROJECT_ROOT}/.env"
     if [[ -f "$env_file" ]]; then
-        # Export only NGROK_* variables to avoid issues with multi-word values
-        while IFS='=' read -r key value || [[ -n "$key" ]]; do
-            # Skip comments and empty lines
-            [[ -z "$key" || "$key" =~ ^# ]] && continue
-            # Export NGROK_* variables
-            if [[ "$key" =~ ^NGROK_[A-Z0-9_]+$ && ! -v "$key" ]]; then
-                # Remove surrounding quotes if present
-                value="${value%\"}"
-                value="${value#\"}"
-                value="${value%\'}"
-                value="${value#\'}"
-                # Remove inline comments (everything after # including preceding spaces)
-                value="${value%%#*}"
-                # Trim all trailing whitespace using extglob
-                shopt -s extglob
-                value="${value%%+([[:space:]])}"
-                shopt -u extglob
-                # Example placeholders must not override the saved CLI login/domain.
-                case "${value,,}" in
-                    *\<*|*placeholder*|your_*) continue ;;
-                esac
+        # Parse first so a missing parser/read failure cannot silently drop access controls.
+        local parsed_env
+        parsed_env=$(mktemp)
+        if ! (cd "$PROJECT_ROOT" && node --input-type=module - "$env_file" > "$parsed_env" <<'JS'
+import { readFileSync } from 'node:fs';
+import { parse } from 'dotenv';
+for (const [key, value] of Object.entries(parse(readFileSync(process.argv[2])))) {
+    if (/^NGROK_[A-Z0-9_]+$/.test(key)) process.stdout.write(`${key}\0${value}\0`);
+}
+JS
+        ); then
+            rm -f "$parsed_env"
+            echo "Failed to read ngrok settings; run npm ci and check .env permissions." >&2
+            exit 2
+        fi
+        # Null-delimited fields preserve quoted #/spaces without evaluating shell code.
+        while IFS= read -r -d '' key && IFS= read -r -d '' value; do
+            if [[ ! -v "$key" ]]; then
+                if [[ "$key" != NGROK_AUTH_USER && "$key" != NGROK_AUTH_PASS ]]; then
+                    case "${value,,}" in
+                        *\<*|*placeholder*|your_*) continue ;;
+                    esac
+                fi
                 export "$key=$value"
             fi
-        done < "$env_file"
+        done < "$parsed_env"
+        rm -f "$parsed_env"
     fi
 }
 

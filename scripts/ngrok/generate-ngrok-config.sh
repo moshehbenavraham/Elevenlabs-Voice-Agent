@@ -102,8 +102,13 @@ fi
 # Basic auth section (only if both user and pass are set)
 DEMO_BASIC_AUTH=""
 if [[ -n "$NGROK_AUTH_USER" && -n "$NGROK_AUTH_PASS" ]]; then
-    DEMO_BASIC_AUTH="    basic_auth:\n      - \"${NGROK_AUTH_USER}:${NGROK_AUTH_PASS}\""
-    print_info "Basic auth enabled for user: ${NGROK_AUTH_USER}"
+    AUTH_JSON=$(node -e 'process.stdout.write(JSON.stringify(process.env.NGROK_AUTH_USER + ":" + process.env.NGROK_AUTH_PASS))')
+    DEMO_BASIC_AUTH="    basic_auth:
+      - ${AUTH_JSON}"
+    print_info "Basic auth enabled"
+elif [[ -n "$NGROK_AUTH_USER" || -n "$NGROK_AUTH_PASS" ]]; then
+    print_error "Set both NGROK_AUTH_USER and NGROK_AUTH_PASS; refusing an unprotected tunnel."
+    exit 1
 else
     print_info "Basic auth disabled (NGROK_AUTH_USER or NGROK_AUTH_PASS not set)"
 fi
@@ -122,21 +127,21 @@ else
     CONTENT="${CONTENT//__DEMO_DOMAIN__/}"
 fi
 
-# Handle basic auth with printf to preserve newlines
+# Preserve JSON escaping and literal newlines in the basic-auth section
 if [[ -n "$DEMO_BASIC_AUTH" ]]; then
-    CONTENT="${CONTENT//__DEMO_BASIC_AUTH__/$(printf '%b' "$DEMO_BASIC_AUTH")}"
+    CONTENT="${CONTENT//__DEMO_BASIC_AUTH__/"$DEMO_BASIC_AUTH"}"
 else
     CONTENT="${CONTENT//__DEMO_BASIC_AUTH__/}"
 fi
 
 # Remove empty lines that may result from empty placeholders
 # But preserve the structure
-CONTENT=$(echo "$CONTENT" | sed '/^$/N;/^\n$/d')
+CONTENT=$(printf '%s\n' "$CONTENT" | sed '/^$/N;/^\n$/d')
 
 # Generated basic-auth credentials must be readable only by their owner.
 umask 077
 # Write output file
-echo "$CONTENT" > "$OUTPUT_FILE"
+printf '%s\n' "$CONTENT" > "$OUTPUT_FILE"
 chmod 600 "$OUTPUT_FILE"
 
 print_success "Generated: ${OUTPUT_FILE}"

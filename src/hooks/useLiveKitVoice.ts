@@ -9,7 +9,7 @@ import { ConnectionState, RoomEvent, Track, LocalAudioTrack } from 'livekit-clie
 import { getLiveKitToken, liveKitErrorMessage } from '@/lib/livekit';
 import type { LiveKitMessage, LiveKitPhase } from '@/types/livekit';
 
-export function useLiveKitVoice(maxSessionSeconds: number) {
+export function useLiveKitVoice(maxSessionSeconds: number, agentWaitSeconds = 30) {
   const controller = useRef<AbortController | null>(null);
   const operation = useRef(0);
   const busy = useRef(false);
@@ -233,9 +233,9 @@ export function useLiveKitVoice(maxSessionSeconds: number) {
         'The assistant is unavailable. Ask the demo host to check the local agent and LiveKit quota.'
       );
       void stop();
-    }, 30000);
+    }, agentWaitSeconds * 1000);
     return () => window.clearTimeout(timer);
-  }, [phase, agent.state, stop]);
+  }, [phase, agent.state, agentWaitSeconds, stop]);
 
   useEffect(() => {
     if (
