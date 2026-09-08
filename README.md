@@ -32,7 +32,7 @@ Features and controls vary by provider. Live conversations require configured pr
 You need **Node.js 22.22.1+**, **npm 10+**, Git, and a browser with microphone access. Voice capture needs localhost or HTTPS.
 
 ```bash
-git clone --branch master https://github.com/moshehbenavraham/Voice-Agent-PuPuPlatter.git
+git clone --branch main https://github.com/moshehbenavraham/Voice-Agent-PuPuPlatter.git
 cd Voice-Agent-PuPuPlatter
 npm ci
 cp .env.example .env
