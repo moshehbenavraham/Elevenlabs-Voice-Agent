@@ -26,7 +26,7 @@ The demo command starts:
 
 ### Required
 
-1. **Node.js 18+** and npm (or Bun)
+1. **Node.js 22.22.1+** and npm 10+ (or Bun)
 2. **ngrok CLI** installed and authenticated
 3. **jq** for JSON parsing (install: `sudo apt install jq` or `brew install jq`)
 4. **Voice provider credentials** configured in `.env`

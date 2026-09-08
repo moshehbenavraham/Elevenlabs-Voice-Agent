@@ -3,6 +3,10 @@
   "private": true,
   "version": "1.0.85",
   "type": "module",
+  "engines": {
+    "node": ">=22.22.1",
+    "npm": ">=10"
+  },
   "scripts": {
     "predev": "node scripts/ensure-config-stub.mjs",
     "dev": "vite",
