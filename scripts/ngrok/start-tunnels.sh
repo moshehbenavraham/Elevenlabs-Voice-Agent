@@ -46,7 +46,7 @@ load_env() {
             # Skip comments and empty lines
             [[ -z "$key" || "$key" =~ ^# ]] && continue
             # Export NGROK_* variables
-            if [[ "$key" =~ ^NGROK_ ]]; then
+            if [[ "$key" =~ ^NGROK_[A-Z0-9_]+$ && ! -v "$key" ]]; then
                 # Remove surrounding quotes if present
                 value="${value%\"}"
                 value="${value#\"}"
@@ -58,6 +58,10 @@ load_env() {
                 shopt -s extglob
                 value="${value%%+([[:space:]])}"
                 shopt -u extglob
+                # Example placeholders must not override the saved CLI login/domain.
+                case "${value,,}" in
+                    *\<*|*placeholder*|your_*) continue ;;
+                esac
                 export "$key=$value"
             fi
         done < "$env_file"
@@ -185,21 +189,24 @@ start_ngrok() {
         exit 1
     fi
 
-    # Verify NGROK_AUTHTOKEN is set
-    if [[ -z "${NGROK_AUTHTOKEN:-}" ]]; then
-        print_error "NGROK_AUTHTOKEN not set"
-        print_info "Set NGROK_AUTHTOKEN in .env or run: ngrok config add-authtoken <token>"
-        print_info "Get your authtoken at: https://dashboard.ngrok.com/get-started/your-authtoken"
-        exit 2
+    # Merge saved CLI authentication/settings with this project's tunnel.
+    # Start only "demo" below, never unrelated tunnels from the saved config.
+    local -a config_args=()
+    local saved_config="" config_check=""
+    if config_check=$(ngrok config check 2>/dev/null); then
+        saved_config="${config_check#Valid configuration file at }"
+        if [[ -f "$saved_config" && "$saved_config" != "$NGROK_CONFIG" ]]; then
+            config_args+=(--config "$saved_config")
+        fi
     fi
-    print_info "Auth token: ${NGROK_AUTHTOKEN:0:8}...${NGROK_AUTHTOKEN: -4} (masked)"
+    config_args+=(--config "$NGROK_CONFIG")
 
     # Create temp file for error output
     local ngrok_log
     ngrok_log=$(mktemp)
 
     # Start ngrok in background, capturing stderr
-    ngrok start --all --config "$NGROK_CONFIG" >"$ngrok_log" 2>&1 &
+    ngrok start demo "${config_args[@]}" >"$ngrok_log" 2>&1 &
     NGROK_PID=$!
 
     # Give ngrok a moment to start (increase to 2s for slower connections)
@@ -208,13 +215,10 @@ start_ngrok() {
     # Verify process is running
     if ! kill -0 "$NGROK_PID" 2>/dev/null; then
         print_error "ngrok failed to start"
-        # Show the actual error from ngrok
-        if [[ -s "$ngrok_log" ]]; then
-            print_info "ngrok output:"
-            while IFS= read -r line; do
-                print_info "  $line"
-            done < "$ngrok_log"
-        fi
+        # Error output can contain credentials. Emit only ngrok's diagnostic code.
+        local error_code
+        error_code=$(grep -oE 'ERR_NGROK_[0-9]+' "$ngrok_log" | head -1 || true)
+        print_error "${error_code:-No diagnostic code}; check ngrok authentication and configuration."
         rm -f "$ngrok_log"
         exit 1
     fi

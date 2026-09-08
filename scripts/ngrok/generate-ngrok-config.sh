@@ -133,8 +133,11 @@ fi
 # But preserve the structure
 CONTENT=$(echo "$CONTENT" | sed '/^$/N;/^\n$/d')
 
+# Generated basic-auth credentials must be readable only by their owner.
+umask 077
 # Write output file
 echo "$CONTENT" > "$OUTPUT_FILE"
+chmod 600 "$OUTPUT_FILE"
 
 print_success "Generated: ${OUTPUT_FILE}"
 print_info "Inspector port: ${NGROK_INSPECTOR_PORT}"

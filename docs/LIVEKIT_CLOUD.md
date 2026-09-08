@@ -51,7 +51,7 @@ Before the scheduled window, stop any development processes using ports 3001, 80
 npm run demo
 ```
 
-The script builds and registers the local agent, builds the frontend, opens the existing single ngrok tunnel, and starts Express serving both frontend and API on port 3001. It prints the client URL ending in `/livekit`. Existing ngrok credentials, domain, and basic-auth settings are reused; see the repository's ngrok setup documentation and `.env.example`.
+The script builds and registers the local agent, builds the frontend, opens the existing single ngrok tunnel, and starts Express serving both frontend and API on port 3001. It prints the client URL ending in `/livekit`. The saved configuration reported by `ngrok config check` is merged with the project tunnel; only the `demo` tunnel starts. Explicit process environment values take precedence over `.env`, and example placeholders in `.env` are ignored. Existing ngrok credentials, domain, and basic-auth settings are reused; see the repository's ngrok setup documentation and `.env.example`.
 
 Before sharing the URL, make one complete conversation through it. Check response audio, interruption, transcript, and End. Registration proves the agent connected to LiveKit; it does not prove billing/quota or model response readiness. Keep the machine awake and network connected for the client window.
 

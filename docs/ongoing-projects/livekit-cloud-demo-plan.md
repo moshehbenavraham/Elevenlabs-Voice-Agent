@@ -1,16 +1,21 @@
 # LiveKit Cloud Demo Implementation Plan
 
-Status: implementation checkpoint committed; final tunnel and lifecycle verification remain pending.
+Status: implementation and automated/live synthetic-audio checks substantially complete; remaining acceptance checks are listed below.
 
 ## Implementation handoff — in progress
 
 - Branch: `feat/livekit-cloud-demo`. Baseline checks: 825 tests passed, lint and formatting passed before implementation.
 - Installed pinned browser/server SDKs: `livekit-client` 2.22.3, `@livekit/components-react` 2.9.24, `livekit-server-sdk` 2.18.0. Isolated Node agent uses `@livekit/agents` 1.8.0 and builds successfully.
 - Implemented configuration/token routes, shared bounded configuration, microphone-only grants, explicit dispatch, provider registration, `/livekit`, transcript, controls, help, and cyan waveform UI. Local ignored `.env` now enables LiveKit.
-- The local agent registered with the cloud project. A real browser session verified speech recognition, model response, assistant audio playback, interruption, mute, and end with retained transcripts using synthetic microphone input. Latest lifecycle/privacy changes still need another live verification pass.
+- The local agent registered with the cloud project. A real browser session verified speech recognition, model response, assistant audio playback, interruption, mute, and end with retained transcripts using synthetic microphone input. The latest worker also passed a synthetic-audio conversation through ngrok; ordinary job logs showed no transcript markers.
 - SDK decision: use manual `Room` lifecycle plus React room/transcription/audio hooks. Inspection of installed `useSession` showed token fetch on mount and unawaited token refresh on `end()`. Explicit token issuance only on Start and deterministic cancellation are better served by the documented Room API here. This supersedes the Session API preference below.
 - Visual reference generated and inspected: `/home/aiwithapex/.codex/generated_images/01a0812c-e6ed-7090-b507-4896f6c61a3f/exec-3b4e99be-1500-4564-9929-2dc757ed4e70.png`. Tokens: zinc `#09090b`, transcript `#0c0c0f`, cyan `#67e8f9`, muted `#a1a1aa`, sans display type, open left stage and one bordered right panel. Spoken suggestions are plain text, despite decorative arrows in the concept, to avoid implying unsupported chat actions.
-- Browser plugin unavailable; using repository Playwright. Root unit suite passed 851 tests and agent suite passed 4 tests. LiveKit browser tests passed on Chromium, WebKit, Mobile Chrome, and Mobile Safari. Firefox mock compatibility was corrected; its final result needs confirmation. The first demo startup correctly cleaned up its agent after ngrok failed: placeholder credentials in `.env` appear to override the saved ngrok login. Remaining: resolve ngrok configuration, verify two bounded tunnel windows and shutdown, and repeat live lifecycle/privacy checks. This branch captures work in progress, not completed acceptance.
+- Browser plugin unavailable; using repository Playwright. Latest checks: 855 root tests, 4 agent tests, agent type/build checks, root typecheck/lint/format checks, and 50 Chromium CI regression tests passed. The 4 LiveKit E2E cases passed on every configured project, including Firefox. Production demo build succeeded.
+- Resolved ngrok startup: ignore example `.env` placeholders, respect explicit process environment, merge the saved CLI configuration, and start only the project `demo` tunnel. Startup failures expose diagnostic codes rather than credential-bearing output; generated configuration is owner-readable only. Three regression tests cover saved configuration, environment precedence, and credential-safe failures.
+- Two actual `npm run demo` windows worked through the public HTTPS endpoint. The ngrok account reuses its assigned domain, which is valid; configuration was regenerated and no duplicate workers remained. First window verified STT/LLM/TTS, audio playback, transcript, end, and 360px layout. Second verified separate simultaneous visitor rooms and 30-second session caps. With the browser configured to allow 600 seconds, the actual agent still ended the call after 33.9 seconds from Start and delivered the duration-limit notice.
+- Both windows were stopped; ports 3001/4041/8081 were free, owned worker children stopped, and the cloud room showed zero participants/publishers. Public endpoint shutdown was checked separately. Shutdown currently uses the documented five-second force-kill fallback for the worker. No permanent agent was deployed.
+- Screenshots: `/tmp/livekit-ngrok-desktop.png` and `/tmp/livekit-ngrok-mobile.png`; the 360px mobile screenshot was inspected with no horizontal overflow. Logs: `/tmp/pupu-livekit-tests-final.log`, `/tmp/pupu-livekit-regression.log`, `/tmp/pupu-firefox-final.log`, `/tmp/pupu-ngrok-tests.log`. These local artifacts are not tracked.
+- Remaining acceptance work: test configured basic-auth page/token access; complete the requirement-by-requirement lifecycle/UI audit (especially reconnect, audio unlock, pipeline failure, route/provider switch, reduced motion, other viewport sizes, and request-limit HTTP behavior); inspect cloud observability settings; run the official Agent Console check if still needed. Human microphone/speaker and a genuinely separate external/mobile device have not been tested. An asynchronous request for that acceptance test was sent to the user; automated synthetic audio over public ngrok is not a substitute. No tunnel is left open while waiting.
 
 Reviewed: 2026-09-08. Repository baseline: `cfc0a8a` on `main`.
 
@@ -24,7 +29,7 @@ Recommended initial experience: an English, general-purpose PuPuPlatter assistan
 
 These are implementation defaults, not outstanding product questions. No additional product decision is needed to begin.
 
-## Evidence and readiness
+## Planning baseline evidence and readiness
 
 | Item               | Evidence                                                                                                                                  | Implication                                                                                     |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |

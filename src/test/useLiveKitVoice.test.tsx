@@ -122,6 +122,30 @@ describe('LiveKit lifecycle', () => {
     expect(stopTrack).toHaveBeenCalledOnce();
     expect(token).not.toHaveBeenCalled();
   });
+  it('does not connect when microphone permission arrives after pagehide', async () => {
+    let resolve!: (value: unknown) => void;
+    permission.mockImplementation(
+      () =>
+        new Promise((r) => {
+          resolve = r;
+        })
+    );
+    const { result } = renderHook(() => useLiveKitVoice(600));
+    let starting!: Promise<void>;
+    act(() => {
+      starting = result.current.start();
+    });
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'));
+    });
+    await act(async () => {
+      resolve({ getTracks: () => [{ stop: stopTrack }] });
+      await starting;
+    });
+    expect(stopTrack).toHaveBeenCalledOnce();
+    expect(token).not.toHaveBeenCalled();
+    expect(room.connect).not.toHaveBeenCalled();
+  });
   it('shows a useful permission error and never requests a token', async () => {
     permission.mockRejectedValue(new DOMException('denied', 'NotAllowedError'));
     const { result } = renderHook(() => useLiveKitVoice(600));

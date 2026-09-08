@@ -152,6 +152,7 @@ export function useLiveKitVoice(maxSessionSeconds: number) {
   useEffect(() => {
     mounted.current = true;
     const onPageHide = () => {
+      operation.current += 1;
       controller.current?.abort();
       void endSession();
     };
