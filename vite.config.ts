@@ -21,6 +21,7 @@ const manualChunkGroups = {
   'ui-utils': ['class-variance-authority', 'clsx', 'tailwind-merge'],
 } as const;
 
+/** Place each provider SDK in a stable lazy-loadable production chunk. */
 function manualChunks(id: string): string | undefined {
   const modulePath = id.split('node_modules/').pop();
   if (!modulePath) return undefined;

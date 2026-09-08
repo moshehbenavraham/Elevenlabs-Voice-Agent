@@ -58,9 +58,8 @@ export function mapRetellApiError(status) {
 }
 
 /**
- * Validates that RETELL_API_KEY environment variable is configured.
- * Retell API keys start with 'key_' prefix.
- * @returns {{ valid: boolean, apiKey?: string, error?: { error: string, message: string } }}
+ * Validates that the server-side Retell API key and agent ID are configured.
+ * @returns {{ valid: boolean, apiKey?: string, agentId?: string, error?: { error: string, message: string } }}
  */
 function validateApiKey() {
   const apiKey = process.env.RETELL_API_KEY;
@@ -74,13 +73,27 @@ function validateApiKey() {
       }
     };
   }
-  return { valid: true, apiKey };
+
+  const agentId = process.env.VITE_RETELL_AGENT_ID;
+  if (!hasConfiguredValue(agentId)) {
+    console.error('[Server] VITE_RETELL_AGENT_ID is not configured');
+    return {
+      valid: false,
+      error: {
+        error: 'Server configuration error',
+        message: 'Retell agent ID not configured'
+      }
+    };
+  }
+
+  return { valid: true, apiKey, agentId };
 }
 
 /**
- * Validates the request body for agent_id.
+ * Validates optional Retell call metadata and the legacy client agent_id field.
+ * The server ignores client agent_id values and uses VITE_RETELL_AGENT_ID.
  * @param {Object} body - Request body
- * @returns {{ valid: boolean, agentId?: string, error?: { error: string, message: string } }}
+ * @returns {{ valid: boolean, metadata?: Object, retellLlmDynamicVariables?: Object, error?: { error: string, message: string } }}
  */
 function validateRequestBody(body) {
   const requestBody = body || {};
@@ -95,7 +108,7 @@ function validateRequestBody(body) {
 
   const agentId = validateString(requestBody.agent_id, {
     field: 'agent_id',
-    required: true,
+    required: false,
     maxLength: 128,
     pattern: AGENT_ID_PATTERN,
   });
@@ -125,7 +138,6 @@ function validateRequestBody(body) {
 
   return {
     valid: true,
-    agentId: agentId.value,
     metadata: metadata.value,
     retellLlmDynamicVariables: dynamicVariables.value,
   };
@@ -244,7 +256,9 @@ async function createRetellWebCall(apiKey, options) {
  */
 router.get('/health', (req, res) => {
   res.json({
-    configured: hasConfiguredValue(process.env.RETELL_API_KEY),
+    configured:
+      hasConfiguredValue(process.env.RETELL_API_KEY) &&
+      hasConfiguredValue(process.env.VITE_RETELL_AGENT_ID),
     provider: 'retell'
   });
 });
@@ -255,7 +269,7 @@ router.get('/health', (req, res) => {
  * The frontend RetellWebClient uses this access_token to connect.
  *
  * Request body:
- *   - agent_id: string (required) - Retell agent ID from dashboard
+ *   - agent_id: string (optional) - Accepted for client compatibility; server configuration wins
  *   - metadata: object (optional) - Custom metadata for the call
  *   - retell_llm_dynamic_variables: object (optional) - Dynamic variables
  *
@@ -278,7 +292,7 @@ router.post('/create-web-call', async (req, res) => {
 
   // Create Retell web call
   const result = await createRetellWebCall(apiValidation.apiKey, {
-    agentId: bodyValidation.agentId,
+    agentId: apiValidation.agentId,
     metadata: bodyValidation.metadata,
     retellLlmDynamicVariables: bodyValidation.retellLlmDynamicVariables
   });

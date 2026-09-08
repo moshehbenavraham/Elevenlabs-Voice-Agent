@@ -24,6 +24,8 @@ interface OpenAITranslationProviderMockProps {
 
 const indexMocks = vi.hoisted(() => ({
   openaiTranslationStop: vi.fn(),
+  retryRuntimeConfiguration: vi.fn(),
+  runtimeError: null as string | null,
   runtimeServices: {
     elevenlabs: { configured: true, missing: [] },
     openai: { configured: true, missing: [] },
@@ -82,6 +84,8 @@ vi.mock('@/hooks/useProviderRuntimeConfiguration', () => ({
   useProviderRuntimeConfiguration: () => ({
     services: indexMocks.runtimeServices,
     isChecking: false,
+    error: indexMocks.runtimeError,
+    retry: indexMocks.retryRuntimeConfiguration,
   }),
 }));
 
@@ -181,6 +185,7 @@ describe('Index Component', () => {
     vi.clearAllMocks();
     localStorage.clear();
     indexMocks.openaiTranslationStop.mockResolvedValue(undefined);
+    indexMocks.runtimeError = null;
     for (const service of Object.values(indexMocks.runtimeServices)) {
       service.configured = true;
     }
@@ -251,5 +256,19 @@ describe('Index Component', () => {
 
     expect(screen.getByTestId('openai-empty-state')).toBeInTheDocument();
     expect(screen.queryByTestId('openai-voice-button')).not.toBeInTheDocument();
+  });
+
+  it('shows a retry action instead of setup guidance when the runtime check fails', () => {
+    localStorage.setItem('voice-ai-provider', 'openai');
+    indexMocks.runtimeServices.openai.configured = false;
+    indexMocks.runtimeError = 'offline';
+
+    render(<Index />, { wrapper: TestWrapper });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Provider check unavailable');
+    expect(screen.queryByTestId('openai-empty-state')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(indexMocks.retryRuntimeConfiguration).toHaveBeenCalledOnce();
   });
 });

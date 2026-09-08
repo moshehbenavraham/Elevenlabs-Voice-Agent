@@ -112,6 +112,7 @@ const distPath = join(__dirname, '..', 'dist');
 const indexPath = join(distPath, 'index.html');
 const tokenInFlightGuard = createInFlightRequestGuard();
 
+/** Return true when an environment variable contains a usable runtime value. */
 function isEnvConfigured(name) {
   return hasConfiguredValue(process.env[name]);
 }

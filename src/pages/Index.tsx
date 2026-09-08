@@ -97,6 +97,7 @@ function XAIEndConversationButton() {
   return <EndConversationButton onClick={disconnect} />;
 }
 
+/** Render the existing setup guidance for an unavailable provider. */
 function RuntimeProviderSetup({
   provider,
   onOpenSettings,
@@ -136,6 +137,28 @@ function RuntimeProviderSetup({
   return <div className="min-h-screen flex items-center justify-center px-6">{content}</div>;
 }
 
+/** Render a retry action when provider readiness could not be verified. */
+function RuntimeProviderCheckError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center px-6" role="alert">
+      <div className="max-w-md rounded-2xl border border-red-500/20 bg-red-500/10 p-8 text-center">
+        <AlertCircle className="mx-auto mb-4 h-8 w-8 text-red-400" />
+        <h2 className="font-display text-2xl text-zinc-100">Provider check unavailable</h2>
+        <p className="mt-3 text-sm leading-6 text-zinc-400">
+          We couldn’t verify the provider configuration. Check the server connection and try again.
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-6 rounded-full border border-zinc-700 bg-zinc-900 px-5 py-2.5 text-sm text-zinc-200 transition-colors hover:border-zinc-500 hover:text-white"
+        >
+          Try again
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export const Index = () => {
   const { error, clearError, isLoading, connect, disconnect, isConnected } = useVoice();
   const { activeProvider } = useProvider();
@@ -147,8 +170,12 @@ export const Index = () => {
   const [vapiHasStarted, setVapiHasStarted] = useState(false);
   const [retellHasStarted, setRetellHasStarted] = useState(false);
   const [geminiHasStarted, setGeminiHasStarted] = useState(false);
-  const { services: runtimeServices, isChecking: isCheckingRuntimeConfiguration } =
-    useProviderRuntimeConfiguration();
+  const {
+    services: runtimeServices,
+    isChecking: isCheckingRuntimeConfiguration,
+    error: runtimeConfigurationError,
+    retry: retryRuntimeConfiguration,
+  } = useProviderRuntimeConfiguration();
   const [openaiTranslationIsOffline, setOpenaiTranslationIsOffline] = useState(() => {
     return typeof navigator !== 'undefined' ? !navigator.onLine : false;
   });
@@ -470,10 +497,20 @@ export const Index = () => {
   const usesStandaloneConfiguration = activeProvider === 'livekit';
   const showRuntimeConfigurationLoading =
     !usesStandaloneConfiguration && isCheckingRuntimeConfiguration;
+  const showRuntimeConfigurationError =
+    !usesStandaloneConfiguration &&
+    !isCheckingRuntimeConfiguration &&
+    runtimeConfigurationError !== null;
   const showRuntimeSetup =
-    !usesStandaloneConfiguration && !isCheckingRuntimeConfiguration && !isActiveRuntimeConfigured;
+    !usesStandaloneConfiguration &&
+    !isCheckingRuntimeConfiguration &&
+    runtimeConfigurationError === null &&
+    !isActiveRuntimeConfigured;
   const canRenderActiveProvider =
-    usesStandaloneConfiguration || (!isCheckingRuntimeConfiguration && isActiveRuntimeConfigured);
+    usesStandaloneConfiguration ||
+    (!isCheckingRuntimeConfiguration &&
+      runtimeConfigurationError === null &&
+      isActiveRuntimeConfigured);
 
   // Main render
   return (
@@ -561,6 +598,12 @@ export const Index = () => {
             >
               <p className="text-zinc-400">Checking provider configuration…</p>
             </div>
+          )}
+          {showRuntimeConfigurationError && (
+            <RuntimeProviderCheckError
+              key="runtime-configuration-error"
+              onRetry={retryRuntimeConfiguration}
+            />
           )}
           {showRuntimeSetup && (
             <RuntimeProviderSetup
