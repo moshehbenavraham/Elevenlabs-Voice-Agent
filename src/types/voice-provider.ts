@@ -18,7 +18,8 @@ export type ProviderType =
   | 'ultravox'
   | 'vapi'
   | 'retell'
-  | 'gemini';
+  | 'gemini'
+  | 'livekit';
 
 /**
  * Canonical provider ordering for navigation.
@@ -33,6 +34,7 @@ export const PROVIDER_ORDER = [
   'vapi',
   'retell',
   'gemini',
+  'livekit',
 ] as const satisfies readonly ProviderType[];
 
 /**
@@ -226,6 +228,8 @@ export function isProviderAvailableInEnv(provider: ProviderType): boolean {
       return isRetellEnabled();
     case 'gemini':
       return isGeminiEnabled();
+    case 'livekit':
+      return isEnabledEnvValue(import.meta.env.VITE_LIVEKIT_ENABLED);
   }
 }
 
@@ -234,6 +238,7 @@ export function isProviderAvailableInEnv(provider: ProviderType): boolean {
  */
 export function getVisibleProviderTypes(): readonly ProviderType[] {
   return PROVIDER_ORDER.filter((provider) => {
+    if (provider === 'livekit') return isEnabledEnvValue(import.meta.env.VITE_LIVEKIT_ENABLED);
     if (provider === 'openai-translation') {
       return isOpenAITranslationEnabled();
     }
@@ -246,6 +251,14 @@ export function getVisibleProviderTypes(): readonly ProviderType[] {
  * Default provider configurations
  */
 export const PROVIDERS: Record<ProviderType, VoiceProvider> = {
+  livekit: {
+    id: 'livekit',
+    name: 'LiveKit Cloud',
+    description: 'Realtime conversations with a LiveKit agent',
+    isAvailable: isEnabledEnvValue(import.meta.env.VITE_LIVEKIT_ENABLED),
+    requiresApiKey: true,
+    icon: 'AudioWaveform',
+  },
   elevenlabs: {
     id: 'elevenlabs',
     name: 'ElevenLabs Widget',

@@ -1,0 +1,27 @@
+{
+  "name": "pupuplatter-livekit-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/main.js start",
+    "dev": "node dist/main.js dev",
+    "download-files": "livekit-agents download-files",
+    "pretest": "npm run build",
+    "test": "node --test test/*.test.mjs",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@livekit/agents": "1.8.0",
+    "@livekit/rtc-node": "0.13.34",
+    "dotenv": "17.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "25.6.2",
+    "typescript": "6.0.3"
+  }
+}

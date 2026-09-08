@@ -67,6 +67,7 @@ const PROVIDER_ICONS: Record<ProviderType, React.ComponentType<{ className?: str
   vapi: PhoneCall,
   retell: Headphones,
   gemini: Sparkle,
+  livekit: AudioWaveform,
 };
 
 /**
@@ -82,6 +83,7 @@ const MOBILE_LABELS: Record<ProviderType, string> = {
   vapi: 'Vapi',
   retell: 'Retell',
   gemini: 'Gemini',
+  livekit: 'LiveKit',
 };
 
 interface ProviderTabProps {

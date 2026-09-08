@@ -11,6 +11,8 @@ import openaiRoutes from './routes/openai.js';
 import ultravoxRoutes from './routes/ultravox.js';
 import retellRoutes from './routes/retell.js';
 import geminiRoutes from './routes/gemini.js';
+import livekitRoutes from './routes/livekit.js';
+import { getLiveKitConfig } from '../shared/livekit-config.mjs';
 import functionsRoutes from './routes/functions.js';
 import {
   REQUEST_ID_HEADER,
@@ -132,6 +134,7 @@ function getProviderServices() {
     vapi: createProviderStatus(['VITE_VAPI_WEB_TOKEN']),
     retell: createProviderStatus(['RETELL_API_KEY']),
     gemini: createProviderStatus(['GEMINI_API_KEY']),
+    ...(getLiveKitConfig().enabled ? { livekit: { configured: getLiveKitConfig().configured, missing: getLiveKitConfig().missing } } : {}),
   };
 }
 
@@ -277,6 +280,7 @@ app.use('/api/openai', openaiRoutes);
 app.use('/api/ultravox', ultravoxRoutes);
 app.use('/api/retell', retellRoutes);
 app.use('/api/gemini', geminiRoutes);
+app.use('/api/livekit', livekitRoutes);
 app.use('/api/functions', functionsRoutes);
 
 // Health check endpoint

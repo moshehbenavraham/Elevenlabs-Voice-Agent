@@ -259,3 +259,11 @@ Generated tags include:
 - Tag reference metadata when applicable.
 
 The selected deploy image reference is the first generated Docker metadata tag.
+
+## LiveKit local demo checks
+
+The unit-test workflow also installs, builds, and tests `agents/livekit/` with its
+own lockfile. The E2E CI selection includes `tests/e2e/providers/livekit.spec.ts`,
+which mocks LiveKit transport and requires no cloud credentials. Real voice and
+ngrok checks run separately as described in [the LiveKit runbook](LIVEKIT_CLOUD.md).
+Client demos run locally; these changes do not provision permanent hosting.

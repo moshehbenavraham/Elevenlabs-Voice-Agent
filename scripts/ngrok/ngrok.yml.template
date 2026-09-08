@@ -11,7 +11,7 @@
 #   - Same-origin = no CORS issues = basic_auth works with preflight
 #
 # Environment Variables Required:
-#   NGROK_AUTHTOKEN - Your ngrok auth token (required)
+#   NGROK_AUTHTOKEN - Your ngrok auth token (or use the saved CLI login)
 #
 # Environment Variables Optional:
 #   NGROK_DOMAIN - Custom domain (paid plans only, e.g., myapp.ngrok.dev)

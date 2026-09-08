@@ -9,10 +9,11 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     globals: true,
     css: true,
-    exclude: ['**/node_modules/**', '**/tests/e2e/**', '**/EXAMPLE/**'],
+    exclude: ['**/node_modules/**', '**/tests/e2e/**', '**/EXAMPLE/**', '**/agents/**'],
     env: {
       VITE_ELEVENLABS_ENABLED: 'true',
       VITE_ELEVENLABS_SDK_ENABLED: 'true',
+      VITE_LIVEKIT_ENABLED: 'false',
       VITE_XAI_ENABLED: 'true',
       VITE_OPENAI_ENABLED: 'true',
     },

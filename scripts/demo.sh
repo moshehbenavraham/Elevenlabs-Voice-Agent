@@ -43,6 +43,10 @@ source "${SCRIPT_DIR}/ngrok/output-formatter.sh"
 declare -a PIDS=()
 declare -a PID_NAMES=()
 CLEANUP_IN_PROGRESS=0
+LIVEKIT_AGENT_PID=""
+LIVEKIT_AGENT_LOG=""
+LIVEKIT_DEMO_ENABLED=false
+CONFIG_GENERATED=0
 
 # Port configuration - single port for production mode
 SERVER_PORT=3001
@@ -84,54 +88,14 @@ check_port() {
     return 1
 }
 
-# Kill process on a specific port
-kill_port() {
-    local port="$1"
-    local pids
-
-    if command -v lsof >/dev/null 2>&1; then
-        pids=$(lsof -ti :"$port" 2>/dev/null)
-        if [[ -n "$pids" ]]; then
-            echo "$pids" | xargs kill -9 2>/dev/null || true
-            return 0
-        fi
-    fi
-    return 1
-}
-
-# Clear required ports by killing any processes using them
+# Fail on occupied ports: never stop an unrelated development server or tunnel.
 clear_ports() {
-    print_info "Checking port availability..."
-
-    if check_port "$SERVER_PORT"; then
-        print_warning "Port ${SERVER_PORT} in use - killing process..."
-        kill_port "$SERVER_PORT"
-        sleep 0.5
-    fi
-
-    if check_port "$NGROK_API_PORT"; then
-        print_warning "Port ${NGROK_API_PORT} in use - killing process..."
-        kill_port "$NGROK_API_PORT"
-        sleep 0.5
-    fi
-
-    # Verify ports are now free
-    local still_blocked=0
-    if check_port "$SERVER_PORT"; then
-        print_error "Failed to free port ${SERVER_PORT}"
-        still_blocked=1
-    fi
-    if check_port "$NGROK_API_PORT"; then
-        print_error "Failed to free port ${NGROK_API_PORT}"
-        still_blocked=1
-    fi
-
-    if [[ $still_blocked -eq 1 ]]; then
-        print_error "Could not free all required ports"
-        exit 3
-    fi
-
-    print_success "All ports available"
+    for port in "$SERVER_PORT" "$NGROK_API_PORT"; do
+        if check_port "$port"; then
+            print_error "Port ${port} is already in use. Stop its owner before starting a demo."
+            exit 3
+        fi
+    done
 }
 
 # Check ngrok prerequisites
@@ -169,7 +133,7 @@ CONFIG_JS_FILE="${PROJECT_ROOT}/dist/config.js"
 cleanup_config_files() {
     print_info "Removing generated config files..."
 
-    if [[ -f "$CONFIG_JS_FILE" ]]; then
+    if [[ "$CONFIG_GENERATED" == 1 && -f "$CONFIG_JS_FILE" ]]; then
         rm -f "$CONFIG_JS_FILE"
         print_success "Removed dist/config.js"
     fi
@@ -177,6 +141,8 @@ cleanup_config_files() {
 
 # Graceful shutdown - kills processes in reverse order (LIFO)
 cleanup() {
+    local exit_code=$?
+    trap - EXIT SIGINT SIGTERM
     # Guard against re-entry
     if [[ $CLEANUP_IN_PROGRESS -eq 1 ]]; then
         return
@@ -194,7 +160,11 @@ cleanup() {
 
         if kill -0 "$pid" 2>/dev/null; then
             print_info "Stopping ${name} (PID: ${pid})..."
-            kill "$pid" 2>/dev/null || true
+            if [[ "$pid" == "$LIVEKIT_AGENT_PID" ]]; then
+                kill -- "-$pid" 2>/dev/null || true
+            else
+                kill "$pid" 2>/dev/null || true
+            fi
 
             # Give process time to exit gracefully
             local wait_count=0
@@ -206,21 +176,30 @@ cleanup() {
             # Force kill if still running
             if kill -0 "$pid" 2>/dev/null; then
                 print_warning "Force killing ${name}..."
-                kill -9 "$pid" 2>/dev/null || true
+                if [[ "$pid" == "$LIVEKIT_AGENT_PID" ]]; then
+                    kill -9 -- "-$pid" 2>/dev/null || true
+                else
+                    kill -9 "$pid" 2>/dev/null || true
+                fi
             fi
         fi
     done
 
+    if [[ -n "$LIVEKIT_AGENT_PID" ]]; then
+        kill -- "-$LIVEKIT_AGENT_PID" 2>/dev/null || true
+    fi
+    [[ -z "$LIVEKIT_AGENT_LOG" ]] || rm -f "$LIVEKIT_AGENT_LOG"
     # Clean up generated config files
     cleanup_config_files
 
     print_success "All processes stopped"
-    exit 0
+    exit "$exit_code"
 }
 
 # Set up signal traps
 setup_traps() {
-    trap cleanup SIGINT SIGTERM
+    trap cleanup EXIT
+    trap 'exit 0' SIGINT SIGTERM
 }
 
 # Build the frontend
@@ -266,6 +245,7 @@ generate_config() {
 })();
 EOF
 
+    CONFIG_GENERATED=1
     print_success "Generated dist/config.js"
 }
 
@@ -313,19 +293,19 @@ start_backend() {
     cd "$PROJECT_ROOT"
 
     # Start in production mode - serves both API and static frontend
-    NODE_ENV=production npm run server >/dev/null 2>&1 &
+    NODE_ENV=production DEMO_MODE=true CORS_ORIGIN="$DEMO_URL" node server/index.js >/dev/null 2>&1 &
     local pid=$!
+
+    track_pid "$pid" "server"
 
     # Give Express time to start
     sleep 2
 
     if ! kill -0 "$pid" 2>/dev/null; then
         print_error "Server failed to start"
-        cleanup
         exit 1
     fi
 
-    track_pid "$pid" "server"
     print_success "Server started (port ${SERVER_PORT}, production mode)"
 }
 
@@ -368,11 +348,48 @@ wait_for_processes() {
 
         if [[ $all_running -eq 0 ]]; then
             print_warning "A process exited unexpectedly"
-            cleanup
+            exit 1
         fi
 
         sleep 5
     done
+}
+
+# The agent owns a process group so its job workers stop with the demo.
+start_livekit_agent() {
+    cd "$PROJECT_ROOT"
+    LIVEKIT_DEMO_ENABLED=$(node --input-type=module -e "import {config} from 'dotenv'; import {getLiveKitConfig} from './shared/livekit-config.mjs'; config({quiet:true}); console.log(getLiveKitConfig().enabled)")
+    if [[ "$LIVEKIT_DEMO_ENABLED" != true ]]; then return; fi
+    local agent_port
+    agent_port=$(node --input-type=module -e "import {config} from 'dotenv'; config({quiet:true}); console.log(process.env.LIVEKIT_AGENT_PORT || '8081')")
+    if check_port "$agent_port"; then
+        print_error "LiveKit agent port ${agent_port} is occupied. Stop the existing agent first."
+        exit 3
+    fi
+    if [[ ! -d "$PROJECT_ROOT/agents/livekit/node_modules" ]]; then
+        print_error "Install the agent first: npm ci --prefix agents/livekit"
+        exit 1
+    fi
+    command -v setsid >/dev/null || { print_error "The local demo requires setsid (Linux/WSL)."; exit 1; }
+    npm run build --prefix agents/livekit || exit 1
+    LIVEKIT_AGENT_LOG=$(mktemp "${TMPDIR:-/tmp}/pupu-livekit-agent.XXXXXX")
+    setsid node agents/livekit/dist/main.js start >"$LIVEKIT_AGENT_LOG" 2>&1 &
+    LIVEKIT_AGENT_PID=$!
+    track_pid "$LIVEKIT_AGENT_PID" "LiveKit agent"
+    local attempt
+    for attempt in {1..30}; do
+        if ! kill -0 "$LIVEKIT_AGENT_PID" 2>/dev/null; then
+            print_error "LiveKit agent failed to start. Check configuration with npm run agent:livekit."
+            exit 1
+        fi
+        if grep -q 'registered worker' "$LIVEKIT_AGENT_LOG"; then
+            print_success "LiveKit agent registered (verify a conversation before the client joins)"
+            return
+        fi
+        sleep 1
+    done
+    print_error "LiveKit agent registration timed out. Check credentials and network."
+    exit 1
 }
 
 # Main function
@@ -389,6 +406,8 @@ main() {
     check_ngrok_prereqs
     echo ""
 
+    start_livekit_agent
+
     # Build frontend first (creates dist/)
     build_frontend
 
@@ -404,6 +423,9 @@ main() {
 
     # Display URL and wait
     display_url
+    if [[ "$LIVEKIT_DEMO_ENABLED" == true ]]; then
+        print_info "LiveKit demo: ${DEMO_URL}/livekit"
+    fi
     wait_for_processes
 }
 

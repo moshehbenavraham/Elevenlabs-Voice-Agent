@@ -9,6 +9,7 @@ import { VoiceProvider } from '@/contexts/VoiceContext';
 import { ProviderProvider } from '@/contexts/ProviderContext';
 
 // Lazy load page components for code splitting
+const LiveKit = lazy(() => import('./pages/LiveKit'));
 const Index = lazy(() => import('./pages/Index').then((m) => ({ default: m.Index })));
 const NotFound = lazy(() => import('./pages/NotFound').then((m) => ({ default: m.NotFound })));
 
@@ -33,6 +34,7 @@ export const App = () => (
               <Suspense fallback={<PageLoader />}>
                 <Routes>
                   <Route path="/" element={<Index />} />
+                  <Route path="/livekit" element={<LiveKit />} />
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>

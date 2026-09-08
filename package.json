@@ -23,7 +23,7 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:e2e": "playwright test",
-    "test:e2e:ci": "playwright test tests/e2e/smoke tests/e2e/providers/elevenlabs.spec.ts tests/e2e/error-handling/elevenlabs-reconnection.spec.ts --project=chromium",
+    "test:e2e:ci": "playwright test tests/e2e/smoke tests/e2e/providers/elevenlabs.spec.ts tests/e2e/error-handling/elevenlabs-reconnection.spec.ts --project=chromium tests/e2e/providers/livekit.spec.ts",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "prepare": "husky",
@@ -34,7 +34,9 @@
     "docker:health": "curl -fsS http://localhost:3001/api/health",
     "deploy:verify": "node scripts/deploy/verify-production.mjs",
     "docker:prod": "npm run docker:up && npm run docker:health",
-    "demo": "bash scripts/demo.sh"
+    "demo": "bash scripts/demo.sh",
+    "agent:livekit": "npm run build --prefix agents/livekit && npm run start --prefix agents/livekit",
+    "agent:livekit:setup": "npm ci --prefix agents/livekit && npm run build --prefix agents/livekit"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -48,6 +50,7 @@
   "dependencies": {
     "@elevenlabs/react": "^1.6.0",
     "@google/genai": "^2.0.1",
+    "@livekit/components-react": "2.9.24",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-popover": "^1.1.15",
     "@radix-ui/react-scroll-area": "^1.2.10",
@@ -65,6 +68,8 @@
     "compression": "^1.8.1",
     "eventemitter3": "^5.0.4",
     "framer-motion": "^12.38.0",
+    "livekit-client": "2.22.3",
+    "livekit-server-sdk": "2.18.0",
     "lucide-react": "^1.16.0",
     "next-themes": "^0.4.6",
     "pino": "^10.3.1",
@@ -94,6 +99,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/express": "5.0.6",
     "@types/node": "^25.6.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
