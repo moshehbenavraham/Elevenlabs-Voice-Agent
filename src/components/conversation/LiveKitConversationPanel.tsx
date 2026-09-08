@@ -3,6 +3,7 @@ import { AudioLines } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { LiveKitMessage } from '@/types/livekit';
 
+/** Show speaker-labelled turns, preserve manual scroll position, and announce finalized text. */
 export function LiveKitConversationPanel({
   messages,
   onClear,

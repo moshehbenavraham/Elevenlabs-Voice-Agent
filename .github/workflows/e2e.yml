@@ -70,6 +70,7 @@ jobs:
           VITE_GEMINI_ENABLED=true
           VITE_GEMINI_MODEL=gemini-2.5-flash-native-audio-preview-12-2025
           VITE_GEMINI_VOICE=Zephyr
+          VITE_LIVEKIT_ENABLED=true
           VITE_DEFAULT_PROVIDER=elevenlabs
           VITE_API_BASE_URL=http://localhost:3001
           VITE_NODE_ENV=test

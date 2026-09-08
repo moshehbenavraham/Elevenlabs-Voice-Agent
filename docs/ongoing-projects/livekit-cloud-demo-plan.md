@@ -24,6 +24,16 @@ Resumption: the same external acceptance dependency remained across three goal t
 
 Reviewed: 2026-09-08. Repository baseline: `cfc0a8a` on `main`.
 
+## PR #138 review follow-up
+
+Current objective: resolve all review details, run PR CI jobs locally, and wait for CodeRabbit on the final commit before declaring merge readiness. External human-device/dashboard acceptance remains recorded above; it is not claimed by the automated review work.
+
+- Latest `origin/main` is already an ancestor of this branch; no remote `master` exists and no rebase is needed.
+- Verified five CodeRabbit inline findings plus README nit. Fixed blank timing defaults, contained shutdown rejections, added standalone agent pretest build, logged sanitized signing diagnostics with request ID, clarified both enable flags, and listed LiveKit in the README.
+- Added focused regression coverage: 868 root tests and 5 agent tests passed; root type/lint/format checks passed. Added missing `VITE_LIVEKIT_ENABLED=true` to CI's E2E environment because provider-switch coverage requires the tab.
+- Added concise API/lifecycle/UI docstrings for CodeRabbit's coverage warning; waiting for its reassessment.
+- Local gitleaks found no leaks in the PR history. npm audit currently reports 10 high and 2 critical findings; the same counts exist on `main`. Local CodeQL setup and remaining CI parity checks are in progress. GitHub-side job completion is not a gate; CodeRabbit review is.
+
 ## Outcome and scope
 
 Add a polished LiveKit Cloud voice demo that feels native to PuPuPlatter, is discoverable alongside the existing voice providers, and has a shareable `/livekit` URL. A visitor can start a conversation, hear and interrupt the assistant, read live transcripts, mute their microphone, end the call, and start again. The implementation includes the agent, backend, frontend, temporary demo orchestration, documentation, and verification needed to make that experience work end to end.

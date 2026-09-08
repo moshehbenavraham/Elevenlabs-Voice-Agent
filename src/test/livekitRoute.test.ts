@@ -1,16 +1,22 @@
 // @vitest-environment node
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { TokenVerifier } from 'livekit-server-sdk';
+import { AccessToken, TokenVerifier } from 'livekit-server-sdk';
 
 const routePath = '../../server/routes/livekit.js';
 const securityPath = '../../server/utils/security.js';
 const configPath = '../../shared/livekit-config.mjs';
 const { default: route } = await import(routePath);
 const { getLiveKitConfig } = await import(configPath);
+const observabilityPath = '../../server/utils/observability.js';
+const { serverLogger } = await import(observabilityPath);
 const { TOKEN_ENDPOINT_PATHS } = await import(securityPath);
 const express = (await import('express')).default;
 const app = express();
 app.use(express.json());
+app.use((req, _res, next) => {
+  Object.assign(req, { requestId: 'test-request-id' });
+  next();
+});
 app.use('/api/livekit', route);
 let server: ReturnType<typeof app.listen>;
 let base: string;
@@ -35,7 +41,10 @@ afterAll(
       server.close((err?: Error) => (err ? reject(err) : resolve()))
     )
 );
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.restoreAllMocks();
+});
 const configure = () => {
   for (const [key, value] of Object.entries(env)) vi.stubEnv(key, value);
 };
@@ -128,5 +137,47 @@ describe('LiveKit token boundary', () => {
     expect(getLiveKitConfig({ ...env, LIVEKIT_AGENT_WAIT_SECONDS: '15' }).agentWaitSeconds).toBe(
       15
     );
+  });
+  it.each(['', '   ', '\t'])('defaults blank timing values %j', async (value) => {
+    configure();
+    vi.stubEnv('LIVEKIT_SESSION_MAX_SECONDS', value);
+    vi.stubEnv('LIVEKIT_AGENT_WAIT_SECONDS', value);
+    const config = getLiveKitConfig();
+    expect(config).toMatchObject({
+      configured: true,
+      maxSessionSeconds: 600,
+      agentWaitSeconds: 30,
+    });
+    expect((await create()).status).toBe(200);
+  });
+  it('keeps explicitly padded numeric timing values', () => {
+    expect(
+      getLiveKitConfig({
+        ...env,
+        LIVEKIT_SESSION_MAX_SECONDS: ' 120 ',
+        LIVEKIT_AGENT_WAIT_SECONDS: ' 15 ',
+      })
+    ).toMatchObject({ configured: true, maxSessionSeconds: 120, agentWaitSeconds: 15 });
+  });
+  it('logs a signing failure safely while preserving the generic 500 response', async () => {
+    configure();
+    const logger = vi.spyOn(serverLogger, 'error').mockImplementation(() => undefined);
+    vi.spyOn(AccessToken.prototype, 'toJwt').mockRejectedValue(
+      new Error(`Signing failed: ${env.LIVEKIT_API_SECRET}`)
+    );
+    const response = await create();
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({
+      error: 'LiveKit session error',
+      message: 'Could not start a LiveKit session. Please try again.',
+    });
+    expect(logger).toHaveBeenCalledWith(
+      expect.objectContaining({
+        detail: 'Signing failed: [redacted]',
+        requestId: 'test-request-id',
+      }),
+      'LiveKit session creation failed'
+    );
+    expect(JSON.stringify(logger.mock.calls)).not.toContain(env.LIVEKIT_API_SECRET);
   });
 });

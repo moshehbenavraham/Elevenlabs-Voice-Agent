@@ -74,3 +74,4 @@ Supported tabs are controlled through environment flags and the shared provider 
 - Vapi
 - Retell
 - Gemini Live
+- LiveKit Cloud

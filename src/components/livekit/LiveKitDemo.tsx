@@ -16,6 +16,7 @@ interface DemoProps {
   stopRef?: MutableRefObject<(() => Promise<void>) | null>;
 }
 
+/** Render voice controls and transcript while exposing awaited cleanup to the provider switcher. */
 function Conversation({
   config,
   stopRef,
@@ -187,6 +188,7 @@ function Conversation({
   );
 }
 
+/** Load demo configuration and mount the shared dedicated-page or embedded conversation. */
 export default function LiveKitDemo({ embedded = false, stopRef }: DemoProps) {
   const [config, setConfig] = useState<LiveKitConfig | null>(null);
   const [error, setError] = useState(false);

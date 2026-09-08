@@ -7,6 +7,7 @@ const SHAPE = Array.from({ length: 45 }, (_, i) => {
   return 3 + 78 * Math.exp(-x * x * 6) * (0.3 + 0.7 * Math.cos(x * 11) ** 2);
 });
 
+/** Visualize actual microphone/assistant levels, with a static decorative shape while idle. */
 export function LiveKitWaveform({
   agentTrack,
   localTrack,

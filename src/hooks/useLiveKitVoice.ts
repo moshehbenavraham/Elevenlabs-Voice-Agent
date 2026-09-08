@@ -9,6 +9,7 @@ import { ConnectionState, RoomEvent, Track, LocalAudioTrack } from 'livekit-clie
 import { getLiveKitToken, liveKitErrorMessage } from '@/lib/livekit';
 import type { LiveKitMessage, LiveKitPhase } from '@/types/livekit';
 
+/** Own one cancellable voice conversation, including media cleanup, transcripts, and deadlines. */
 export function useLiveKitVoice(maxSessionSeconds: number, agentWaitSeconds = 30) {
   const controller = useRef<AbortController | null>(null);
   const operation = useRef(0);

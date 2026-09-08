@@ -7,7 +7,11 @@ export function createSessionLifetime(
   const finish = (reason: string): Promise<void> => {
     if (completion) return completion;
     clearTimeout(timer);
-    completion = Promise.resolve().then(() => close(reason));
+    completion = Promise.resolve()
+      .then(() => close(reason))
+      .catch(() => {
+        // Shutdown is best effort; event/timer callers intentionally do not await it.
+      });
     return completion;
   };
   const timer = setTimeout(() => {

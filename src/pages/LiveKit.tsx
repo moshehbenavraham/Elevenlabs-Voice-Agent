@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import LiveKitDemo from '@/components/livekit/LiveKitDemo';
 import { LiveKitHelp } from '@/components/livekit/LiveKitHelp';
 
+/** Wrap the shared voice demo with dedicated navigation and help. */
 export default function LiveKit() {
   return (
     <div className="lk-page">

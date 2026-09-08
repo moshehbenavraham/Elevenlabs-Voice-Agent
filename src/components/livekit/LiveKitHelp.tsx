@@ -9,6 +9,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
+/** Present keyboard-accessible usage and troubleshooting guidance for the voice demo. */
 export function LiveKitHelp() {
   return (
     <Dialog>

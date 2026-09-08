@@ -2,12 +2,14 @@ import { getApiBaseUrl } from '@/lib/apiConfig';
 import type { LiveKitConfig } from '@/types/livekit';
 import type { TokenSourceResponseObject } from 'livekit-client';
 
+/** Fetch public demo readiness without exposing server credentials. */
 export async function getLiveKitConfiguration(signal: AbortSignal): Promise<LiveKitConfig> {
   const response = await fetch(`${getApiBaseUrl()}/api/livekit/config`, { signal });
   if (!response.ok) throw new Error('Could not reach the demo server. Please try again.');
   return response.json() as Promise<LiveKitConfig>;
 }
 
+/** Request an ephemeral session only after the visitor explicitly starts. */
 export async function getLiveKitToken(signal: AbortSignal): Promise<TokenSourceResponseObject> {
   const response = await fetch(`${getApiBaseUrl()}/api/livekit/session`, {
     method: 'POST',
@@ -29,6 +31,7 @@ export async function getLiveKitToken(signal: AbortSignal): Promise<TokenSourceR
   return { serverUrl: data.serverUrl, participantToken: data.participantToken };
 }
 
+/** Map microphone and application failures to safe, actionable visitor messages. */
 export function liveKitErrorMessage(error: unknown): string {
   if (error instanceof DOMException) {
     if (error.name === 'NotAllowedError')
