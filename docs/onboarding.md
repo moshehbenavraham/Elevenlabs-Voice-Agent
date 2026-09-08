@@ -4,8 +4,8 @@ Zero-to-hero checklist for new developers.
 
 ## Prerequisites
 
-- [ ] Node.js 18+ installed (`node --version`)
-- [ ] npm 7+ or Bun installed
+- [ ] Node.js 22.22.1+ installed (`node --version`)
+- [ ] npm 10+ or Bun installed
 - [ ] Git installed
 - [ ] Modern browser (Chrome, Firefox, Edge, Safari)
 - [ ] Microphone available for voice testing

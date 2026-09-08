@@ -4,7 +4,7 @@ The app and voice agent run on your local Linux/WSL machine. LiveKit Cloud provi
 
 ## Setup
 
-Use Node.js 22 or later. From the repository root:
+Use Node.js 22.22.1 or later and npm 10 or later. From the repository root:
 
 ```bash
 npm ci

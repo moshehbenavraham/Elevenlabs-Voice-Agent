@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:20-alpine AS build-deps
+FROM node:22.22.1-alpine3.22 AS build-deps
 WORKDIR /app
 
 COPY package*.json ./
@@ -65,7 +65,7 @@ ARG VITE_NODE_ENV=production
 
 RUN npm run build
 
-FROM node:20-alpine AS production-deps
+FROM node:22.22.1-alpine3.22 AS production-deps
 
 WORKDIR /app
 
@@ -73,7 +73,7 @@ COPY package*.json ./
 RUN --mount=type=cache,id=voice-agent-npm-production,target=/root/.npm \
     npm ci --omit=dev --ignore-scripts
 
-FROM node:20-alpine AS production
+FROM node:22.22.1-alpine3.22 AS production
 
 WORKDIR /app
 

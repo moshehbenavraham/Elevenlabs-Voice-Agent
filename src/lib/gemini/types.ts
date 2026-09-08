@@ -143,10 +143,7 @@ export interface ClientContentMessage {
  * Union of all client-to-server message types.
  */
 export type GeminiClientMessage =
-  | SetupMessage
-  | RealtimeInputMessage
-  | ToolResponseMessage
-  | ClientContentMessage;
+  SetupMessage | RealtimeInputMessage | ToolResponseMessage | ClientContentMessage;
 
 // =============================================================================
 // Server Message Types (Received from Gemini)
@@ -215,10 +212,7 @@ export interface GoAwayMessage {
  * Union of all server-to-client message types.
  */
 export type GeminiServerMessage =
-  | ServerContentMessage
-  | ToolCallMessage
-  | SetupCompleteMessage
-  | GoAwayMessage;
+  ServerContentMessage | ToolCallMessage | SetupCompleteMessage | GoAwayMessage;
 
 // =============================================================================
 // Tool/Function Types

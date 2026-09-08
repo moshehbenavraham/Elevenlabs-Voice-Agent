@@ -1,17 +1,5 @@
 export type OpenAITranslationTargetLanguageCode =
-  | 'es'
-  | 'pt'
-  | 'fr'
-  | 'ja'
-  | 'ru'
-  | 'zh'
-  | 'de'
-  | 'ko'
-  | 'hi'
-  | 'id'
-  | 'vi'
-  | 'it'
-  | 'en';
+  'es' | 'pt' | 'fr' | 'ja' | 'ru' | 'zh' | 'de' | 'ko' | 'hi' | 'id' | 'vi' | 'it' | 'en';
 
 export interface OpenAITranslationTargetLanguage {
   readonly code: OpenAITranslationTargetLanguageCode;
@@ -132,17 +120,10 @@ export interface OpenAITranslationAudioMixState {
 export type OpenAITranslationAutoStopReason = 'max-session-duration';
 
 export type OpenAITranslationSessionEndReason =
-  | 'manual'
-  | 'source-ended'
-  | 'runtime-error'
-  | 'provider-switch'
-  | OpenAITranslationAutoStopReason;
+  'manual' | 'source-ended' | 'runtime-error' | 'provider-switch' | OpenAITranslationAutoStopReason;
 
 export type OpenAITranslationRuntimeStopReason =
-  | OpenAITranslationSessionEndReason
-  | 'failed-start'
-  | 'reset'
-  | 'unmount';
+  OpenAITranslationSessionEndReason | 'failed-start' | 'reset' | 'unmount';
 
 export interface OpenAITranslationCleanupResult {
   readonly ok: boolean;
@@ -160,18 +141,10 @@ export interface OpenAITranslationMaxSessionConfig {
 export type OpenAITranslationSourceMode = 'microphone' | 'browser-tab';
 
 export type OpenAITranslationSourceStatus =
-  | 'idle'
-  | 'requesting'
-  | 'ready'
-  | 'ended'
-  | 'stopped'
-  | 'error';
+  'idle' | 'requesting' | 'ready' | 'ended' | 'stopped' | 'error';
 
 export type OpenAITranslationSourceCapabilityStatus =
-  | 'available'
-  | 'restricted'
-  | 'unavailable'
-  | 'unsupported';
+  'available' | 'restricted' | 'unavailable' | 'unsupported';
 
 export type OpenAITranslationSourceErrorKind =
   | 'unsupported'
@@ -324,12 +297,7 @@ export type OpenAITranslationDiagnosticCategory =
   | 'unknown';
 
 export type OpenAITranslationDiagnosticOwner =
-  | 'source'
-  | 'runtime'
-  | 'backend'
-  | 'browser'
-  | 'provider'
-  | 'audio';
+  'source' | 'runtime' | 'backend' | 'browser' | 'provider' | 'audio';
 
 export interface OpenAITranslationDiagnosticDetail {
   readonly label: string;

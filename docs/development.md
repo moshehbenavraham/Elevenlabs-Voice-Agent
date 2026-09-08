@@ -4,8 +4,8 @@
 
 ### Required Tools
 
-- Node.js 18+
-- npm 7+ or Bun
+- Node.js 22.22.1+
+- npm 10+ or Bun
 - Git
 
 ### Port Mappings
