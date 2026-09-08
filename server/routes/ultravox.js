@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { hasConfiguredValue } from '../../shared/config-placeholders.mjs';
 import {
   MAX_PROVIDER_STRING_LENGTH,
   mapProviderError,
@@ -23,7 +24,7 @@ const DEFAULT_SYSTEM_PROMPT = 'You are a helpful voice assistant. Keep responses
  */
 function validateApiKey() {
   const apiKey = process.env.ULTRAVOX_API_KEY;
-  if (!apiKey) {
+  if (!hasConfiguredValue(apiKey)) {
     console.error('[Server] ULTRAVOX_API_KEY is not configured');
     return {
       valid: false,
@@ -188,11 +189,8 @@ function validateCallRequest(body) {
  *   - { configured: boolean, provider: string }
  */
 router.get('/health', (req, res) => {
-  const apiKey = process.env.ULTRAVOX_API_KEY;
-  const configured = Boolean(apiKey && apiKey.length > 0);
-
   res.json({
-    configured,
+    configured: hasConfiguredValue(process.env.ULTRAVOX_API_KEY),
     provider: 'ultravox'
   });
 });

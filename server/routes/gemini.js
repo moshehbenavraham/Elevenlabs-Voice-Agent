@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { hasConfiguredValue } from '../../shared/config-placeholders.mjs';
 import { GoogleGenAI } from '@google/genai';
 import {
   getGeminiBrowserTokenPolicy,
@@ -24,7 +25,7 @@ const NEW_SESSION_EXPIRY_SECONDS = 60;
  */
 function validateApiKey() {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  if (!hasConfiguredValue(apiKey)) {
     console.error('[Server] GEMINI_API_KEY is not configured');
     return {
       valid: false,
@@ -147,11 +148,8 @@ function validateSessionRequest(body) {
  *   - { configured: boolean, provider: string }
  */
 router.get('/health', (req, res) => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  const configured = Boolean(apiKey && apiKey.length > 0);
-
   res.json({
-    configured,
+    configured: hasConfiguredValue(process.env.GEMINI_API_KEY),
     provider: 'gemini',
   });
 });

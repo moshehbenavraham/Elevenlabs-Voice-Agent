@@ -24,6 +24,16 @@ interface OpenAITranslationProviderMockProps {
 
 const indexMocks = vi.hoisted(() => ({
   openaiTranslationStop: vi.fn(),
+  runtimeServices: {
+    elevenlabs: { configured: true, missing: [] },
+    openai: { configured: true, missing: [] },
+    xai: { configured: true, missing: [] },
+    ultravox: { configured: true, missing: [] },
+    vapi: { configured: true, missing: [] },
+    retell: { configured: true, missing: [] },
+    gemini: { configured: true, missing: [] },
+    livekit: { configured: true, missing: [] },
+  },
 }));
 
 // Wrapper with required providers
@@ -66,6 +76,13 @@ vi.mock('@/hooks/useVoiceAnimations', () => ({
 
 vi.mock('@/hooks/use-toast', () => ({
   toast: vi.fn(),
+}));
+
+vi.mock('@/hooks/useProviderRuntimeConfiguration', () => ({
+  useProviderRuntimeConfiguration: () => ({
+    services: indexMocks.runtimeServices,
+    isChecking: false,
+  }),
 }));
 
 // Mock all the components to avoid complex rendering
@@ -113,8 +130,36 @@ vi.mock('@/components/providers', () => ({
   },
   XAIProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   XAIVoiceButton: () => <div data-testid="xai-voice-button">XAI Voice Button</div>,
+  XAIVoiceSelector: () => <div />,
   XAIVoiceStatus: () => <div data-testid="xai-voice-status">XAI Voice Status</div>,
   XAIVoiceVisualizer: () => <div data-testid="xai-voice-visualizer">XAI Voice Visualizer</div>,
+  XAIEmptyState: () => <div data-testid="xai-empty-state">xAI Setup Required</div>,
+  ElevenLabsEmptyState: () => (
+    <div data-testid="elevenlabs-empty-state">ElevenLabs Setup Required</div>
+  ),
+  OpenAIProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  OpenAIVoiceButton: () => <div data-testid="openai-voice-button">OpenAI Voice Button</div>,
+  OpenAIVoiceSelector: () => <div />,
+  OpenAIVoiceStatus: () => <div />,
+  OpenAIVoiceVisualizer: () => <div />,
+  OpenAIEmptyState: () => <div data-testid="openai-empty-state">OpenAI Setup Required</div>,
+  UltravoxProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  UltravoxVoiceButton: () => <div />,
+  UltravoxVoiceStatus: () => <div />,
+  UltravoxEmptyState: () => <div>Ultravox Setup Required</div>,
+  VapiProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  VapiButton: () => <div />,
+  VapiVoiceStatus: () => <div />,
+  VapiEmptyState: () => <div>Vapi Setup Required</div>,
+  RetellProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  RetellButton: () => <div />,
+  RetellVoiceStatus: () => <div />,
+  RetellEmptyState: () => <div>Retell Setup Required</div>,
+  GeminiProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  GeminiButton: () => <div />,
+  GeminiVoiceStatus: () => <div />,
+  GeminiVoiceSelector: () => <div />,
+  GeminiEmptyState: () => <div>Gemini Setup Required</div>,
 }));
 
 // Mock ProviderTabs
@@ -136,6 +181,9 @@ describe('Index Component', () => {
     vi.clearAllMocks();
     localStorage.clear();
     indexMocks.openaiTranslationStop.mockResolvedValue(undefined);
+    for (const service of Object.values(indexMocks.runtimeServices)) {
+      service.configured = true;
+    }
   });
 
   afterEach(() => {
@@ -193,5 +241,15 @@ describe('Index Component', () => {
     await waitFor(() => {
       expect(indexMocks.openaiTranslationStop).not.toHaveBeenCalled();
     });
+  });
+
+  it('shows setup guidance instead of active controls for an unconfigured provider', () => {
+    localStorage.setItem('voice-ai-provider', 'openai');
+    indexMocks.runtimeServices.openai.configured = false;
+
+    render(<Index />, { wrapper: TestWrapper });
+
+    expect(screen.getByTestId('openai-empty-state')).toBeInTheDocument();
+    expect(screen.queryByTestId('openai-voice-button')).not.toBeInTheDocument();
   });
 });

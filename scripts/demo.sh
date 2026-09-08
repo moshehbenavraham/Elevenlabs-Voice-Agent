@@ -166,9 +166,9 @@ cleanup() {
                 kill "$pid" 2>/dev/null || true
             fi
 
-            # Give process time to exit gracefully
+            # LiveKit drains its Cloud worker before exiting; allow that handshake to finish.
             local wait_count=0
-            while kill -0 "$pid" 2>/dev/null && [[ $wait_count -lt 10 ]]; do
+            while kill -0 "$pid" 2>/dev/null && [[ $wait_count -lt 30 ]]; do
                 sleep 0.5
                 wait_count=$((wait_count + 1))
             done

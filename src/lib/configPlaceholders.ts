@@ -1,4 +1,12 @@
-const PLACEHOLDER_MARKERS = ['your_', 'your-', 'your ', '<', '>', 'placeholder'] as const;
+const PLACEHOLDER_MARKERS = [
+  'your_',
+  'your-',
+  'your ',
+  '<',
+  '>',
+  'placeholder',
+  'example.com',
+] as const;
 
 export function isPlaceholderConfigValue(value: string | undefined | null): boolean {
   const normalized = value?.trim().toLowerCase();

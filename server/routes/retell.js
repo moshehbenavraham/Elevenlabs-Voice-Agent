@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { hasConfiguredValue } from '../../shared/config-placeholders.mjs';
 import { sanitizeLogInput } from '../utils/sanitize.js';
 import {
   mapProviderError,
@@ -63,7 +64,7 @@ export function mapRetellApiError(status) {
  */
 function validateApiKey() {
   const apiKey = process.env.RETELL_API_KEY;
-  if (!apiKey) {
+  if (!hasConfiguredValue(apiKey)) {
     console.error('[Server] RETELL_API_KEY is not configured');
     return {
       valid: false,
@@ -242,11 +243,8 @@ async function createRetellWebCall(apiKey, options) {
  *   - { configured: boolean, provider: string }
  */
 router.get('/health', (req, res) => {
-  const apiKey = process.env.RETELL_API_KEY;
-  const configured = Boolean(apiKey && apiKey.length > 0);
-
   res.json({
-    configured,
+    configured: hasConfiguredValue(process.env.RETELL_API_KEY),
     provider: 'retell'
   });
 });
