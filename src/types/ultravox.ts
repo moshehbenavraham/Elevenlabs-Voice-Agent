@@ -11,13 +11,7 @@
  * Maps directly to UltravoxSessionStatus enum from ultravox-client
  */
 export type UltravoxSessionStatus =
-  | 'disconnected'
-  | 'disconnecting'
-  | 'connecting'
-  | 'idle'
-  | 'listening'
-  | 'thinking'
-  | 'speaking';
+  'disconnected' | 'disconnecting' | 'connecting' | 'idle' | 'listening' | 'thinking' | 'speaking';
 
 /**
  * Speaker role in transcripts from SDK
@@ -116,11 +110,7 @@ export type UltravoxVoice = 'Mark' | string;
  * Ultravox connection status for frontend state management
  */
 export type UltravoxConnectionStatus =
-  | 'idle'
-  | 'connecting'
-  | 'connected'
-  | 'disconnecting'
-  | 'error';
+  'idle' | 'connecting' | 'connected' | 'disconnecting' | 'error';
 
 /**
  * Frontend state for Ultravox voice provider

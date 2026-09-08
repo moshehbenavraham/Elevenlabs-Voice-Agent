@@ -2,11 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 // Reconnection state machine states
 export type ReconnectionStatus =
-  | 'idle'
-  | 'connected'
-  | 'disconnected'
-  | 'reconnecting'
-  | 'max_retries';
+  'idle' | 'connected' | 'disconnected' | 'reconnecting' | 'max_retries';
 
 // Configuration for the reconnection hook
 export interface ReconnectionConfig {

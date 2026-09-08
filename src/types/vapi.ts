@@ -98,9 +98,7 @@ export interface VapiFunctionCallResultMessage extends VapiBaseMessage {
  * Union type for all possible Vapi messages
  */
 export type VapiMessage =
-  | VapiTranscriptMessage
-  | VapiFunctionCallMessage
-  | VapiFunctionCallResultMessage;
+  VapiTranscriptMessage | VapiFunctionCallMessage | VapiFunctionCallResultMessage;
 
 // ============================================================
 // STATE INTERFACES
