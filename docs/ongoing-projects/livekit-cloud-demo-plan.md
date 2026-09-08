@@ -31,8 +31,12 @@ Current objective: resolve all review details, run PR CI jobs locally, and wait 
 - Latest `origin/main` is already an ancestor of this branch; no remote `master` exists and no rebase is needed.
 - Verified five CodeRabbit inline findings plus README nit. Fixed blank timing defaults, contained shutdown rejections, added standalone agent pretest build, logged sanitized signing diagnostics with request ID, clarified both enable flags, and listed LiveKit in the README.
 - Added focused regression coverage: 868 root tests and 5 agent tests passed; root type/lint/format checks passed. Added missing `VITE_LIVEKIT_ENABLED=true` to CI's E2E environment because provider-switch coverage requires the tab.
-- Added concise API/lifecycle/UI docstrings for CodeRabbit's coverage warning; waiting for its reassessment.
-- Local gitleaks found no leaks in the PR history. npm audit currently reports 10 high and 2 critical findings; the same counts exist on `main`. Local CodeQL setup and remaining CI parity checks are in progress. GitHub-side job completion is not a gate; CodeRabbit review is.
+- CodeRabbit completed review of `38aac49`, resolved all five original threads, reported low merge risk, and passed all five pre-merge checks. Docstring coverage is now 87.50% against its 80% threshold.
+- Updated only the root lockfile with compatible dependency fixes for the inherited npm-audit failures. Root and agent audits now report zero vulnerabilities. Changed dependencies have no licenses prohibited by the dependency-review workflow.
+- Full-history gitleaks initially identified three historical documentation examples (a sequential synthetic ngrok token, truncated JWT, and literal YOUR_API_KEY placeholder). Added exact commit/path/rule/line fingerprints to `.gitleaksignore`; full-history scan now passes without disabling rules or rewriting history.
+- Local PR CI parity on Node 22.22.0: clean `npm ci`, typecheck, lint, formatting, 868 unit tests, production build, and 55 E2E tests all passed. E2E ran in an isolated worktree with the exact workflow environment, including the corrected LiveKit flag. Agent clean install and standalone pretest/build/test passed 5 tests.
+- Local CodeQL CLI 2.26.4 with `codeql/javascript-queries` 2.4.4 and the security-extended suite scanned all 233 JS/TS files and 6 workflow files with zero findings. Reports are in `/tmp/pupu-pr138-codeql/`, `/tmp/pupu-pr138-ci.log`, `/tmp/pupu-pr138-e2e-ci.log`, and `/tmp/pupu-pr138-gitleaks-clean.log`. Hosted artifact upload/publishing steps are not local validation jobs; deployment/release workflows do not run for this PR.
+- The compatible lockfile update and fingerprint exclusions are submitted as a separate security-check commit. Confirm CodeRabbit completion on the final PR head before merge readiness; GitHub-side CI waiting is not a gate. No PR merge is authorized by this task.
 
 ## Outcome and scope
 

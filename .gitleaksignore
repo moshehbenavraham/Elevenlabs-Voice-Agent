@@ -1,0 +1,7 @@
+# Historical documentation examples only; do not suppress these rules globally.
+# Sequential synthetic ngrok token in an explicitly labelled example configuration.
+1b296142337f2fc8a7015eaa78deb1798e4b9fc6:docs/DEMO_MODE.md:generic-api-key:87
+# Truncated JWT ending in an ellipsis; not a usable token.
+b3342acb477db1d4b4527bc32e9e93fb31c22375:.spec_system/PRD/PRD.md:generic-api-key:2853
+# Literal YOUR_API_KEY placeholder in a troubleshooting curl command.
+447a93a1938a244e29530ff771a09c4312134434:docs/TROUBLESHOOTING.md:curl-auth-header:254
