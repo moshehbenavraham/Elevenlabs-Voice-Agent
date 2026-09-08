@@ -1,15 +1,13 @@
+import { hasConfiguredValue } from './config-placeholders.mjs';
+
 export const DEFAULT_AGENT_NAME = 'pupuplatter-livekit-demo';
 export const DEFAULT_SESSION_SECONDS = 600;
 
 /** Validate server credentials and bounded timing settings, defaulting absent optional values. */
 export function getLiveKitConfig(env = process.env) {
-  const configured = (value) =>
-    typeof value === 'string' &&
-    value.trim().length > 0 &&
-    !/your[_ -]|[<>]|placeholder|example\.com/i.test(value);
   const enabled = /^(true|1)$/i.test(env.LIVEKIT_ENABLED ?? env.VITE_LIVEKIT_ENABLED ?? 'false');
   const required = ['LIVEKIT_URL', 'LIVEKIT_API_KEY', 'LIVEKIT_API_SECRET'];
-  const missing = required.filter((name) => !configured(env[name]));
+  const missing = required.filter((name) => !hasConfiguredValue(env[name]));
   let validUrl = false;
   try {
     const url = new URL(env.LIVEKIT_URL);
@@ -19,7 +17,9 @@ export function getLiveKitConfig(env = process.env) {
     /* Invalid or absent server URL. */
   }
   const agentName = env.LIVEKIT_AGENT_NAME || DEFAULT_AGENT_NAME;
-  const maxSessionSeconds = Number(env.LIVEKIT_SESSION_MAX_SECONDS?.trim() || DEFAULT_SESSION_SECONDS);
+  const maxSessionSeconds = Number(
+    env.LIVEKIT_SESSION_MAX_SECONDS?.trim() || DEFAULT_SESSION_SECONDS
+  );
   const agentWaitSeconds = Number(env.LIVEKIT_AGENT_WAIT_SECONDS?.trim() || 30);
   const valid =
     missing.length === 0 &&

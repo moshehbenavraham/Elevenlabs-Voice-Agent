@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { hasConfiguredValue } from '../../shared/config-placeholders.mjs';
 import {
   validateAllowedKeys,
   validateString,
@@ -85,7 +86,7 @@ function resolveTranslationValidationCode(message) {
  */
 function validateApiKey() {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  if (!hasConfiguredValue(apiKey)) {
     console.error('[Server] OPENAI_API_KEY is not configured');
     return {
       valid: false,
@@ -483,11 +484,8 @@ async function createEphemeralToken(apiKey) {
  *   - { configured: boolean, provider: string }
  */
 router.get('/health', (req, res) => {
-  const apiKey = process.env.OPENAI_API_KEY;
-  const configured = Boolean(apiKey && apiKey.length > 0);
-
   res.json({
-    configured,
+    configured: hasConfiguredValue(process.env.OPENAI_API_KEY),
     provider: 'openai'
   });
 });

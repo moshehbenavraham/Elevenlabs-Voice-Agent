@@ -34,6 +34,7 @@ export const mockResponses = {
  * Route patterns for API interception
  */
 export const apiRoutes = {
+  health: '**/api/health',
   openai: '**/api/openai/session',
   xai: '**/api/xai/session',
   elevenlabs: '**/api/elevenlabs/signed-url',
@@ -58,6 +59,27 @@ export async function setupMockServer(
   } = {}
 ): Promise<void> {
   const { latency = 100, failOpenAI, failXAI, failElevenLabs, failGemini } = options;
+
+  // Provider UI is gated by the aggregate server health response. Tests that
+  // mock provider sessions must also declare those providers available.
+  await page.route(apiRoutes.health, async (route: Route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        services: {
+          elevenlabs: { configured: true, missing: [] },
+          openai: { configured: true, missing: [] },
+          xai: { configured: true, missing: [] },
+          ultravox: { configured: true, missing: [] },
+          vapi: { configured: true, missing: [] },
+          retell: { configured: true, missing: [] },
+          gemini: { configured: true, missing: [] },
+          livekit: { configured: true, missing: [] },
+        },
+      }),
+    });
+  });
 
   // Mock OpenAI session endpoint
   await page.route(apiRoutes.openai, async (route: Route) => {
@@ -151,6 +173,7 @@ function simulateLatency(ms: number): Promise<void> {
  * Clear all mock routes from a page
  */
 export async function clearMockServer(page: Page): Promise<void> {
+  await page.unroute(apiRoutes.health);
   await page.unroute(apiRoutes.openai);
   await page.unroute(apiRoutes.xai);
   await page.unroute(apiRoutes.elevenlabs);

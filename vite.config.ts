@@ -13,10 +13,15 @@ const manualChunkGroups = {
   motion: ['framer-motion'],
   // Voice SDK
   elevenlabs: ['@elevenlabs/react'],
+  vapi: ['@vapi-ai/web'],
+  retell: ['retell-client-js-sdk'],
+  ultravox: ['ultravox-client'],
+  gemini: ['@google/genai'],
   // UI utilities
   'ui-utils': ['class-variance-authority', 'clsx', 'tailwind-merge'],
 } as const;
 
+/** Place each provider SDK in a stable lazy-loadable production chunk. */
 function manualChunks(id: string): string | undefined {
   const modulePath = id.split('node_modules/').pop();
   if (!modulePath) return undefined;
@@ -44,7 +49,7 @@ export default defineConfig(() => ({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
   build: {

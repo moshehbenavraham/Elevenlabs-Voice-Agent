@@ -13,6 +13,7 @@ import retellRoutes from './routes/retell.js';
 import geminiRoutes from './routes/gemini.js';
 import livekitRoutes from './routes/livekit.js';
 import { getLiveKitConfig } from '../shared/livekit-config.mjs';
+import { hasConfiguredValue } from '../shared/config-placeholders.mjs';
 import functionsRoutes from './routes/functions.js';
 import {
   REQUEST_ID_HEADER,
@@ -111,9 +112,9 @@ const distPath = join(__dirname, '..', 'dist');
 const indexPath = join(distPath, 'index.html');
 const tokenInFlightGuard = createInFlightRequestGuard();
 
+/** Return true when an environment variable contains a usable runtime value. */
 function isEnvConfigured(name) {
-  const value = process.env[name];
-  return typeof value === 'string' && value.trim().length > 0;
+  return hasConfiguredValue(process.env[name]);
 }
 
 function createProviderStatus(requiredEnv) {
@@ -132,7 +133,7 @@ function getProviderServices() {
     xai: createProviderStatus(['XAI_API_KEY']),
     ultravox: createProviderStatus(['ULTRAVOX_API_KEY']),
     vapi: createProviderStatus(['VITE_VAPI_WEB_TOKEN']),
-    retell: createProviderStatus(['RETELL_API_KEY']),
+    retell: createProviderStatus(['RETELL_API_KEY', 'VITE_RETELL_AGENT_ID']),
     gemini: createProviderStatus(['GEMINI_API_KEY']),
     ...(getLiveKitConfig().enabled ? { livekit: { configured: getLiveKitConfig().configured, missing: getLiveKitConfig().missing } } : {}),
   };
@@ -385,7 +386,7 @@ app.get('/api/elevenlabs/signed-url', async (req, res) => {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   const agentId = process.env.VITE_ELEVENLABS_AGENT_ID;
 
-  if (!apiKey) {
+  if (!hasConfiguredValue(apiKey)) {
     console.error('[Server] ELEVENLABS_API_KEY is not configured');
     return res.status(500).json({
       error: 'Server configuration error',
@@ -393,7 +394,7 @@ app.get('/api/elevenlabs/signed-url', async (req, res) => {
     });
   }
 
-  if (!agentId) {
+  if (!hasConfiguredValue(agentId)) {
     console.error('[Server] VITE_ELEVENLABS_AGENT_ID is not configured');
     return res.status(500).json({
       error: 'Server configuration error',

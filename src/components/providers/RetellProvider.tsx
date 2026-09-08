@@ -4,6 +4,7 @@ import { MicOff, Loader2, Phone, AlertCircle, Wifi, WifiOff, Settings, Square } 
 import { useRetellVoice } from '@/hooks/useRetellVoice';
 import { RetellVoiceProvider } from '@/contexts/RetellVoiceContext';
 import { RetellCallStatus } from '@/types/retell';
+import { hasConfiguredValue } from '@/lib/configPlaceholders';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 
@@ -14,7 +15,7 @@ import type { ReactNode } from 'react';
 // eslint-disable-next-line react-refresh/only-export-components
 export function checkRetellConfiguration(): boolean {
   const agentId = import.meta.env.VITE_RETELL_AGENT_ID;
-  return !!agentId && agentId !== 'your-retell-agent-id';
+  return hasConfiguredValue(agentId);
 }
 
 /**

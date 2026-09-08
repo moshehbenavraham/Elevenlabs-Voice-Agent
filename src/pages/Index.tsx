@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, lazy, Suspense, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, AlertCircle, X } from 'lucide-react';
 import { HeroSection } from '@/components/HeroSection';
@@ -24,31 +24,42 @@ import {
   XAIVoiceSelector,
   XAIVoiceStatus,
   XAIVoiceVisualizer,
+  XAIEmptyState,
   OpenAIProvider,
   OpenAIVoiceButton,
   OpenAIVoiceSelector,
   OpenAIVoiceStatus,
   OpenAIVoiceVisualizer,
+  OpenAIEmptyState,
   OpenAITranslationProvider,
   UltravoxProvider,
   UltravoxVoiceButton,
   UltravoxVoiceStatus,
+  UltravoxEmptyState,
   VapiProvider,
   VapiButton,
   VapiVoiceStatus,
+  VapiEmptyState,
   RetellProvider,
   RetellButton,
   RetellVoiceStatus,
+  RetellEmptyState,
   GeminiProvider,
   GeminiButton,
   GeminiVoiceStatus,
   GeminiVoiceSelector,
+  GeminiEmptyState,
+  ElevenLabsEmptyState,
 } from '@/components/providers';
 import { useVoice } from '@/contexts/VoiceContext';
 import { useProvider } from '@/contexts/ProviderContext';
 import { toast } from '@/hooks/use-toast';
 import { useOpenAIVoice } from '@/hooks/useOpenAIVoice';
 import { useXAIVoice } from '@/hooks/useXAIVoice';
+import {
+  useProviderRuntimeConfiguration,
+  type RuntimeProviderName,
+} from '@/hooks/useProviderRuntimeConfiguration';
 import { hasConfiguredValue, isPlaceholderConfigValue } from '@/lib/configPlaceholders';
 import { trackError } from '@/lib/errorTracking';
 import type { ProviderType } from '@/types';
@@ -86,6 +97,68 @@ function XAIEndConversationButton() {
   return <EndConversationButton onClick={disconnect} />;
 }
 
+/** Render the existing setup guidance for an unavailable provider. */
+function RuntimeProviderSetup({
+  provider,
+  onOpenSettings,
+}: {
+  provider: ProviderType;
+  onOpenSettings: () => void;
+}) {
+  let content: ReactNode;
+  switch (provider) {
+    case 'elevenlabs':
+    case 'elevenlabs-sdk':
+      content = <ElevenLabsEmptyState onOpenSettings={onOpenSettings} />;
+      break;
+    case 'xai':
+      content = <XAIEmptyState onOpenSettings={onOpenSettings} />;
+      break;
+    case 'openai':
+    case 'openai-translation':
+      content = <OpenAIEmptyState onOpenSettings={onOpenSettings} />;
+      break;
+    case 'ultravox':
+      content = <UltravoxEmptyState onOpenSettings={onOpenSettings} />;
+      break;
+    case 'vapi':
+      content = <VapiEmptyState onOpenSettings={onOpenSettings} />;
+      break;
+    case 'retell':
+      content = <RetellEmptyState onOpenSettings={onOpenSettings} />;
+      break;
+    case 'gemini':
+      content = <GeminiEmptyState onOpenSettings={onOpenSettings} />;
+      break;
+    case 'livekit':
+      return null;
+  }
+
+  return <div className="min-h-screen flex items-center justify-center px-6">{content}</div>;
+}
+
+/** Render a retry action when provider readiness could not be verified. */
+function RuntimeProviderCheckError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center px-6" role="alert">
+      <div className="max-w-md rounded-2xl border border-red-500/20 bg-red-500/10 p-8 text-center">
+        <AlertCircle className="mx-auto mb-4 h-8 w-8 text-red-400" />
+        <h2 className="font-display text-2xl text-zinc-100">Provider check unavailable</h2>
+        <p className="mt-3 text-sm leading-6 text-zinc-400">
+          We couldn’t verify the provider configuration. Check the server connection and try again.
+        </p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-6 rounded-full border border-zinc-700 bg-zinc-900 px-5 py-2.5 text-sm text-zinc-200 transition-colors hover:border-zinc-500 hover:text-white"
+        >
+          Try again
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export const Index = () => {
   const { error, clearError, isLoading, connect, disconnect, isConnected } = useVoice();
   const { activeProvider } = useProvider();
@@ -97,6 +170,12 @@ export const Index = () => {
   const [vapiHasStarted, setVapiHasStarted] = useState(false);
   const [retellHasStarted, setRetellHasStarted] = useState(false);
   const [geminiHasStarted, setGeminiHasStarted] = useState(false);
+  const {
+    services: runtimeServices,
+    isChecking: isCheckingRuntimeConfiguration,
+    error: runtimeConfigurationError,
+    retry: retryRuntimeConfiguration,
+  } = useProviderRuntimeConfiguration();
   const [openaiTranslationIsOffline, setOpenaiTranslationIsOffline] = useState(() => {
     return typeof navigator !== 'undefined' ? !navigator.onLine : false;
   });
@@ -408,6 +487,30 @@ export const Index = () => {
   // Check for missing configuration
   const agentId = import.meta.env.VITE_ELEVENLABS_AGENT_ID;
   const isConfigured = hasConfiguredValue(agentId);
+  const activeRuntimeProvider: RuntimeProviderName =
+    activeProvider === 'elevenlabs-sdk'
+      ? 'elevenlabs'
+      : activeProvider === 'openai-translation'
+        ? 'openai'
+        : activeProvider;
+  const isActiveRuntimeConfigured = runtimeServices?.[activeRuntimeProvider]?.configured === true;
+  const usesStandaloneConfiguration = activeProvider === 'livekit';
+  const showRuntimeConfigurationLoading =
+    !usesStandaloneConfiguration && isCheckingRuntimeConfiguration;
+  const showRuntimeConfigurationError =
+    !usesStandaloneConfiguration &&
+    !isCheckingRuntimeConfiguration &&
+    runtimeConfigurationError !== null;
+  const showRuntimeSetup =
+    !usesStandaloneConfiguration &&
+    !isCheckingRuntimeConfiguration &&
+    runtimeConfigurationError === null &&
+    !isActiveRuntimeConfigured;
+  const canRenderActiveProvider =
+    usesStandaloneConfiguration ||
+    (!isCheckingRuntimeConfiguration &&
+      runtimeConfigurationError === null &&
+      isActiveRuntimeConfigured);
 
   // Main render
   return (
@@ -452,7 +555,7 @@ export const Index = () => {
             className="flex items-center gap-4"
           >
             {/* Config status */}
-            {!isConfigured && (
+            {showRuntimeSetup && (
               <div className="flex items-center gap-2 text-amber-400/70 text-sm">
                 <AlertCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">Setup required</span>
@@ -487,7 +590,29 @@ export const Index = () => {
       {/* Main Content */}
       <main className="relative z-10 min-h-screen pt-12">
         <AnimatePresence mode="wait">
-          {activeProvider === 'livekit' && (
+          {showRuntimeConfigurationLoading && (
+            <div
+              key="runtime-configuration-loading"
+              className="min-h-screen flex items-center justify-center px-6"
+              role="status"
+            >
+              <p className="text-zinc-400">Checking provider configuration…</p>
+            </div>
+          )}
+          {showRuntimeConfigurationError && (
+            <RuntimeProviderCheckError
+              key="runtime-configuration-error"
+              onRetry={retryRuntimeConfiguration}
+            />
+          )}
+          {showRuntimeSetup && (
+            <RuntimeProviderSetup
+              key={`runtime-setup-${activeProvider}`}
+              provider={activeProvider}
+              onOpenSettings={() => setShowConfig(true)}
+            />
+          )}
+          {canRenderActiveProvider && activeProvider === 'livekit' && (
             <div key="livekit">
               <Suspense fallback={<p className="text-center pt-40">Loading LiveKit…</p>}>
                 <LiveKitDemo embedded stopRef={livekitStopRef} />
@@ -495,7 +620,7 @@ export const Index = () => {
             </div>
           )}
           {/* ElevenLabs Widget Provider */}
-          {activeProvider === 'elevenlabs' && (
+          {canRenderActiveProvider && activeProvider === 'elevenlabs' && (
             <motion.div
               key="widget-elevenlabs"
               initial={{ opacity: 0, y: 20 }}
@@ -525,7 +650,7 @@ export const Index = () => {
           )}
 
           {/* ElevenLabs SDK Provider */}
-          {activeProvider === 'elevenlabs-sdk' && !hasStarted && (
+          {canRenderActiveProvider && activeProvider === 'elevenlabs-sdk' && !hasStarted && (
             <HeroSection
               key="hero-elevenlabs-sdk"
               onStartConversation={handleStartConversation}
@@ -534,7 +659,7 @@ export const Index = () => {
             />
           )}
 
-          {activeProvider === 'elevenlabs-sdk' && hasStarted && (
+          {canRenderActiveProvider && activeProvider === 'elevenlabs-sdk' && hasStarted && (
             <motion.div
               key="interface-elevenlabs-sdk"
               initial={{ opacity: 0 }}
@@ -610,7 +735,7 @@ export const Index = () => {
           )}
 
           {/* xAI Provider */}
-          {activeProvider === 'xai' && (
+          {canRenderActiveProvider && activeProvider === 'xai' && (
             <XAIProvider onDisconnect={handleXAIDisconnect}>
               {!xaiHasStarted ? (
                 <motion.div
@@ -743,7 +868,7 @@ export const Index = () => {
           )}
 
           {/* OpenAI Provider */}
-          {activeProvider === 'openai' && (
+          {canRenderActiveProvider && activeProvider === 'openai' && (
             <OpenAIProvider onDisconnect={handleOpenAIDisconnect}>
               {!openaiHasStarted ? (
                 <motion.div
@@ -878,7 +1003,7 @@ export const Index = () => {
           )}
 
           {/* OpenAI Translation Provider */}
-          {activeProvider === 'openai-translation' && (
+          {canRenderActiveProvider && activeProvider === 'openai-translation' && (
             <OpenAITranslationProvider
               isOffline={openaiTranslationIsOffline}
               stopRef={openaiTranslationStopRef}
@@ -886,7 +1011,7 @@ export const Index = () => {
           )}
 
           {/* Ultravox Provider */}
-          {activeProvider === 'ultravox' && (
+          {canRenderActiveProvider && activeProvider === 'ultravox' && (
             <UltravoxProvider onDisconnect={handleUltravoxDisconnect}>
               {!ultravoxHasStarted ? (
                 <motion.div
@@ -1002,7 +1127,7 @@ export const Index = () => {
           )}
 
           {/* Vapi Provider */}
-          {activeProvider === 'vapi' && (
+          {canRenderActiveProvider && activeProvider === 'vapi' && (
             <VapiProvider onDisconnect={handleVapiDisconnect}>
               {!vapiHasStarted ? (
                 <motion.div
@@ -1118,7 +1243,7 @@ export const Index = () => {
           )}
 
           {/* Retell Provider */}
-          {activeProvider === 'retell' && (
+          {canRenderActiveProvider && activeProvider === 'retell' && (
             <RetellProvider onDisconnect={handleRetellDisconnect}>
               {!retellHasStarted ? (
                 <motion.div
@@ -1234,7 +1359,7 @@ export const Index = () => {
           )}
 
           {/* Gemini Provider */}
-          {activeProvider === 'gemini' && (
+          {canRenderActiveProvider && activeProvider === 'gemini' && (
             <GeminiProvider
               onDisconnect={handleGeminiDisconnect}
               disconnectRef={geminiDisconnectRef}

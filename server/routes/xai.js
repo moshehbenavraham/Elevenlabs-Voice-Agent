@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { sanitizeLogInput } from '../utils/sanitize.js';
+import { hasConfiguredValue } from '../../shared/config-placeholders.mjs';
 import {
   mapProviderError,
   validateAllowedKeys,
@@ -21,7 +22,7 @@ const REQUEST_TIMEOUT_MS = 30000;
  */
 function validateApiKey() {
   const apiKey = process.env.XAI_API_KEY;
-  if (!apiKey) {
+  if (!hasConfiguredValue(apiKey)) {
     console.error('[Server] XAI_API_KEY is not configured');
     return {
       valid: false,
@@ -163,11 +164,8 @@ function validateSessionRequest(body) {
  *   - { configured: boolean, provider: string }
  */
 router.get('/health', (req, res) => {
-  const apiKey = process.env.XAI_API_KEY;
-  const configured = Boolean(apiKey && apiKey.length > 0);
-
   res.json({
-    configured,
+    configured: hasConfiguredValue(process.env.XAI_API_KEY),
     provider: 'xai'
   });
 });

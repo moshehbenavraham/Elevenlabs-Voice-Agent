@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Playwright forces color for readable reports; remove the conflicting inherited opt-out.
+delete process.env.NO_COLOR;
+
 /**
  * Playwright configuration for E2E testing
  * @see https://playwright.dev/docs/test-configuration
